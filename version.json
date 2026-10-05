@@ -1,10 +1,10 @@
 {
-  "version": 231,
-  "versionStr": "0.00002",
-  "build": 231,
-  "hash": "dca9bfc74337607a",
-  "hashFull": "dca9bfc74337607a",
-  "releasedAt": "2026-10-05 17:58",
+  "version": 232,
+  "versionStr": "0.00003",
+  "build": 232,
+  "hash": "417f12bff9002932",
+  "hashFull": "417f12bff9002932",
+  "releasedAt": "2026-10-05 18:41",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "La bandeja muestra cada gestor con su tarjeta 3D antes de tocarla",
-    "Descripcion del vale en limpio: fichas de producto, datos con iconos y total destacado",
-    "Opciones con titulo y subtitulo: se entiende lo que hace cada boton"
+    "Buscador de vales: cliente, telefono, numero, articulo o direccion",
+    "Resumen del dia en la bandeja: vales de hoy, por cobrar, cobrado y comisiones",
+    "Los vales por cobrar avisan solos: 3 dias ambar, 7 dias rojo y suben a la lista"
   ]
 }

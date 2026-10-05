@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 231;
+const APP_VERSION = 232;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 231;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = '0.00002';
+let _PUBLIC_VERSION_STR = '0.00003';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -82,7 +82,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = 'dca9bfc74337607a';
+let _LOCAL_BUILD_HASH = '417f12bff9002932';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -9184,6 +9184,54 @@ function _vxSumaTotales(lista) {
 const _vxMoney = n => { const r = Math.round(n * 100) / 100; return '$' + (Number.isInteger(r) ? String(r) : r.toFixed(2)); };
 const _vxSubMN = x => (x && x.mn > 0) ? '+ ' + Math.round(x.mn).toLocaleString('es-ES') + ' MN' : '';
 
+// ── v232: RECORDATORIOS DE COBRO ───────────────────────────────────────
+// Un vale «Entregado, por cobrar» que duerme más de VX_COBRO_ALERTA_DIAS días
+// se delata solo en la tarjeta (ámbar), y a partir de VX_COBRO_ROJO_DIAS avisa
+// en rojo y sube a la cabeza de la lista de cobro. El reloj arranca cuando la
+// venta se cerró (confirmTs) o, en vales viejos que nacieron así, la fecha del
+// propio vale.
+const VX_COBRO_ALERTA_DIAS = 3;
+const VX_COBRO_ROJO_DIAS = 7;
+function _diasSinCobrar(v) {
+  if (!v || (v.status || 'pending') !== 'pending_payment') return 0;
+  const base = v.confirmTs || v.ts;
+  const ms = Date.now() - new Date(base).getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}
+// Los vencidos primero — el que más días lleva, arriba — y dentro del mismo
+// tramo, los más recientes. La cola vieja no puede quedar tapada por los
+// recién llegados.
+function _ordenarPorCobro(lista) {
+  return (lista || []).slice().sort((a, b) =>
+    _diasSinCobrar(b) - _diasSinCobrar(a) || new Date(b.ts) - new Date(a.ts));
+}
+
+// ── v232: BUSCADOR DE VALES ───────────────────────────────────────
+// La lupa del panel de vales: con dos letras el panel entero pasa a lista de
+// resultados. Busca por cliente, teléfono, número de vale (con o sin #),
+// artículo, dirección, gestor y hasta el importe tal como se escribe.
+let adminValeQuery = '';
+const _normTex = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function setValeSearch(q) {
+  adminValeQuery = String(q || '').trim();
+  const x = document.getElementById('valesSearchX');
+  if (x) x.style.display = adminValeQuery ? '' : 'none';
+  renderAdminGestores();
+  if (!adminValeQuery && typeof renderProximasEntregas === 'function') {
+    try { renderProximasEntregas(); } catch (e) {}   // recupera su propia visibilidad
+  }
+}
+function clearValeSearch() {
+  const i = document.getElementById('valesSearchInput');
+  if (i) i.value = '';
+  setValeSearch('');
+}
+function _valeCoincideBusqueda(v, q) {
+  const g = gestorOf(v.gestorId);
+  const campos = [v.cliente, v.telefono, valeNumStr(v), (valeNumStr(v) || '').replace('#', ''), v.articulo, v.direccion, v.total, g ? g.name : ''];
+  return campos.some(c => _normTex(c).includes(q));
+}
+
 // Antigüedad corta para las chapas: "ahora", "2 min", "3 h".
 function _vxEdad(v) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(v.ts).getTime()) / 60000));
@@ -9242,25 +9290,46 @@ function _vxRenderHead(pendientes) {
   _setHTMLifChanged(el, `<div class="vx-h-title">Vales</div><div class="vx-h-sub">${sub}</div>`);
 }
 
-// ── Estadísticas de dinero: por cobrar, cobrado hoy y comisiones ──
+// ── Estadísticas de dinero: resumen del día, por cobrar (con vencidos), cobrado hoy y comisiones ──
+// v232: la fila pasa a ser el RESUMEN DEL DÍA — cuántos vales se hicieron hoy
+// y cuánto suman, a la izquierda de todo. «Por cobrar» aprende a avisar: si
+// algún vale lleva 3+ días durmiendo, lleva chapa ⏰ en la esquina (roja si
+// alguno ya supera la semana).
 function _vxRenderStats(vales, gestores) {
   const el = document.getElementById('valesStats');
   if (!el) return;
-  const porCobrar = _vxSumaTotales(vales.filter(v => v.status === 'pending_payment'));
+  const _pc = vales.filter(v => v.status === 'pending_payment');
+  const porCobrar = _vxSumaTotales(_pc);
+  const _vencidos = _pc.filter(v => _diasSinCobrar(v) >= VX_COBRO_ALERTA_DIAS);
+  const _enRojo = _vencidos.some(v => _diasSinCobrar(v) >= VX_COBRO_ROJO_DIAS);
   const _hoy = localDay(new Date());
+  const _valesHoy = vales.filter(v => localDay(v.ts) === _hoy && v.status !== 'cancelled');
+  const _vendidoHoy = _vxSumaTotales(_valesHoy);
   const cobradoHoy = _vxSumaTotales(vales.filter(v => v.status === 'confirmed' && localDay(v.confirmedTs || v.ts) === _hoy));
   const com = { usd: 0, mn: 0 };
   gestores.forEach(g => {
     try { const c = comisionPendienteDe(g.id); com.usd += c.usd || 0; com.mn += c.mn || 0; } catch (e) {}
   });
-  const _card = (cls, k, tot, onclick, title) =>
+  const _card = (cls, k, tot, onclick, title, extra) =>
     `<div class="vx-stat ${cls}"${onclick ? ` onclick="${onclick}"` : ''}${title ? ` title="${title}"` : ''}>
       <div class="vx-stat-k">${k}</div>
       <div class="vx-stat-n">${_vxMoney(tot.usd)}</div>
-      <div class="vx-stat-s">${_vxSubMN(tot) || '&nbsp;'}</div>
+      <div class="vx-stat-s">${_vxSubMN(tot) || '&nbsp;'}</div>${extra || ''}
     </div>`;
+  const _subHoy = _valesHoy.length
+    ? (_vxMoney(_vendidoHoy.usd) + (_vendidoHoy.mn > 0 ? ' + ' + Math.round(_vendidoHoy.mn).toLocaleString('es-ES') + ' MN' : ''))
+    : 'sin vales aún';
+  const _hoyCard =
+    `<div class="vx-stat vx-st-resumen" title="Vales creados hoy y cuánto suman">
+      <div class="vx-stat-k">🧾 Vales hoy</div>
+      <div class="vx-stat-n">${_valesHoy.length}</div>
+      <div class="vx-stat-s">${_subHoy}</div>
+    </div>`;
+  const _alertaCobro = _vencidos.length
+    ? `<div class="vx-stat-alerta${_enRojo ? ' rojo' : ''}" title="${_vencidos.length} vale${_vencidos.length > 1 ? 's' : ''} llevan más de ${VX_COBRO_ALERTA_DIAS} días sin cobrar">⏰ ${_vencidos.length}</div>` : '';
   _setHTMLifChanged(el, '<div class="vx-stats">'
-    + _card('vx-st-cobrar', 'Por cobrar', porCobrar, "setInboxFilter('cobrar')", 'Ver los pendientes de cobro')
+    + _hoyCard
+    + _card('vx-st-cobrar', 'Por cobrar', porCobrar, "setInboxFilter('cobrar')", 'Ver los pendientes de cobro', _alertaCobro)
     + _card('vx-st-hoy', 'Cobrado hoy', cobradoHoy, '', '')
     + _card('vx-st-com', 'Comisiones', com, "if(typeof adminTab==='function')adminTab('gestores')", 'Lo que se le debe a los gestores')
     + '</div>');
@@ -9424,19 +9493,47 @@ function renderAdminGestores() {
   _vxRenderChips(_ordenados, activos);
 
   // Secciones que acompañan a la bandeja, según el filtro activo.
+  // v232: con la lupa puesta, el panel entero se convierte en resultados y el
+  // resto de secciones (confirmados, pendientes de cobro, próximas entregas,
+  // pills y chips) se aparta — nada debe pelear con los resultados.
+  const _buscando = adminValeQuery.length >= 2;
   const _secBandeja = document.getElementById('bandejaSection');
   const _secConf = document.getElementById('confirmadosSection');
   const _secPend = document.getElementById('pendienteSection');
   const _secPendCobro = document.getElementById('pendingCobroSection');
+  const _secProx = document.getElementById('proximasEntregasSection');
+  const _pillsEl = document.getElementById('valesPills');
+  const _chipsEl = document.getElementById('valesChips');
   const _lbl = document.getElementById('bandejaLbl');
-  if (_secConf) _secConf.style.display = inboxFilter === 'todos' ? '' : 'none';
-  if (_secPend) _secPend.style.display = (inboxFilter === 'todos' || inboxFilter === 'cobrar') ? '' : 'none';
-  if (_secPendCobro) _secPendCobro.style.display = inboxFilter === 'todos' ? '' : 'none';
-  if (_secBandeja) _secBandeja.style.display = inboxFilter === 'cobrar' ? 'none' : '';
+  [_pillsEl, _chipsEl].forEach(e => { if (e) e.style.display = _buscando ? 'none' : ''; });
+  if (_secProx && _buscando) _secProx.style.display = 'none';
+  if (_secConf) _secConf.style.display = _buscando ? 'none' : (inboxFilter === 'todos' ? '' : 'none');
+  if (_secPend) _secPend.style.display = _buscando ? 'none' : ((inboxFilter === 'todos' || inboxFilter === 'cobrar') ? '' : 'none');
+  if (_secPendCobro) _secPendCobro.style.display = _buscando ? 'none' : (inboxFilter === 'todos' ? '' : 'none');
+  if (_secBandeja) _secBandeja.style.display = (!_buscando && inboxFilter === 'cobrar') ? 'none' : '';
 
   let html = '';
 
-  if (inboxFilter === 'pendientes' || inboxFilter === 'calle') {
+  if (_buscando) {
+    // ── v232: resultados de la lupa — todos los vales, no solo los activos ──
+    const _q = _normTex(adminValeQuery);
+    let _res = vales.filter(v => {
+      if (adminGestorFilter != null) {
+        const _delGestor = adminGestorFilter === 0
+          ? (esValeDeLaTienda(v) || !_idsReales.has(v.gestorId))
+          : String(v.gestorId) === String(adminGestorFilter);
+        if (!_delGestor) return false;
+      }
+      return _valeCoincideBusqueda(v, _q);
+    });
+    _res.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    if (_lbl) _lbl.innerHTML = `🔎 Resultados para <em>«${escapeHTML(adminValeQuery)}»</em>`;
+    const _MAX_RES = 60;
+    html = _res.length
+      ? _res.slice(0, _MAX_RES).map(v => buildInboxCard(v)).join('')
+        + (_res.length > _MAX_RES ? `<div style="text-align:center;padding:9px;font-size:11px;font-weight:600;color:var(--gray-400);">… y ${_res.length - _MAX_RES} resultados más — afina la búsqueda</div>` : '')
+      : '<div class="es"><div class="es-icon">🔍</div><div class="es-text" style="font-weight:600;">Sin resultados para «' + escapeHTML(adminValeQuery) + '»</div></div>';
+  } else if (inboxFilter === 'pendientes' || inboxFilter === 'calle') {
     // ── Lista plana del filtro: "Atender ya" / "En calle" ──
     if (_lbl) _lbl.innerHTML = inboxFilter === 'pendientes' ? '🔥 Atender <em>ya</em>' : '🛵 En <em>calle</em>';
     let lista = activos.filter(_vxCoincideFiltro);
@@ -9553,7 +9650,11 @@ function buildInboxCard(v) {
   const _notaAdmin = (v.adminNotes && v.adminNotes !== 'Generado por Admin') ? String(v.adminNotes).trim() : '';
   const _meta = [valeNumStr(v), v.articulo || 'Sin artículo', v.direccion || ''].filter(Boolean).join(' · ');
   const _chipHora = _chipHoraEntrega(v);
-  const _tieneChips = estafaMatch.length || reserva || _nota || _notaAdmin || m || _chipHora;
+  // v232: recordatorio de cobro en la tarjeta — ámbar a los 3 días, rojo a los 7.
+  const _dCobro = _diasSinCobrar(v);
+  const _chipCobro = _dCobro >= VX_COBRO_ALERTA_DIAS
+    ? `<span class="vx-mini ${_dCobro >= VX_COBRO_ROJO_DIAS ? 'vx-mini-red' : 'vx-mini-amber'}" title="Pendiente de cobro desde hace ${_dCobro} días">⏰ ${_dCobro}d sin cobrar</span>` : '';
+  const _tieneChips = estafaMatch.length || reserva || _nota || _notaAdmin || m || _chipHora || _chipCobro;
   // v228: la tarjeta del vale lleva la PIEL 3D del gestor (la misma del
   // selector «¿Quién eres?») — degradado pastel→pleno, esquina de vidrio,
   // círculos decorativos y sombra del color del gestor. La Tienda no tiene
@@ -9572,6 +9673,7 @@ function buildInboxCard(v) {
       ${_tieneChips ? `<div class="vx-minis">
         ${estafaMatch.length ? '<span class="vx-mini vx-mini-red">🚫 Estafa</span>' : ''}
         ${_chipHora}
+        ${_chipCobro}
         ${reserva ? '<span class="vx-mini vx-mini-amber">🔐 Apartado</span>' : ''}
         ${_nota ? `<span class="vx-mini vx-mini-blue" title="Nota del gestor">📝 ${escapeHTML(_nota)}</span>` : ''}
         ${_notaAdmin ? `<span class="vx-mini vx-mini-yellow" title="Nota del admin">📝 ${escapeHTML(_notaAdmin)}</span>` : ''}
@@ -11461,31 +11563,39 @@ function renderConfirmados() {
 function renderPendienteCobro() {
   const c=document.getElementById('pendienteList');
   if(!c) return;
-  const pend=ordenarRecientesPrimero(getVales().filter(v=>v.status==='pending_payment'));
+  // v232: primero los que más días llevan sin cobrar — la cola vieja manda.
+  const pend=_ordenarPorCobro(getVales().filter(v=>v.status==='pending_payment'));
   if(!pend.length){_setHTMLifChanged(c,'<div class="es"><div class="es-icon">⏳</div><div class="es-text">Sin pendientes</div></div>');return;}
   // v211: con cientos de vales pendientes este mapa de tarjetas congelaba el
-  // hilo. Se pintan las 30 más recientes (lo que se atiende a mano) y un pie
+  // hilo. Se pintan las 30 más urgentes (lo que se atiende a mano) y un pie
   // con lo que queda — los más viejos siguen en Sheets y en los reportes.
   const _MAX_PCOBRO=30;
   const _vis=pend.slice(0,_MAX_PCOBRO);
   const _pie=pend.length>_MAX_PCOBRO?`<div style="text-align:center;padding:9px;font-size:11px;font-weight:600;color:var(--gray-400);">… y ${pend.length-_MAX_PCOBRO} más · los más viejos quedan en Sheets</div>`:'';
   _setHTMLifChanged(c,_vis.map(v=>{
     const g=gestorOf(v.gestorId);const m=v.mensajeroId?mensajeroOf(v.mensajeroId):null;
-    return `<div class="sc sc-pend"><div class="sc-head"><span class="sc-g">${g?escapeHTML(g.name):'—'}</span><span class="sc-t">${timeStr(v.ts)}</span></div><div>${escapeHTML(v.cliente||'')} · ${escapeHTML(v.total||'')}</div><div class="sc-m">${m?'🛵 '+escapeHTML(m.name):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;"><button class="btn btn-green btn-sm btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-ghost btn-sm btn-full" style="color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir</button></div></div>`;
+    // v232: chapa de días sin cobrar — el motivo de que esté arriba se lee.
+    const _d=_diasSinCobrar(v);
+    const _chipD=_d>=VX_COBRO_ALERTA_DIAS?` <span class="vxc-dias${_d>=VX_COBRO_ROJO_DIAS?' rojo':''}" title="Pendiente de cobro desde hace ${_d} días">⏰ ${_d}d</span>`:'';
+    return `<div class="sc sc-pend"><div class="sc-head"><span class="sc-g">${g?escapeHTML(g.name):'—'}</span><span class="sc-t">${timeStr(v.ts)}</span></div><div>${escapeHTML(v.cliente||'')} · ${escapeHTML(v.total||'')}${_chipD}</div><div class="sc-m">${m?'🛵 '+escapeHTML(m.name):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;"><button class="btn btn-green btn-sm btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-ghost btn-sm btn-full" style="color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir</button></div></div>`;
   }).join('') + _pie);
 }
 function togglePendingCobro(){pendingCobroExpanded=!pendingCobroExpanded;renderPendingCobroSection();}
 function renderPendingCobroSection() {
   const c=document.getElementById('pendingCobroSection');if(!c)return;
-  const pend=ordenarRecientesPrimero(getVales().filter(v=>v.status==='pending_payment'));
+  // v232: vencidos primero y aviso en la cabecera del acordeón.
+  const pend=_ordenarPorCobro(getVales().filter(v=>v.status==='pending_payment'));
   if(!pend.length){_setHTMLifChanged(c,'');return;}
+  const _vencidos=pend.filter(v=>_diasSinCobrar(v)>=VX_COBRO_ALERTA_DIAS).length;
   const body=pendingCobroExpanded?`<div style="margin-top:8px;">${(()=>{ // v211: cap 30 — misma razón que renderPendienteCobro
     const _MAX=30, _vis=pend.slice(0,_MAX);
     const _pie=pend.length>_MAX?`<div style="text-align:center;padding:9px;font-size:11px;font-weight:600;color:var(--gray-400);">… y ${pend.length-_MAX} más</div>`:'';
     return _vis.map(v=>{
     const g=gestorOf(v.gestorId);const m=v.mensajeroId?mensajeroOf(v.mensajeroId):null;
+    const _d=_diasSinCobrar(v);
+    const _chipD=_d>=VX_COBRO_ALERTA_DIAS?`<span class="vxc-dias${_d>=VX_COBRO_ROJO_DIAS?' rojo':''}" title="Pendiente de cobro desde hace ${_d} días">⏰ ${_d}d sin cobrar</span>`:'';
     return `<div class="mv-card" style="border-left:3px solid var(--red);background:rgba(239,68,68,.05);margin-bottom:6px;">
-      <div class="mv-head"><span class="mv-time">${timeStr(v.confirmedTs||v.ts)}</span><span style="color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;background:rgba(239,68,68,.12);border-radius:4px;">⏳ Pend. cobro</span></div>
+      <div class="mv-head"><span class="mv-time">${timeStr(v.confirmedTs||v.ts)}</span><span style="color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;background:rgba(239,68,68,.12);border-radius:4px;">⏳ Pend. cobro</span>${_chipD}</div>
       <div class="mv-info"><b>${escapeHTML(v.cliente||'—')}</b> · <span style="color:var(--red);font-weight:700;">${escapeHTML(v.total||'—')}</span></div>
       ${g?`<div style="font-size:11px;color:var(--gray-400);">Gestor: ${escapeHTML(g.name)}</div>`:''}
       ${m?`<div style="font-size:11px;color:var(--gray-400);">🛵 ${escapeHTML(m.name)}</div>`:''}
@@ -11493,10 +11603,11 @@ function renderPendingCobroSection() {
     </div>`;
   }).join('')+_pie;})()}</div>`:'' ;
   _setHTMLifChanged(c,`<div onclick="togglePendingCobro()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.3);border-radius:9px;cursor:pointer;margin-bottom:${pendingCobroExpanded?'0':'12px'};">
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span style="font-size:16px;">⏳</span>
       <span style="font-weight:700;font-size:13px;color:var(--red);">Pendientes de cobro</span>
       <span style="background:var(--red);color:white;border-radius:10px;font-size:10px;font-weight:700;padding:1px 7px;">${pend.length}</span>
+      ${_vencidos?`<span style="font-size:10px;color:var(--red);font-weight:800;">· ${_vencidos} con +${VX_COBRO_ALERTA_DIAS} días</span>`:''}
     </div>
     <span style="color:var(--red);font-size:14px;">${pendingCobroExpanded?'▲':'▼'}</span>
   </div>${body}`);

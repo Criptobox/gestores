@@ -3886,3 +3886,82 @@ body.contrast .vx-opt-green .vx-opt-tx b{color:var(--green);}
 body.contrast .vx-opt-orange .vx-opt-tx b{color:var(--orange);}
 body.contrast .vx-estado{background:var(--surface2);border:1px solid var(--border);}
 body.contrast .vx-estado b{color:var(--text);}
+
+/* ══════════════════════════════════════════════════════════════════
+   v232 · v0.00003 — BUSCAR, RESUMEN DEL DÍA Y RECORDATORIOS DE COBRO
+   1 · Lupa (.vx-search): barra píldora bajo los chips; con 2 letras
+       el panel pasa a resultados y lo demás se aparta.
+   2 · Resumen del día: 4 tarjetas — 🧾 Vales hoy (n + total),
+       Por cobrar (con chapa ⏰ de vencidos), Cobrado hoy, Comisiones.
+       4 en fila en PC, 2×2 en móvil.
+   3 · Recordatorios (.vxc-dias): «⏰ Nd sin cobrar» ámbar a los 3
+       días, rojo a los 7, en tarjetas de vales y listas de cobro.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · LUPA ── */
+.vx-search{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:100px;padding:9px 14px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.vx-search:focus-within{
+  border-color:var(--blue,#0891b2);
+  box-shadow:0 0 0 3px rgba(8,145,178,.14);
+}
+.vx-search-ic{font-size:14px;opacity:.7;flex-shrink:0;line-height:1;}
+.vx-search input{
+  flex:1;min-width:0;border:none;outline:none;background:transparent;
+  font-size:13px;font-weight:600;color:var(--text);font-family:inherit;
+}
+.vx-search input::placeholder{color:var(--gray-400);font-weight:500;}
+.vx-search input::-webkit-search-cancel-button{display:none;}
+.vx-search-x{
+  display:flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;border:none;
+  background:var(--surface3);color:var(--text-muted);
+  font-size:10px;cursor:pointer;flex-shrink:0;padding:0;
+}
+.vx-search-x:hover{background:var(--border);color:var(--text);}
+
+/* ── 2 · RESUMEN DEL DÍA (4 tarjetas) ── */
+.vx-stats{grid-template-columns:repeat(4,minmax(0,1fr));}
+.vx-stat{position:relative;}
+.vx-st-resumen .vx-stat-n{color:var(--text);}
+@media (max-width:900px){
+  .vx-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+/* Chapa de vencidos en «Por cobrar» */
+.vx-stat-alerta{
+  position:absolute;top:8px;right:8px;
+  background:rgba(245,158,11,.15);color:#b45309;
+  border:1px solid rgba(245,158,11,.4);
+  border-radius:100px;padding:1px 7px;
+  font-size:9px;font-weight:800;line-height:1.5;
+}
+.vx-stat-alerta.rojo{background:rgba(239,68,68,.14);color:var(--red);border-color:rgba(239,68,68,.4);}
+.vx-st-cobrar:has(.vx-stat-alerta){border-color:rgba(245,158,11,.45);}
+.vx-st-cobrar:has(.vx-stat-alerta.rojo){border-color:rgba(239,68,68,.45);}
+
+/* ── 3 · CHAPA DE DÍAS SIN COBRAR ── */
+.vxc-dias{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(245,158,11,.15);color:#b45309;
+  border-radius:100px;padding:1px 8px;
+  font-size:9.5px;font-weight:800;white-space:nowrap;
+  vertical-align:middle;margin-left:4px;
+}
+.vxc-dias.rojo{background:rgba(239,68,68,.14);color:var(--red);}
+
+/* ── Oscuro: acentos más claros para leer igual ── */
+body.dark .vx-stat-alerta{color:#FBBF24;}
+body.dark .vx-stat-alerta.rojo{color:#F87171;}
+body.dark .vxc-dias{color:#FBBF24;background:rgba(245,158,11,.18);}
+body.dark .vxc-dias.rojo{color:#F87171;background:rgba(239,68,68,.18);}
+
+/* ── Alto contraste: plano, como manda la casa ── */
+body.contrast .vx-search{background:var(--surface);}
+body.contrast .vx-stat-alerta,
+body.contrast .vxc-dias{background:var(--surface3);color:var(--text);border-color:var(--border);}
+body.contrast .vx-st-cobrar:has(.vx-stat-alerta),
+body.contrast .vx-st-cobrar:has(.vx-stat-alerta.rojo){border-color:var(--border);}
