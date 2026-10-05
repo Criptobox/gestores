@@ -12,11 +12,11 @@
   <meta name="apple-mobile-web-app-title" content="AXONTECH">
   <link rel="apple-touch-icon" href="./iconos/icon-192.png">
   <link rel="preload" href="./fuentes/sora-var-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./app.css?v=226">
+  <link rel="stylesheet" href="./app.css?v=227">
   <!-- v211 RENDIMIENTO: pre cargamos el JS principal desde el head (el navegador
        empieza a bajarlo en seguido, no cuando llega al final del body) y se
        ejecuta con defer: no bloquea el parseo ni el primer pintado del splash. -->
-  <link rel="preload" href="./app.min.js?v=226" as="script" fetchpriority="high">
+  <link rel="preload" href="./app.min.js?v=227" as="script" fetchpriority="high">
   <style>
     /* Splash screen inline — no depende de app.css.
        Se muestra INMEDIATAMENTE al cargar el HTML, antes de que app.js termine.
@@ -63,7 +63,7 @@
     <span id="versionBadge"
           onclick="checkVersion(true)"
           title="Versión actual · Toca para buscar actualizaciones"
-          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">v17.2</span>
+          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">v17.3</span>
   </div>
   <span id="headerGestorName"></span>
   <div class="header-right">
@@ -852,7 +852,7 @@
   <div class="pf-ver" id="pfVer">AXONTECH</div>
 </div>
 
-<script src="./app.min.js?v=226" defer></script>
+<script src="./app.min.js?v=227" defer></script>
 <script>
 // Close modals by clicking backdrop
 document.querySelectorAll('.modal-bg').forEach(bg => {

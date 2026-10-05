@@ -1,10 +1,10 @@
 {
-  "version": 226,
-  "versionStr": "v17.2",
-  "build": 226,
-  "hash": "7345c8bd5a921fbd",
-  "hashFull": "7345c8bd5a921fbd",
-  "releasedAt": "2026-10-05 16:26",
+  "version": 227,
+  "versionStr": "v17.3",
+  "build": 227,
+  "hash": "71812c951b51565d",
+  "hashFull": "71812c951b51565d",
+  "releasedAt": "2026-10-05 16:49",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Selector «¿Quién eres?» con tarjetas 3D por gestor:",
-    "degradado propio, esquina de vidrio y círculos con iniciales o foto",
-    "móvil 3 por fila compactas · PC 2 columnas con el ranking al lado"
+    "Barra superior con vidrio y degradados del nuevo estilo:",
+    "icono AX mini-tarjeta 3D, botones y chips de vidrio con halo",
+    "Vales del admin: riel degradado por estado, sombra de color y avatares con anillo"
   ]
 }

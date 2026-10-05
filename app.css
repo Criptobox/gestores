@@ -3112,3 +3112,240 @@ body.contrast #gestoresList .g-item .g-badge{transform:none;}
 .rank-row .g-avatar{box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),0 3px 8px -3px rgba(15,23,42,.4);}
 body.dark .rank-row .g-avatar{box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 3px 8px -3px rgba(0,0,0,.5);}
 .rank-pts{font-weight:900;letter-spacing:-.2px;}
+
+/* ══════════════════════════════════════════════════════════════════
+   v227 · v17.3 — BARRA SUPERIOR + VALES DEL ADMIN con el lenguaje 3D
+   El usuario pidió llevar el diseño aprobado (vidrio + degradados +
+   sombra de color) a la barra superior y a los vales que llegan al
+   admin. Todo aquí gana por orden: este bloque va al final a propósito.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · HEADER: degradado profundo + brillo de vidrio + sombra de color ── */
+header{
+  background:
+    radial-gradient(ellipse 120% 95% at 85% -25%, rgba(255,255,255,.15), transparent 58%),
+    linear-gradient(135deg,var(--blue-dk) 0%,var(--blue) 55%,#0891b2 100%);
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.14),
+    0 2px 6px rgba(2,8,23,.18),
+    0 12px 30px -14px rgba(0,109,138,.5);
+}
+body.dark header{
+  background:
+    radial-gradient(ellipse 120% 95% at 85% -25%, rgba(255,255,255,.10), transparent 58%),
+    linear-gradient(135deg,#0c4a6e 0%,#0e5f80 55%,#0891b2 100%);
+  box-shadow:
+    inset 0 -1px 0 rgba(255,255,255,.10),
+    0 2px 6px rgba(0,0,0,.4),
+    0 12px 30px -14px rgba(2,60,80,.65);
+}
+header .brand-name{text-shadow:0 1px 3px rgba(2,8,23,.35);}
+
+/* Icono AX = mini tarjeta 3D: degradado pastel→pleno + esquina de vidrio
+   (el gesto firma de las tarjetas del selector, ahora en la barra) */
+header .brand-icon{
+  position:relative;z-index:0;overflow:hidden;
+  background:linear-gradient(135deg,#7dd3fc 0%,#0284c7 100%);
+  border:1px solid rgba(255,255,255,.4);
+  box-shadow:
+    0 6px 14px -4px rgba(2,132,199,.6),
+    inset 0 1px 0 rgba(255,255,255,.5);
+  text-shadow:0 1px 2px rgba(2,8,23,.4);
+}
+header .brand-icon::before{
+  content:'';position:absolute;inset:2px;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.55) 100%);
+}
+
+/* Botones de la derecha: píldora de vidrio con blur (pisa los inline) */
+header .header-right button{
+  background:rgba(255,255,255,.13) !important;
+  border:1px solid rgba(255,255,255,.3) !important;
+  color:#fff !important;
+  border-radius:100px !important;
+  padding:6px 13px !important;
+  font-weight:700 !important;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 2px 8px rgba(2,8,23,.2),inset 0 1px 0 rgba(255,255,255,.3);
+  transition:background .15s,transform .12s cubic-bezier(.2,.8,.2,1),box-shadow .15s !important;
+}
+header .header-right button:hover{
+  background:rgba(255,255,255,.22) !important;
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(2,8,23,.26),inset 0 1px 0 rgba(255,255,255,.3);
+}
+header .header-right button:active{transform:scale(.94);}
+#btnTheme{
+  background:rgba(255,255,255,.13) !important;
+  border:1px solid rgba(255,255,255,.3) !important;
+  box-shadow:0 2px 8px rgba(2,8,23,.2),inset 0 1px 0 rgba(255,255,255,.3);
+}
+
+/* Instalar y Salir conservan SU color: vidrio verde/rojo con sombra propia */
+#btnPWAInstallHeader{
+  background:rgba(34,197,94,.22) !important;
+  border:1px solid rgba(74,222,128,.55) !important;
+  color:#bbf7d0 !important;
+  box-shadow:0 3px 10px -3px rgba(34,197,94,.5),inset 0 1px 0 rgba(255,255,255,.22);
+}
+#btnPWAInstallHeader:hover{
+  background:rgba(34,197,94,.32) !important;
+  box-shadow:0 5px 14px -3px rgba(34,197,94,.6),inset 0 1px 0 rgba(255,255,255,.22);
+}
+#btnLogout{
+  background:rgba(239,68,68,.2) !important;
+  border:1px solid rgba(248,113,113,.5) !important;
+  color:#fecaca !important;
+  box-shadow:0 3px 10px -3px rgba(239,68,68,.45),inset 0 1px 0 rgba(255,255,255,.18);
+}
+#btnLogout:hover{
+  background:rgba(239,68,68,.3) !important;
+  box-shadow:0 5px 14px -3px rgba(239,68,68,.55),inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+/* Chip de versión: pastilla verde con halo (igual gesto que la app) */
+#versionBadge{
+  background:rgba(34,197,94,.2) !important;
+  border:1px solid rgba(74,222,128,.5) !important;
+  color:#a7f3d0 !important;
+  border-radius:100px !important;
+  padding:3px 10px !important;
+  box-shadow:0 0 0 3px rgba(34,197,94,.08),0 2px 8px -2px rgba(34,197,94,.45),inset 0 1px 0 rgba(255,255,255,.2);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+#versionBadge:hover{
+  box-shadow:0 0 0 3px rgba(34,197,94,.14),0 3px 12px -2px rgba(34,197,94,.6),inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+/* Fecha y chips de estado: pastillas de vidrio coherentes */
+header .header-date{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:100px;padding:4px 11px;
+  color:rgba(255,255,255,.9);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+}
+#offlineChip,#roLabel,#adminLabel,#inboxCountBadge,#adminBadge{border-radius:100px !important;}
+#offlineChip{
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:0 2px 8px -2px rgba(245,158,11,.4),inset 0 1px 0 rgba(255,255,255,.15);
+}
+#inboxCountBadge,#adminBadge{
+  box-shadow:0 2px 8px -2px rgba(239,68,68,.5);
+}
+#adminLabel{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+}
+@media (max-width:700px){
+  header .header-right button{padding:5px 10px !important;font-size:11px !important;}
+  #btnTheme{width:30px;height:28px;padding:0 !important;}
+  #versionBadge{padding:2px 8px !important;font-size:9.5px !important;}
+}
+
+/* ── 2 · VALES DEL ADMIN: tarjetas con vidrio, riel degradado y
+      sombra del color de su estado (misma fórmula que las 3D) ── */
+.vx-card{
+  background:linear-gradient(180deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,0) 30%),var(--surface);
+}
+body.dark .vx-card{
+  background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,0) 32%),var(--surface);
+}
+
+/* Riel de estado: degradado pastel→pleno con halo del color (antes plano) */
+.vx-card::before{
+  width:5px;left:6px;top:12px;bottom:12px;
+  background:linear-gradient(180deg,#7dd3fc,#0284c7);
+}
+.vx-card.st-pending::before{background:linear-gradient(180deg,#7dd3fc,#0284c7);box-shadow:0 0 10px -1px rgba(2,132,199,.6);}
+.vx-card.st-assigned::before{background:linear-gradient(180deg,#fdba74,#ea580c);box-shadow:0 0 10px -1px rgba(234,88,12,.55);}
+.vx-card.st-delivered::before{background:linear-gradient(180deg,#c4b5fd,#7c3aed);box-shadow:0 0 10px -1px rgba(124,58,237,.55);}
+.vx-card.st-pending_payment::before{background:linear-gradient(180deg,#fde68a,#d97706);box-shadow:0 0 10px -1px rgba(217,119,6,.55);}
+.vx-card.st-confirmed::before{background:linear-gradient(180deg,#6ee7b7,#059669);box-shadow:0 0 10px -1px rgba(5,150,105,.55);}
+.vx-card.st-cancelled::before{background:linear-gradient(180deg,#cbd5e1,#64748b);box-shadow:none;}
+
+/* Sombra de color por estado — la tarjeta «flota» en su tinte */
+.vx-card{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(2,132,199,.3);}
+.vx-card.st-pending{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(2,132,199,.35);}
+.vx-card.st-assigned{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(234,88,12,.32);}
+.vx-card.st-delivered{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(124,58,237,.32);}
+.vx-card.st-pending_payment{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(217,119,6,.32);}
+.vx-card.st-confirmed{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(5,150,105,.32);}
+.vx-card.st-cancelled{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -14px rgba(71,85,105,.28);}
+.vx-card:hover{
+  transform:translateY(-1.5px);
+  box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 36px -14px rgba(2,132,199,.4);
+}
+.vx-card.st-assigned:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 36px -14px rgba(234,88,12,.4);}
+.vx-card.st-delivered:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 36px -14px rgba(124,58,237,.4);}
+.vx-card.st-pending_payment:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 36px -14px rgba(217,119,6,.4);}
+.vx-card.st-confirmed:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 36px -14px rgba(5,150,105,.4);}
+/* Nuevo: halo azul suave alrededor de toda la tarjeta */
+.vx-card.is-new{box-shadow:0 0 0 3px rgba(14,165,233,.1),0 1px 2px rgba(15,23,42,.04),0 14px 30px -14px rgba(2,132,199,.42);}
+body.dark .vx-card.is-new{box-shadow:0 0 0 3px rgba(14,165,233,.14),0 1px 2px rgba(0,0,0,.3),0 14px 30px -14px rgba(2,132,199,.5);}
+
+/* Avatar del gestor: anillo blanco + sombra profunda (mismo gesto del ranking) */
+.vx-ava{box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),0 3px 8px -3px rgba(15,23,42,.4);}
+body.dark .vx-ava{box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 3px 8px -3px rgba(0,0,0,.5);}
+
+/* Píldora de estado activa: degradado azul (antes negro plano) */
+.vx-pill.act{
+  background:linear-gradient(135deg,#0ea5e9,#0891b2);
+  border-color:transparent;
+  color:#fff;
+  box-shadow:0 4px 12px -4px rgba(2,132,199,.6);
+}
+.vx-pill.act .vx-pill-n{color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.65);}
+
+/* Acción rápida: píldora 100% (ya llevaba degradado, ahora redondea igual) */
+.vx-accion{border-radius:100px;padding:8px 15px;}
+
+/* Stats de dinero: vidrio sutil arriba (coherencia con las tarjetas) */
+.vx-stat{
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 34%),var(--surface);
+}
+body.dark .vx-stat{
+  background:linear-gradient(180deg,rgba(255,255,255,.045) 0%,rgba(255,255,255,0) 36%),var(--surface);
+}
+
+/* Título del apartado con degradado de texto (mismo gesto que los pts del ranking) */
+.vx-h-title{
+  background:linear-gradient(135deg,var(--blue),#0891b2);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:var(--blue);
+}
+
+/* Alto contraste: plano otra vez, manda la legibilidad */
+body.contrast .vx-card{
+  background:var(--surface) !important;
+  box-shadow:none !important;
+}
+body.contrast .vx-card::before{
+  width:6px;left:0;top:0;bottom:0;border-radius:0;
+  background:var(--blue);box-shadow:none;
+}
+body.contrast .vx-card.st-pending::before{background:var(--blue);box-shadow:none;}
+body.contrast .vx-card.st-assigned::before{background:var(--orange);box-shadow:none;}
+body.contrast .vx-card.st-delivered::before{background:var(--purple);box-shadow:none;}
+body.contrast .vx-card.st-pending_payment::before{background:var(--yellow);box-shadow:none;}
+body.contrast .vx-card.st-confirmed::before{background:var(--green);box-shadow:none;}
+body.contrast .vx-ava{box-shadow:inset 0 0 0 2px #000;}
+body.dark.contrast .vx-ava{box-shadow:inset 0 0 0 2px #e2e8f0;}
+body.contrast .vx-pill.act{background:#000;color:#fff;border-color:#000;box-shadow:none;}
+body.dark.contrast .vx-pill.act{background:#fff;color:#0a0f18;border-color:#fff;box-shadow:none;}
+body.contrast .vx-stat{background:var(--surface);}
+body.contrast .vx-h-title{
+  background:none;-webkit-background-clip:initial;background-clip:initial;
+  -webkit-text-fill-color:initial;color:var(--text);
+}
+body.contrast header{background:var(--blue-dk) !important;box-shadow:none !important;}
+body.contrast header .brand-icon{background:rgba(255,255,255,.2);box-shadow:none;}
+body.contrast header .brand-icon::before{display:none;}
+body.contrast header .header-right button,
+body.contrast #btnTheme{background:rgba(255,255,255,.1) !important;box-shadow:none !important;}
+body.contrast header .header-date{background:transparent;border:none;box-shadow:none;}
+body.contrast #versionBadge{box-shadow:none !important;}
