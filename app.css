@@ -3965,3 +3965,266 @@ body.contrast .vx-stat-alerta,
 body.contrast .vxc-dias{background:var(--surface3);color:var(--text);border-color:var(--border);}
 body.contrast .vx-st-cobrar:has(.vx-stat-alerta),
 body.contrast .vx-st-cobrar:has(.vx-stat-alerta.rojo){border-color:var(--border);}
+/* ══════════════════════════════════════════════════════════════════
+   v233 · v0.00004 — UN SOLO LENGUAJE EN TODA LA APP
+   La piel 3D del gestor (degradado 135° + esquina de vidrio + círculos)
+   deja de ser excluso del historial y la bandeja: ahora cubre Ranking,
+   Confirmados, Pendientes de cobro, Entregas del mensajero y las fichas
+   de gestor de Estadísticas. Y las tarjetas de datos viejas (stat-card
+   cuadrada, bordes laterales de color, cajas inline) pasan al lenguaje
+   del resumen del día (.vx-stat).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Receta compartida de piel 3D (la de .hist-hero, generalizada) ──
+   Requiere las vars de gestorHeroVars(g): --g1 --g2 --gink --gacc
+   --gacc2 --gsh. Las tarjetas que la llevan añaden también la clase
+   vx-skin junto a la suya. La Tienda (sin gestor) NUNCA la lleva. */
+.vx-skin{
+  isolation:isolate;position:relative;overflow:hidden;
+  border-color:transparent;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 24px 34px 16px -36px,rgba(var(--gsh,15,42,60),.24) 0 10px 20px -12px !important;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;
+}
+.vx-skin::after{
+  content:'';position:absolute;inset:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.76) 100%);
+  pointer-events:none;
+}
+.vx-skin .vxh-c{
+  position:absolute;border-radius:50%;z-index:0;display:block;
+  background:var(--gacc,rgba(255,255,255,.24));
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.vx-skin .vxh-c.c1{width:58px;height:58px;top:-15px;right:-12px;}
+.vx-skin .vxh-c.c2{width:42px;height:42px;top:-5px;right:-3px;opacity:.75;}
+.vx-skin > *{position:relative;z-index:1;}
+.vx-skin:hover{transform:translateY(-1px);}
+.vx-skin:active{transform:scale(.985);}
+/* Tinta y acento del gestor para el texto sobre el degradado */
+.vx-skin .ink{color:var(--gink,#0f172a) !important;}
+.vx-skin .acc{color:var(--gacc2,#0369a1) !important;}
+.vx-skin .mv-time,.vx-skin .sc-t{color:var(--gink,#0f172a) !important;opacity:.66;}
+.vx-skin .sc-m{color:var(--gink,#0f172a) !important;opacity:.7;}
+.vx-skin .g-avatar{box-shadow:inset 0 0 0 2px rgba(255,255,255,.6),0 2px 6px -2px rgba(var(--gsh,15,42,60),.5);}
+/* La chapa de días sin cobrar sube a vidrio para leerse sobre el degradado */
+.vx-skin .vxc-dias{background:rgba(255,255,255,.55);color:#92400e;border:1px solid rgba(255,255,255,.65);}
+.vx-skin .vxc-dias.rojo{color:#b91c1c;}
+
+/* ── Botones de vidrio sobre la piel ── */
+.vg-btn{
+  background:rgba(255,255,255,.62) !important;
+  border:1px solid rgba(255,255,255,.85) !important;
+  border-radius:100px;font-weight:800;
+  box-shadow:0 1px 5px -1px rgba(var(--gsh,15,42,60),.3);
+  transition:transform .15s,background .15s;
+}
+.vg-btn:hover{background:rgba(255,255,255,.88) !important;}
+.vg-btn:active{transform:scale(.96);}
+.vg-green{color:#047857 !important;}
+.vg-red{color:#b91c1c !important;}
+.vg-blue{color:var(--gacc2,#0369a1) !important;}
+/* ── Chapas de vidrio sobre la piel ── */
+.vg-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);
+  color:var(--gink,#0f172a);
+  border-radius:100px;padding:1px 8px;
+  font-size:9.5px;font-weight:800;white-space:nowrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   PANEL ESTADÍSTICAS — mismo lenguaje que el resumen del día
+   ════════════════════════════════════════════════════════════ */
+/* Variantes de color por clase (adiós al style="color:...") */
+.vx-stat.v-blue .vx-stat-n{color:var(--blue);}
+.vx-stat.v-green .vx-stat-n{color:var(--green);}
+.vx-stat.v-orange .vx-stat-n{color:var(--orange);}
+.vx-stat.v-red .vx-stat-n{color:var(--red);}
+.vx-stat.v-amber .vx-stat-n{color:#d97706;}
+body.dark .vx-stat.v-amber .vx-stat-n{color:#FBBF24;}
+.vx-stat.v-wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+/* Caja: 4 montos con auto-ajuste (2×2 en móvil por el minmax) */
+.vx-caja-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;}
+/* Nota al pie de la caja y de los descuadres */
+.vx-nota{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.55;}
+/* Recuadro de descuadres (antes inline) */
+.vx-desc{margin-top:10px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:10px 12px;}
+.vx-desc-t{font-size:11px;font-weight:800;color:var(--red);margin-bottom:6px;}
+.vx-desc-btn{
+  background:var(--surface);border:1px solid var(--border);border-radius:100px;
+  font-size:11px;font-weight:700;padding:3px 10px;cursor:pointer;color:var(--text);
+  transition:border-color .15s,color .15s;
+}
+.vx-desc-btn:hover{border-color:var(--red);color:var(--red);}
+/* Lista de productos vendidos */
+.vx-prod-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:10px 14px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.vx-prod-name{font-size:12.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vx-prod-meta{font-size:10.5px;color:var(--gray-400);font-weight:600;white-space:nowrap;flex-shrink:0;}
+/* Tendencia: misma card, padding propio sin inline */
+.vx-tend{padding:12px 14px;}
+/* Ficha de gestor en Estadísticas: piel 3D colapsada, blanco al abrir */
+.sg-card{transition:border-color .18s,box-shadow .18s;}
+.sg-card.sg-open{border-color:var(--blue) !important;box-shadow:0 0 0 2px rgba(0,180,216,.22) !important;}
+.sg-head{border-radius:inherit;}
+
+/* ════════════════════════════════════════════════════════════
+   RANKING — cada fila con la piel de SU gestor
+   ════════════════════════════════════════════════════════════ */
+.rk-skin{border-radius:18px;}
+.rk-skin .rank-name{color:var(--gink,#0f172a) !important;}
+.rk-skin .rank-pts{color:var(--gacc2,#0369a1) !important;}
+.rk-skin .rank-pos span{color:var(--gink,#0f172a) !important;}
+.rk-skin .rank-bar-wrap{background:rgba(0,0,0,.10);}
+.rk-skin .rank-bar{background:rgba(255,255,255,.92) !important;box-shadow:0 1px 3px rgba(var(--gsh,15,42,60),.35);}
+.rk-ok{font-size:9px;font-weight:800;color:#047857;}
+.rk-skin .rk-ok{color:var(--gink,#0f172a);}
+.rk-sin{font-size:9px;color:var(--gray-400);}
+.rk-skin .rk-sin{color:var(--gink,#0f172a);opacity:.66;}
+
+/* ════════════════════════════════════════════════════════════
+   CONFIRMADOS / PENDIENTES DE COBRO (Inicio del admin) + ENTREGAS
+   ════════════════════════════════════════════════════════════ */
+.sc.vx-skin,.mv-card.vx-skin{border-radius:16px;}
+/* Cabecera del acordeón «Pendientes de cobro» (antes inline) */
+.vxc-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:rgba(239,68,68,.08);
+  border:1.5px solid rgba(239,68,68,.3);border-radius:14px;cursor:pointer;
+}
+/* Estado del vale en Mis vales como píldora (antes texto suelto) */
+.mv-status{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(127,127,127,.08);border-radius:100px;
+  padding:2px 9px;font-size:10px;
+}
+.mv-old{opacity:.92;}
+
+/* ════════════════════════════════════════════════════════════
+   MIS COMISIONES (gestor) — adiós al borde lateral de color
+   ════════════════════════════════════════════════════════════ */
+.vx-com{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:12px 14px;margin-bottom:8px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.vx-com-ic{
+  border-radius:12px;padding:8px 10px;font-size:18px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.vx-com-pend .vx-com-ic{background:rgba(245,158,11,.14);}
+.vx-com-sobre .vx-com-ic{background:rgba(234,179,8,.14);}
+.vx-com-ok .vx-com-ic{background:rgba(16,185,129,.14);}
+.vx-com-t{font-size:13px;font-weight:700;}
+.vx-com-s{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.vx-com-badge{font-size:14px;font-weight:800;flex-shrink:0;}
+.vx-com-dim{opacity:.88;}
+
+/* ════════════════════════════════════════════════════════════
+   MERMAS · VENTAS DE BORRADOS · AUDIT LOG
+   ════════════════════════════════════════════════════════════ */
+.vx-merma-row{
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:9px 11px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.vx-aviso{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:12px 13px;}
+.vx-aviso-t{font-size:12px;font-weight:800;color:#b45309;margin-bottom:4px;}
+.vx-aviso-s{font-size:11px;color:var(--text-muted);margin-bottom:9px;line-height:1.5;}
+.vx-relink-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px 11px;margin-bottom:7px;}
+/* Audit: fila con punto de color y hora en mono */
+.audit-entry{
+  display:flex;align-items:flex-start;gap:9px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:9px 12px;margin-bottom:5px;font-size:11px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.audit-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--blue);
+  flex-shrink:0;margin-top:4px;box-shadow:0 0 0 3px rgba(0,180,216,.14);
+}
+.audit-main{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px 8px;align-items:baseline;}
+.audit-ts{font-family:var(--ax2-mono,'Courier New',monospace);color:var(--gray-400);font-weight:600;font-size:10px;}
+.audit-action{font-weight:700;color:var(--blue);}
+.audit-user{color:var(--text-muted);}
+.audit-target{color:var(--gray-600);font-weight:600;}
+
+/* ── Oscuro: las pieles se iluminan solas; esto es para lo demás ── */
+body.dark .vx-desc-btn{background:var(--surface2);}
+body.dark .audit-dot{background:var(--accent);box-shadow:0 0 0 3px rgba(14,165,233,.18);}
+body.dark .audit-action{color:var(--accent);}
+body.dark .vg-btn{background:rgba(255,255,255,.66) !important;}
+
+/* ── Alto contraste: todo plano, como manda la casa ── */
+body.contrast .vx-skin{
+  background:var(--surface) !important;border:1px solid var(--border) !important;
+  box-shadow:none !important;transform:none !important;
+}
+body.contrast .vx-skin::after,
+body.contrast .vx-skin .vxh-c{display:none;}
+body.contrast .vx-skin .ink,
+body.contrast .vx-skin .acc,
+body.contrast .rk-skin .rank-name,
+body.contrast .rk-skin .rank-pts,
+body.contrast .rk-skin .rank-pos span,
+body.contrast .rk-skin .rk-ok,
+body.contrast .rk-skin .rk-sin{color:var(--text) !important;}
+body.contrast .vg-btn{background:var(--surface2) !important;border-color:var(--border) !important;box-shadow:none;}
+body.contrast .vg-green{color:var(--green) !important;}
+body.contrast .vg-red{color:var(--red) !important;}
+body.contrast .vg-blue{color:var(--blue) !important;}
+body.contrast .vg-chip{background:var(--surface3);color:var(--text);border-color:var(--border);}
+body.contrast .vx-skin .vxc-dias{background:var(--surface3);color:var(--text);border-color:var(--border);}
+body.contrast .rk-skin .rank-bar-wrap{background:var(--surface3);}
+body.contrast .rk-skin .rank-bar{background:var(--blue) !important;box-shadow:none;}
+body.contrast .sg-card.sg-open{box-shadow:none !important;border-color:var(--blue) !important;}
+body.contrast .vx-desc{background:var(--surface2);border-color:var(--border);}
+body.contrast .vxc-head{background:var(--surface2);border-color:var(--border);}
+body.contrast .vx-aviso{background:var(--surface2);border-color:var(--border);}
+body.contrast .audit-dot{background:var(--blue);box-shadow:none;}
+body.contrast .mv-status{background:var(--surface3);}
+
+/* ── Móvil: la piel respira igual en pantallas chicas ── */
+@media (max-width:700px){
+  .rk-skin{padding:9px 11px;}
+  .audit-main{gap:2px 7px;}
+}
+
+/* ── v233 añadir: card de renglón con padding propio (categorías, top vendidos) ── */
+.vx-row-card{padding:10px 14px;margin-bottom:6px;}
+
+/* ── v233 añadir 2: LA PIEL GANA A LOS BARRIDOS VIEJOS ──
+   El barrido oscuro de la era vieja (body.dark .mv-card/.sc/.rank-row →
+   background:var(--surface) !important) y el pastel .rank-row.g-rank
+   aplastaban el degradado de las tarjetas con piel. Misma especificidad
+   pero MÁS ABAJO = gana la piel. Y en oscuro la tinta --gink manda sobre
+   los grises del barrido, porque sobre el degradado el texto se lee con
+   la tinta del gestor, no con la del tema. */
+.sc.vx-skin,.mv-card.vx-skin,.rank-row.vx-skin,.sg-head.vx-skin{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  border-color:transparent !important;
+}
+body.dark .sc.vx-skin,body.dark .mv-card.vx-skin,body.dark .rank-row.vx-skin{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+}
+body.dark .vx-skin .ink,
+body.dark .vx-skin .rank-name,
+body.dark .vx-skin .rank-pos span,
+body.dark .vx-skin .mv-info,
+body.dark .vx-skin .sc-g,body.dark .vx-skin .sc-t,body.dark .vx-skin .sc-m{
+  color:var(--gink,#0f172a) !important;
+}
+body.dark .vx-skin .acc,body.dark .vx-skin .rank-pts{
+  color:var(--gacc2,#0369a1) !important;
+}
+body.dark .vx-skin .mv-time{color:var(--gink,#0f172a) !important;opacity:.66;}
+body.dark .sg-head.sg-head.vx-skin .sg-sub{color:var(--gink,#0f172a) !important;opacity:.72;}

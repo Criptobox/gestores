@@ -1,10 +1,10 @@
 {
-  "version": 232,
-  "versionStr": "0.00003",
-  "build": 232,
-  "hash": "417f12bff9002932",
-  "hashFull": "417f12bff9002932",
-  "releasedAt": "2026-10-05 18:41",
+  "version": 233,
+  "versionStr": "0.00004",
+  "build": 233,
+  "hash": "8a1c8248f4812ab5",
+  "hashFull": "8a1c8248f4812ab5",
+  "releasedAt": "2026-10-05 19:26",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Buscador de vales: cliente, telefono, numero, articulo o direccion",
-    "Resumen del dia en la bandeja: vales de hoy, por cobrar, cobrado y comisiones",
-    "Los vales por cobrar avisan solos: 3 dias ambar, 7 dias rojo y suben a la lista"
+    "Revision integral de estilos: la piel 3D del gestor llega al ranking, entregas y confirmaciones",
+    "Estadisticas con las tarjetas del resumen del dia: caja, inventario, productos y fichas de gestor",
+    "Adiós a los parches viejos: bordes laterales, cajas inline y stat-cards cuadradas unificadas"
   ]
 }

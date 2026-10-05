@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 232;
+const APP_VERSION = 233;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 232;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = '0.00003';
+let _PUBLIC_VERSION_STR = '0.00004';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -82,7 +82,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = '417f12bff9002932';
+let _LOCAL_BUILD_HASH = '8a1c8248f4812ab5';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -8288,29 +8288,41 @@ function renderMensajeroVales() {
         // —cerrar la venta borraba la deuda— y la tarjeta ofrecía "confirmar
         // venta" sobre una venta que ya estaba confirmada.
         const soloFaltaElDinero = !porEntregar && v.status==='confirmed';
+        // v233: cada entrega con la piel 3D del gestor del vale; la Tienda y
+        // los vales sin gestor se quedan en tarjeta neutra.
+        const _skinM=!!(g&&!g._tienda);
+        const _subM=_skinM?'color:var(--gink);opacity:.72;':'color:var(--gray-400);';
         const chapa = porEntregar
-          ? '<span class="sp-assigned" style="font-size:9px;padding:2px 6px;">🛵 Asignado</span>'
+          ? (_skinM
+            ? '<span class="vg-chip">🛵 Asignado</span>'
+            : '<span class="sp-assigned" style="font-size:9px;padding:2px 6px;">🛵 Asignado</span>')
           : soloFaltaElDinero
-            ? '<span style="color:var(--orange);font-size:10px;font-weight:700;" title="La venta ya está cerrada; falta que el mensajero entregue el dinero">💵 Te debe el dinero</span>'
-            : '<span style="color:var(--orange);font-size:10px;font-weight:700;">⏳ Pendiente de cobro</span>';
+            ? (_skinM
+              ? '<span class="vg-chip" title="La venta ya está cerrada; falta que el mensajero entregue el dinero">💵 Te debe el dinero</span>'
+              : '<span style="color:var(--orange);font-size:10px;font-weight:700;" title="La venta ya está cerrada; falta que el mensajero entregue el dinero">💵 Te debe el dinero</span>')
+            : (_skinM
+              ? '<span class="vg-chip">⏳ Pendiente de cobro</span>'
+              : '<span style="color:var(--orange);font-size:10px;font-weight:700;">⏳ Pendiente de cobro</span>');
+        const _bG=_skinM?'btn btn-sm btn-full vg-btn vg-green':'btn btn-green btn-sm btn-full';
+        const _bB=_skinM?'btn btn-sm btn-full vg-btn vg-blue':'btn btn-green btn-sm btn-full';
         const acciones = porEntregar
           ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-            <button class="btn btn-green btn-sm btn-full" onclick="mensajeroEntrega(${v.id})">📦 Entregado</button>
-            <button class="btn btn-green btn-sm btn-full" style="background:#2563EB;color:white;" onclick="mensajeroPagadoDirecto(${v.id})">💰 Pagado</button>
+            <button class="${_bG}" onclick="mensajeroEntrega(${v.id})">📦 Entregado</button>
+            <button class="${_bB}"${_skinM?'':' style="background:#2563EB;color:white;"'} onclick="mensajeroPagadoDirecto(${v.id})">💰 Pagado</button>
           </div>`
           : soloFaltaElDinero
-            ? `<button class="btn btn-green btn-sm btn-full" style="margin-top:8px;" onclick="mensajeroEntregoDinero(${v.id})">💵 Me entregó el dinero</button>`
-            : `<button class="btn btn-green btn-sm btn-full" style="margin-top:8px;" onclick="mensajeroPagado(${v.id})">💰 Cobrado — confirmar venta</button>`;
+            ? `<button class="${_bG}" style="margin-top:8px;" onclick="mensajeroEntregoDinero(${v.id})">💵 Me entregó el dinero</button>`
+            : `<button class="${_bG}" style="margin-top:8px;" onclick="mensajeroPagado(${v.id})">💰 Cobrado — confirmar venta</button>`;
         const waBtn = (porEntregar && m && m.phone)
           ? `<button class="btn btn-sm btn-full" style="background:#25D366;color:white;margin-top:4px;" onclick="openMensajeroWhatsApp(${m.id}, buildShareText(getVales().find(x=>x.id===${v.id}), mensajeroOf(${v.mensajeroId})))">💬 WhatsApp al mensajero</button>`
           : '';
-        return `<div class="mv-card ${porEntregar?'st-assigned':'st-pending_payment'}">
-          <div class="mv-head"><span class="mv-time">${timeStr(porEntregar?v.ts:(v.deliveredTs||v.ts))}</span>${chapa}</div>
-          <div class="mv-info"><b>${escapeHTML(v.cliente||'—')}</b> · ${escapeHTML(v.telefono||'—')}</div>
-          <div style="font-size:11px;color:var(--gray-400);">📍 ${escapeHTML(v.direccion||'Sin dirección')}</div>
-          <div style="font-size:12px;font-weight:700;margin-top:3px;">💰 ${escapeHTML(_aCobrarVale(v).txt||'—')}${v.vuelto?` · Vuelto: ${escapeHTML(v.vuelto)}`:''}</div>
-          ${g?`<div style="font-size:11px;color:var(--gray-400);">Gestor: ${escapeHTML(g.name)}</div>`:''}
-          <div style="font-size:11px;color:var(--gray-600);margin-top:3px;">📦 ${escapeHTML(v.articulo||'—')}</div>
+        return `<div class="mv-card ${porEntregar?'st-assigned':'st-pending_payment'}${_skinM?' vx-skin':''}" style="${_skinM?gestorHeroVars(g):''}">
+          <div class="mv-head"><span class="mv-time${_skinM?' ink':''}">${timeStr(porEntregar?v.ts:(v.deliveredTs||v.ts))}</span>${chapa}</div>
+          <div class="mv-info${_skinM?' ink':''}"><b>${escapeHTML(v.cliente||'—')}</b> · ${escapeHTML(v.telefono||'—')}</div>
+          <div style="font-size:11px;${_subM}">📍 ${escapeHTML(v.direccion||'Sin dirección')}</div>
+          <div style="font-size:12px;font-weight:700;margin-top:3px;${_skinM?'color:var(--gacc2);':''}">💰 ${escapeHTML(_aCobrarVale(v).txt||'—')}${v.vuelto?` · Vuelto: ${escapeHTML(v.vuelto)}`:''}</div>
+          ${g?`<div style="font-size:11px;${_subM}">Gestor: ${escapeHTML(g.name)}</div>`:''}
+          <div style="font-size:11px;${_skinM?'color:var(--gink);opacity:.82;':'color:var(--gray-600);'}margin-top:3px;">📦 ${escapeHTML(v.articulo||'—')}</div>
           ${acciones}
           ${waBtn}
         </div>`;
@@ -8326,10 +8338,11 @@ function renderMensajeroVales() {
       html+=`<div class="lbl" style="margin-top:16px;">Cobrados / Completados${confirmados.length>_MAX_COBRADOS?` <span style="font-weight:400;color:var(--gray-400);">· últimos ${_MAX_COBRADOS} de ${confirmados.length}</span>`:''}</div>`;
       html+=_confMostrar.map(v=>{
         const g=gestorOf(v.gestorId);
-        return `<div class="mv-card st-confirmed">
-          <div class="mv-head"><span class="mv-time">${timeStr(v.confirmedTs||v.ts)}</span><span style="color:var(--green);font-size:10px;font-weight:700;">✅ Pagado</span></div>
-          <div class="mv-info"><b>${escapeHTML(v.cliente||'—')}</b> · ${escapeHTML(v.total||'—')}</div>
-          ${g?`<div style="font-size:11px;color:var(--gray-400);">Gestor: ${escapeHTML(g.name)}</div>`:''}
+        const _skinMc=!!(g&&!g._tienda);
+        return `<div class="mv-card st-confirmed${_skinMc?' vx-skin':''}" style="${_skinMc?gestorHeroVars(g):''}">
+          <div class="mv-head"><span class="mv-time${_skinMc?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span>${_skinMc?'<span class="vg-chip">✅ Pagado</span>':'<span style="color:var(--green);font-size:10px;font-weight:700;">✅ Pagado</span>'}</div>
+          <div class="mv-info${_skinMc?' ink':''}"><b>${escapeHTML(v.cliente||'—')}</b> · ${escapeHTML(v.total||'—')}</div>
+          ${g?`<div style="font-size:11px;${_skinMc?'color:var(--gink);opacity:.72;':'color:var(--gray-400);'}">Gestor: ${escapeHTML(g.name)}</div>`:''}
         </div>`;
       }).join('');
     }
@@ -10156,24 +10169,24 @@ function renderCaja(vales) {
   if (!el) return;
   const t = totalesCaja(vales);
   if (!t.ventas) { el.innerHTML = '<div class="es"><div class="es-text">Sin ventas confirmadas en el período</div></div>'; return; }
-  const tarjeta = (icono, nombre, valor, color) => `<div class="stat-card"><div class="stat-num" style="color:${color};font-size:18px;">${valor}</div><div class="stat-lbl">${icono} ${nombre}</div></div>`;
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
-      ${tarjeta('💵','USD efectivo', '$' + t.usd.toFixed(2).replace(/\.00$/,''), 'var(--green)')}
-      ${tarjeta('🏦','Zelle', '$' + t.zelle.toFixed(2).replace(/\.00$/,''), 'var(--blue)')}
-      ${tarjeta('💶','Euro', '€' + t.eur.toFixed(2).replace(/\.00$/,''), 'var(--blue)')}
-      ${tarjeta('🇨🇺','MN', t.mn.toLocaleString('es-ES') + ' MN', 'var(--orange)')}
+  const tarjeta = (icono, nombre, valor, cls) => `<div class="vx-stat ${cls}"><div class="vx-stat-k">${icono} ${nombre}</div><div class="vx-stat-n">${valor}</div></div>`;
+  // v233: la caja usa el lenguaje del resumen del día (.vx-stat)
+  el.innerHTML = `<div class="vx-caja-grid">
+      ${tarjeta('💵','USD efectivo', '$' + t.usd.toFixed(2).replace(/\.00$/,''), 'v-green')}
+      ${tarjeta('🏦','Zelle', '$' + t.zelle.toFixed(2).replace(/\.00$/,''), 'v-blue')}
+      ${tarjeta('💶','Euro', '€' + t.eur.toFixed(2).replace(/\.00$/,''), 'v-blue')}
+      ${tarjeta('🇨🇺','MN', t.mn.toLocaleString('es-ES') + ' MN', 'v-orange')}
     </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+    <div class="vx-nota">
       ${t.ventas} venta(s) · todo junto ≈ <b>$${t.equivUSD.toFixed(2)} USD</b> con la tasa de cada día
       ${t.sinApuntar ? `<br>⚠️ ${t.sinApuntar} sin forma de pago apuntada: se cuentan como dice el vale (dólares en USD, MN en MN).` : ''}
       ${t.sinTasa ? `<br>⚠️ ${t.sinTasa} sin tasa para pasarlas a USD: no entran en el "todo junto".` : ''}
     </div>
-    ${t.descuadres.length ? `<div id="cajaDescuadres" style="margin-top:8px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.3);border-radius:9px;padding:9px 11px;">
-      <div style="font-size:11px;font-weight:800;color:var(--red);margin-bottom:5px;">⚠️ ${t.descuadres.length} venta${t.descuadres.length>1?'s':''} con el pago apuntado que no cuadra con el vale</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">${t.descuadres.map(d => `<button type="button" onclick="adminTab('vales');selectVale(${d.id})"
-        style="background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;color:var(--text);">
+    ${t.descuadres.length ? `<div id="cajaDescuadres" class="vx-desc">
+      <div class="vx-desc-t">⚠️ ${t.descuadres.length} venta${t.descuadres.length>1?'s':''} con el pago apuntado que no cuadra con el vale</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${t.descuadres.map(d => `<button type="button" class="vx-desc-btn" onclick="adminTab('vales');selectVale(${d.id})">
         ${escapeHTML(valeNumStr({valeNum:d.num}) || ('#' + d.id))} · ${d.dif > 0 ? 'sobra' : 'falta'} $${Math.abs(d.dif).toFixed(2)}</button>`).join('')}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-top:5px;">Toca uno para abrirlo y corregir la forma de pago. Mientras tanto, la caja suma lo apuntado.</div>
+      <div class="vx-nota" style="margin-top:5px;">Toca uno para abrirlo y corregir la forma de pago. Mientras tanto, la caja suma lo apuntado.</div>
     </div>` : ''}`;
 }
 
@@ -11557,7 +11570,13 @@ function renderConfirmados() {
   if(!today.length){_setHTMLifChanged(c,'<div class="es"><div class="es-icon">✅</div><div class="es-text">Sin confirmaciones</div></div>');return;}
   _setHTMLifChanged(c,today.map(v=>{
     const g=gestorOf(v.gestorId);const m=v.mensajeroId?mensajeroOf(v.mensajeroId):null;
-    return `<div class="sc sc-ok"><div class="sc-head"><span class="sc-g">${g?escapeHTML(g.name):'—'}</span><span class="sc-t">${timeStr(v.confirmedTs||v.ts)}</span></div><div>${escapeHTML(v.cliente||'')}</div><div class="sc-m">${m?'🛵 '+escapeHTML(m.name):''}</div><button type="button" class="btn btn-ghost btn-sm" style="margin-top:5px;font-size:10px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button></div>`;
+    // v233: la confirmación lleva la piel 3D del gestor, como el historial;
+    // la Tienda y los vales sin gestor se quedan en tarjeta neutra.
+    const _skinC=!!(g&&!g._tienda);
+    const _btnC=_skinC
+      ? `<button type="button" class="btn btn-sm vg-btn vg-red" style="margin-top:6px;font-size:10px;" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" style="margin-top:5px;font-size:10px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button>`;
+    return `<div class="sc sc-ok${_skinC?' vx-skin':''}" style="${_skinC?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinC?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinC?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span></div><div${_skinC?' class="ink"':''}>${escapeHTML(v.cliente||'')}</div><div class="sc-m${_skinC?' ink':''}">${m?'🛵 '+escapeHTML(m.name):''}</div>${_btnC}</div>`;
   }).join(''));
 }
 function renderPendienteCobro() {
@@ -11577,7 +11596,15 @@ function renderPendienteCobro() {
     // v232: chapa de días sin cobrar — el motivo de que esté arriba se lee.
     const _d=_diasSinCobrar(v);
     const _chipD=_d>=VX_COBRO_ALERTA_DIAS?` <span class="vxc-dias${_d>=VX_COBRO_ROJO_DIAS?' rojo':''}" title="Pendiente de cobro desde hace ${_d} días">⏰ ${_d}d</span>`:'';
-    return `<div class="sc sc-pend"><div class="sc-head"><span class="sc-g">${g?escapeHTML(g.name):'—'}</span><span class="sc-t">${timeStr(v.ts)}</span></div><div>${escapeHTML(v.cliente||'')} · ${escapeHTML(v.total||'')}${_chipD}</div><div class="sc-m">${m?'🛵 '+escapeHTML(m.name):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;"><button class="btn btn-green btn-sm btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-ghost btn-sm btn-full" style="color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir</button></div></div>`;
+    // v233: piel 3D del gestor + botones de vidrio; la deuda en el acento.
+    const _skinP=!!(g&&!g._tienda);
+    const _totP=_skinP
+      ? `<span class="acc">${escapeHTML(v.total||'')}</span>`
+      : escapeHTML(v.total||'');
+    const _btnsP=_skinP
+      ? `<button class="btn btn-sm btn-full vg-btn vg-green" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-sm btn-full vg-btn vg-red" onclick="revertConfirmSale(${v.id})">↩ Revertir</button>`
+      : `<button class="btn btn-green btn-sm btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-ghost btn-sm btn-full" style="color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir</button>`;
+    return `<div class="sc sc-pend${_skinP?' vx-skin':''}" style="${_skinP?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinP?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinP?' ink':''}">${timeStr(v.ts)}</span></div><div${_skinP?' class="ink"':''}>${escapeHTML(v.cliente||'')} · ${_totP}${_chipD}</div><div class="sc-m${_skinP?' ink':''}">${m?'🛵 '+escapeHTML(m.name):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;">${_btnsP}</div></div>`;
   }).join('') + _pie);
 }
 function togglePendingCobro(){pendingCobroExpanded=!pendingCobroExpanded;renderPendingCobroSection();}
@@ -11594,15 +11621,21 @@ function renderPendingCobroSection() {
     const g=gestorOf(v.gestorId);const m=v.mensajeroId?mensajeroOf(v.mensajeroId):null;
     const _d=_diasSinCobrar(v);
     const _chipD=_d>=VX_COBRO_ALERTA_DIAS?`<span class="vxc-dias${_d>=VX_COBRO_ROJO_DIAS?' rojo':''}" title="Pendiente de cobro desde hace ${_d} días">⏰ ${_d}d sin cobrar</span>`:'';
-    return `<div class="mv-card" style="border-left:3px solid var(--red);background:rgba(239,68,68,.05);margin-bottom:6px;">
-      <div class="mv-head"><span class="mv-time">${timeStr(v.confirmedTs||v.ts)}</span><span style="color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;background:rgba(239,68,68,.12);border-radius:4px;">⏳ Pend. cobro</span>${_chipD}</div>
-      <div class="mv-info"><b>${escapeHTML(v.cliente||'—')}</b> · <span style="color:var(--red);font-weight:700;">${escapeHTML(v.total||'—')}</span></div>
-      ${g?`<div style="font-size:11px;color:var(--gray-400);">Gestor: ${escapeHTML(g.name)}</div>`:''}
-      ${m?`<div style="font-size:11px;color:var(--gray-400);">🛵 ${escapeHTML(m.name)}</div>`:''}
-      <button class="btn btn-green btn-full btn-sm" style="margin-top:8px;" onclick="markAsPaid(${v.id})">💵 Registrar cobro</button>
+    // v233: piel 3D del gestor también en el acordeón; sin gestor, tarjeta roja
+    // suave como antes. El botón sube a vidrio sobre el degradado.
+    const _skinA=!!(g&&!g._tienda);
+    const _chapaA=_skinA
+      ? `<span class="vg-chip">⏳ Pend. cobro</span>`
+      : `<span style="color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;background:rgba(239,68,68,.12);border-radius:4px;">⏳ Pend. cobro</span>`;
+    return `<div class="mv-card${_skinA?' vx-skin':''}" style="${_skinA?gestorHeroVars(g):'border-left:3px solid var(--red);background:rgba(239,68,68,.05);'}margin-bottom:6px;">
+      <div class="mv-head"><span class="mv-time${_skinA?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span>${_chapaA}${_chipD}</div>
+      <div class="mv-info${_skinA?' ink':''}"><b>${escapeHTML(v.cliente||'—')}</b> · <span${_skinA?' class="acc"':' style="color:var(--red);font-weight:700;"'}>${escapeHTML(v.total||'—')}</span></div>
+      ${g?`<div style="font-size:11px;${_skinA?'color:var(--gink);opacity:.7;':'color:var(--gray-400);'}">Gestor: ${escapeHTML(g.name)}</div>`:''}
+      ${m?`<div style="font-size:11px;${_skinA?'color:var(--gink);opacity:.7;':'color:var(--gray-400);'}">🛵 ${escapeHTML(m.name)}</div>`:''}
+      <button class="btn btn-sm btn-full${_skinA?' vg-btn vg-green':' btn-green'}" style="margin-top:8px;" onclick="markAsPaid(${v.id})">💵 Registrar cobro</button>
     </div>`;
   }).join('')+_pie;})()}</div>`:'' ;
-  _setHTMLifChanged(c,`<div onclick="togglePendingCobro()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.3);border-radius:9px;cursor:pointer;margin-bottom:${pendingCobroExpanded?'0':'12px'};">
+  _setHTMLifChanged(c,`<div class="vxc-head" onclick="togglePendingCobro()" style="margin-bottom:${pendingCobroExpanded?'0':'12px'};">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span style="font-size:16px;">⏳</span>
       <span style="font-weight:700;font-size:13px;color:var(--red);">Pendientes de cobro</span>
@@ -12158,7 +12191,7 @@ function renderMyVales() {
       histHTML+=pendingPayVales.map(v=>{
         const _vStatus = v.status || 'pending_payment';
         const s=sMap[_vStatus]||{label:_vStatus,color:'var(--yellow)',icon:'⏳'};
-        return `<div class="mv-card st-pending_payment" onclick="openGestorValeModal(${v.id})" style="cursor:pointer; border-left: 3px solid var(--yellow);">
+        return `<div class="mv-card st-pending_payment" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;">
           <div class="mv-head">
             <span class="mv-time" style="color:var(--gray-600);"><b style="color:var(--gray-800);">${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>
           </div>
@@ -12174,7 +12207,7 @@ function renderMyVales() {
       histHTML+=historyVales.map(v=>{
         const _vStatus = v.status || 'confirmed';
         const s=sMap[_vStatus]||{label:_vStatus,color:'var(--green)',icon:'✅'};
-        return `<div class="mv-card st-${v.status}" onclick="openGestorValeModal(${v.id})" style="cursor:pointer; opacity:0.85; border-left: 3px solid var(--gray-300);">
+        return `<div class="mv-card st-${v.status} mv-old" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;">
           <div class="mv-head">
             <span class="mv-time" style="color:var(--gray-600);"><b style="color:var(--gray-800);">${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>
           </div>
@@ -12215,39 +12248,42 @@ function renderGestorComisiones() {
   section.style.display='block';
   let html='';
   // v39: Card style with icon containers matching original design
-  // Pendientes — orange left border, hourglass icon box, "se acumulan" subtitle
+  // v233: las tres tarjetas dejan el borde lateral de color (lenguaje viejo)
+  // y pasan a ficha con icono en squircle tintado — la misma gramática del
+  // detalle del vale. El color del estado queda en el título y el icono.
+  // Pendientes — hourglass icon box, "se acumulan" subtitle
   if(pendientes.length){
     const s=sumCommissions(pendientes);
     const badge=fmtComisionBadge(s.usd,s.mn,s.computed,s.sinCalcular);
-    html+=`<div class="card" style="border-left:4px solid #f59e0b;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
-      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">⏳</div>
+    html+=`<div class="vx-com vx-com-pend">
+      <div class="vx-com-ic">⏳</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:#f59e0b;">Pendiente</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${pendientes.length} comisión${pendientes.length!==1?'es':''} · se acumulan</div>
+        <div class="vx-com-t" style="color:#f59e0b;">Pendiente</div>
+        <div class="vx-com-s">${pendientes.length} comisión${pendientes.length!==1?'es':''} · se acumulan</div>
       </div>
-      ${badge?`<div style="font-size:14px;font-weight:800;color:var(--green);flex-shrink:0;">💵 ${badge}</div>`:''}
+      ${badge?`<div class="vx-com-badge" style="color:var(--green);">💵 ${badge}</div>`:''}
     </div>`;
   }
-  // En sobre — yellow left border, envelope icon box
+  // En sobre — envelope icon box
   if(enSobre.length){
     const s=sumCommissions(enSobre);
     const badge=fmtComisionBadge(s.usd,s.mn,s.computed,s.sinCalcular);
-    html+=`<div class="card" style="border-left:4px solid #eab308;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;opacity:.85;">
-      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">✉️</div>
+    html+=`<div class="vx-com vx-com-sobre vx-com-dim">
+      <div class="vx-com-ic">✉️</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:#eab308;">En sobre</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${enSobre.length} comisión${enSobre.length!==1?'es':''} · pendiente de entrega</div>
+        <div class="vx-com-t" style="color:#ca9a04;">En sobre</div>
+        <div class="vx-com-s">${enSobre.length} comisión${enSobre.length!==1?'es':''} · pendiente de entrega</div>
       </div>
-      ${badge?`<div style="font-size:13px;font-weight:800;color:#eab308;flex-shrink:0;">✉️ ${badge}</div>`:''}
+      ${badge?`<div class="vx-com-badge" style="color:#ca9a04;">✉️ ${badge}</div>`:''}
     </div>`;
   }
-  // Cobrados — green left border, checkmark icon box, "completado" subtitle
+  // Cobrados — checkmark icon box, "completado" subtitle
   if(cobrados.length){
-    html+=`<div class="card" style="border-left:4px solid #10b981;padding:12px 14px;display:flex;align-items:center;gap:12px;opacity:.85;">
-      <div style="background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">✅</div>
+    html+=`<div class="vx-com vx-com-ok vx-com-dim">
+      <div class="vx-com-ic">✅</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:#10b981;">Cobrados</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${cobrados.length} comisión${cobrados.length!==1?'es':''} · completado</div>
+        <div class="vx-com-t" style="color:#10b981;">Cobrados</div>
+        <div class="vx-com-s">${cobrados.length} comisión${cobrados.length!==1?'es':''} · completado</div>
       </div>
     </div>`;
   }
@@ -14329,16 +14365,16 @@ function renderVentasDeBorrados() {
   if (!grupos.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
   const prods = getProductos().slice().sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
   box.style.display = 'block';
-  box.innerHTML = `<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.4);border-radius:11px;padding:12px 13px;">
-    <div style="font-size:12px;font-weight:800;color:#b45309;margin-bottom:4px;">🗑️ Ventas de productos que ya no están en el catálogo</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:9px;line-height:1.5;">Si el producto se volvió a crear, elígelo y esas ventas pasan a contar como él: dan sus puntos y en Dueños se sabe de quién eran. El stock no se toca.</div>
+  box.innerHTML = `<div class="vx-aviso">
+    <div class="vx-aviso-t">🗑️ Ventas de productos que ya no están en el catálogo</div>
+    <div class="vx-aviso-s">Si el producto se volvió a crear, elígelo y esas ventas pasan a contar como él: dan sus puntos y en Dueños se sabe de quién eran. El stock no se toca.</div>
     ${grupos.map(g => {
       const sug = _productoParecido(g.nombre);
-      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:7px;">
+      return `<div class="vx-relink-row">
         <div style="font-size:12px;font-weight:700;">${escapeHTML(g.nombre)}</div>
         <div style="font-size:10px;color:var(--text-muted);margin:2px 0 7px;">${g.vales.length} venta${g.vales.length>1?'s':''} · ${g.uds} unidades${g.sinPuntos ? ` · <b style="color:var(--red);">${g.sinPuntos} sin puntos</b>` : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <select id="relink-${g.pid}" style="flex:1;min-width:170px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:12px;color:var(--text);">
+          <select id="relink-${g.pid}" style="flex:1;min-width:170px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:6px 12px;font-size:12px;color:var(--text);">
             <option value="">— Elegir el producto —</option>
             ${prods.map(p => `<option value="${p.id}"${sug && sug.id === p.id ? ' selected' : ''}>${escapeHTML(p.name)}${p.puntos ? ' · ' + p.puntos + ' pts' : ''}</option>`).join('')}
           </select>
@@ -14804,16 +14840,14 @@ function renderMermas() {
     const hoy = new Date();
     const mes = _resumenMermas(`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`);
     const todo = _resumenMermas();
-    const caja = (n, t, color) => `<div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
-        <div style="font-size:18px;font-weight:800;color:${color};">${n}</div>
-        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">${t}</div>
-      </div>`;
+    // v233: resumen con las tarjetas .vx-stat de toda la app
+    const caja = (n, t, cls) => `<div class="vx-stat ${cls}"><div class="vx-stat-k">${t}</div><div class="vx-stat-n">${n}</div></div>`;
     // El dinero se marca con "≈" cuando alguna merma no tiene costo apuntado:
     // ese número se queda corto y no se puede presentar como el total exacto.
     const signo = mes.sinCosto ? '≈ ' : '';
-    res.innerHTML = caja(mes.uds, 'Uds. este mes', 'var(--red)')
-      + caja(signo + _fmtUSD(mes.usd), 'Perdido este mes', 'var(--orange)')
-      + caja(todo.uds, 'Uds. en total', 'var(--text)');
+    res.innerHTML = caja(mes.uds, 'Uds. este mes', 'v-red')
+      + caja(signo + _fmtUSD(mes.usd), 'Perdido este mes', 'v-orange')
+      + caja(todo.uds, 'Uds. en total', 'v-blue');
   }
   if (!lista.length) {
     cont.innerHTML = '<div class="es"><div class="es-icon">📉</div><div class="es-text">Todavía no se ha dado de baja nada.</div></div>';
@@ -14826,7 +14860,7 @@ function renderMermas() {
     const costo = (typeof m.costoUsd === 'number' && isFinite(m.costoUsd))
       ? `<span style="font-size:11px;font-weight:700;color:var(--orange);">−${_fmtUSD(m.costoUsd)}</span>`
       : `<span style="font-size:10px;color:var(--gray-400);" title="Ese producto no tiene precio de compra apuntado">sin costo</span>`;
-    return `<div style="display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:6px;">
+    return `<div class="vx-merma-row">
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:700;">${escapeHTML(m.nombre || '—')} <span style="color:var(--red);">×${parseInt(m.qty,10)||0}</span></div>
         <div style="font-size:10px;color:var(--text-muted);">${escapeHTML(m.motivo || '—')} · ${escapeHTML(fecha)}</div>
@@ -15037,22 +15071,26 @@ function _renderStatsGestorCard(g, vales, from, to) {
         ? `<span style="background:var(--red);color:white;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;">⚠️ ${inactDays}d sin actividad</span>`
         : '');
 
-  // Header — v220 · IDEA 4 «Pastel pleno»: el color llega por el relleno
-  // sólido del .pf-fill (colapsado; expandido conserva su azul de estado).
-  // Sin borde lateral de color.
-  let html = `<div class="card" style="padding:0;overflow:hidden;margin-bottom:6px;border-color:${isExpanded?'var(--blue)':'var(--border)'};">
-    <div${isExpanded?'':' class="pf-fill"'} onclick="toggleStatsGestor(${g.id})" style="${isExpanded?'':_pfVars(g)}display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;${isExpanded?'background:var(--blue-lt);':''}">
+  // Header — v233 · la ficha colapsada lleva la PIEL 3D del gestor (la misma
+  // receta de la bandeja: degradado + esquina de vidrio + tinta), como pidió
+  // la casa: tocar un gestor es entrar a SU color. Al abrirse pasa a blanco
+  // con anillo azul para que las tablas de abajo se lean. La Tienda queda
+  // en tarjeta neutra.
+  const _sgSkin = !g._tienda && !isExpanded;
+  const _sgCls = _sgSkin ? ' ink' : '';
+  let html = `<div class="card sg-card${isExpanded?' sg-open':''}" style="padding:0;overflow:hidden;margin-bottom:6px;">
+    <div class="sg-head${_sgSkin?' vx-skin':''}" onclick="toggleStatsGestor(${g.id})" style="${_sgSkin?gestorHeroVars(g):''}display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;${isExpanded?'background:var(--blue-lt);':''}">
       <div class="g-avatar" style="background:${g.color};width:32px;height:32px;font-size:11px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:13px;font-weight:700;">${escapeHTML(g.name)}</span>
+          <span class="sg-nombre${_sgCls}" style="font-size:13px;font-weight:700;">${escapeHTML(g.name)}</span>
           ${inactBadge}
         </div>
-        <div style="font-size:11px;color:var(--gray-400);">${gv.length} vales · ${closed} cerrados${pts?` · ⭐ ${pts} pts`:''} · ${conversion}% conv.</div>
+        <div class="sg-sub${_sgCls}" style="font-size:11px;${_sgSkin?'opacity:.72;':'color:var(--gray-400);'}">${gv.length} vales · ${closed} cerrados${pts?` · ⭐ ${pts} pts`:''} · ${conversion}% conv.</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <button type="button" onclick="event.stopPropagation();jumpToHistorialForGestor(${g.id},'${from||''}','${to||''}')" style="background:var(--blue);color:white;border:none;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;">Ver historial →</button>
-        <span style="color:var(--gray-400);font-size:12px;">${isExpanded?'▲':'▼'}</span>
+        <button type="button" class="${_sgSkin?'vg-btn vg-blue':'btn-ver-hist'}" onclick="event.stopPropagation();jumpToHistorialForGestor(${g.id},'${from||''}','${to||''}')" style="${_sgSkin?'':'background:var(--blue);color:white;'}border:none;border-radius:100px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;">Ver historial →</button>
+        <span style="${_sgSkin?'color:var(--gink);':'color:var(--gray-400);'}font-size:12px;">${isExpanded?'▲':'▼'}</span>
       </div>
     </div>`;
 
@@ -16214,12 +16252,14 @@ function renderStats() {
   const confirmed=vales.filter(v=>v.status==='confirmed').length;
   const pending=vales.filter(v=>v.status==='pending').length;
   const assigned=vales.filter(v=>v.status==='assigned').length;
+  // v233: mismas tarjetas que el resumen del día (.vx-stat) — se jubila la
+  // stat-card cuadrada de la era vieja y el color va por clase, no inline.
   document.getElementById('statsSummaryRow').innerHTML=[
-    {label:'Total vales',val:total,color:'var(--blue)'},
-    {label:'Confirmados',val:confirmed,color:'var(--green)'},
-    {label:'Con mensajero',val:assigned,color:'var(--orange)'},
-    {label:'Pendientes',val:pending,color:'var(--red)'},
-  ].map(({label,val,color})=>`<div class="stat-card"><div class="stat-num" style="color:${color};">${val}</div><div class="stat-lbl">${label}</div></div>`).join('');
+    {icon:'🧾',label:'Total vales',val:total,cls:'v-blue'},
+    {icon:'✅',label:'Confirmados',val:confirmed,cls:'v-green'},
+    {icon:'🛵',label:'Con mensajero',val:assigned,cls:'v-orange'},
+    {icon:'⏳',label:'Pendientes',val:pending,cls:'v-red'},
+  ].map(({icon,label,val,cls})=>`<div class="vx-stat ${cls}"><div class="vx-stat-k">${icon} ${label}</div><div class="vx-stat-n">${val}</div></div>`).join('');
   // v213: gráfico de tendencia — ventas y dinero por semana (SVG puro, 0 librerías)
   try { renderTendencia(vales); } catch(e) { console.warn('[tendencia]', e && e.message); }
   // By gestor — expandible cards with drill-down details
@@ -16247,9 +16287,10 @@ function renderStats() {
   document.getElementById('statsProductList').innerHTML=sortedProds.length?
     sortedProds.map(([id,{qty,confirmados}])=>{
       const p=productoOf(parseInt(id));
-      return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
-        <div style="font-size:13px;font-weight:700;">${p?escapeHTML(p.name):`Producto ${id}`}</div>
-        <div style="font-size:11px;color:var(--gray-400);">${qty} vendidos · ${confirmados} entregados</div>
+      // v233: fila limpia nombre + contadores a la derecha
+      return `<div class="vx-prod-row">
+        <div class="vx-prod-name">${p?escapeHTML(p.name):`Producto ${id}`}</div>
+        <div class="vx-prod-meta">${qty} vendidos · ${confirmados} entregados</div>
       </div>`;
     }).join('') :
     '<div class="es"><div class="es-text">Sin datos de productos en el período</div></div>';
@@ -16263,17 +16304,18 @@ function renderStats() {
   prods.forEach(p=>{const n=parsePrecioNum(p.precio||'');if(n>0)valorTotal+=n*(p.stock||0);});
   const valorStr=valorTotal>0?`$${valorTotal.toLocaleString('es-ES',{maximumFractionDigits:0})} USD`:'—';
 
+  // v233: inventario con el lenguaje del resumen del día
   document.getElementById('statsInventarioRow').innerHTML=
-    [{label:'Total productos',val:prods.length,color:'var(--blue)'},
-     {label:'En stock',val:enStock,color:'var(--green)'},
-     {label:'Agotados',val:agotados,color:'var(--red)'},
-     {label:'Stock bajo',val:stockBajo,color:'var(--yellow)'}]
-    .map(({label,val,color})=>
-      `<div class="stat-card"><div class="stat-num" style="color:${color};">${val}</div><div class="stat-lbl">${label}</div></div>`
+    [{icon:'📦',label:'Total productos',val:prods.length,cls:'v-blue'},
+     {icon:'🟢',label:'En stock',val:enStock,cls:'v-green'},
+     {icon:'⛔',label:'Agotados',val:agotados,cls:'v-red'},
+     {icon:'⚠️',label:'Stock bajo',val:stockBajo,cls:'v-amber'}]
+    .map(({icon,label,val,cls})=>
+      `<div class="vx-stat ${cls}"><div class="vx-stat-k">${icon} ${label}</div><div class="vx-stat-n">${val}</div></div>`
     ).join('')+
-    (valorTotal>0?`<div class="stat-card" style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-      <div class="stat-lbl">💰 Valor total en inventario</div>
-      <div style="font-size:20px;font-weight:900;color:var(--green);">${valorStr}</div>
+    (valorTotal>0?`<div class="vx-stat v-wide">
+      <div class="vx-stat-k" style="font-size:10.5px;">💰 Valor total en inventario</div>
+      <div style="font-size:20px;font-weight:900;color:var(--green);letter-spacing:-.3px;">${valorStr}</div>
     </div>`:'');
 
   // ── POR CATEGORÍA ──
@@ -16283,7 +16325,7 @@ function renderStats() {
       const cs=cp.filter(p=>(p.stock||0)>0).length;
       const ca=cp.filter(p=>(p.stock||0)===0).length;
       const pct=cp.length?Math.round(cs/cp.length*100):0;
-      return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+      return `<div class="card vx-row-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <span style="font-size:13px;font-weight:700;">${escapeHTML(cat.name)}</span>
           <span style="font-size:11px;color:var(--gray-400);">${cp.length} prods</span>
@@ -16309,7 +16351,7 @@ function renderStats() {
     topSold.map(([id,qty])=>{
       const p=productoOf(parseInt(id));
       const pct=Math.round(qty/maxSold*100);
-      return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+      return `<div class="card vx-row-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:12px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p?escapeHTML(p.name):`Prod. ${id}`}</span>
           <span style="font-size:13px;font-weight:800;color:var(--blue);margin-left:8px;white-space:nowrap;">${qty} uds</span>
@@ -17704,16 +17746,19 @@ function renderGestorRanking() {
     let hint='';
     // v119: se mira _hayMeta, no el número guardado — en el modo por ciclos la
     // meta sigue configurada pero no está en juego.
-    if(reached){hint='<span style="color:var(--green);font-weight:700;">✓ Meta</span>';}
-    else if(!_hayMeta&&g.pts===0){hint='<span style="color:var(--gray-400);">Sin puntos</span>';}
-    else if(!_hayMeta&&i===0){hint='<span style="color:var(--green);font-weight:700;">👑 Va ganando</span>';}
+    if(reached){hint='<span class="rk-ok">✓ Meta</span>';}
+    else if(!_hayMeta&&g.pts===0){hint='<span class="rk-sin">Sin puntos</span>';}
+    else if(!_hayMeta&&i===0){hint='<span class="rk-ok">👑 Va ganando</span>';}
     // Al resto no se les pone nada: los puntos y la barra ya dicen dónde están.
-    return `<div class="rank-row${g._tienda?'':' g-rank'}" style="${_pfVars(g)}">
+    // v233: cada fila con la PIEL 3D de su gestor (la Tienda queda neutra).
+    // La barra pasa a vidrio y los puntos se tiñen con el acento del gestor.
+    const _skinRk = !g._tienda;
+    return `<div class="rank-row${_skinRk?' vx-skin rk-skin':' g-rank'}" style="${_skinRk?gestorHeroVars(g):_pfVars(g)}">
       <div class="rank-pos">${pos}</div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:6px;">
           <div class="g-avatar" style="background:${g.color};width:26px;height:26px;font-size:10px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
-          <span class="rank-name" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(g.name)}</span>
+          <span class="rank-name${_skinRk?' ink':''}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(g.name)}</span>
           ${(() => {
             // v114: los puntos ahora vuelven a cero al llegar a la meta, así que
             // el mérito acumulado se enseña aquí: cuántas metas lleva cerradas.
@@ -17721,10 +17766,10 @@ function renderGestorRanking() {
             const _m = parseInt(g.metas, 10) || 0;
             return _m ? `<span style="background:rgba(245,158,11,.15);color:var(--yellow);border-radius:20px;padding:1px 6px;font-size:9px;font-weight:800;flex-shrink:0;" title="${_m} meta${_m>1?'s':''} completada${_m>1?'s':''}">🏆 ${_m}</span>` : '';
           })()}
-          <span class="rank-pts" style="${reached?'color:var(--green);':''}flex-shrink:0;">${g.pts} pts</span>
+          <span class="rank-pts${_skinRk?' acc':''}" style="${reached&&!_skinRk?'color:var(--green);':''}flex-shrink:0;">${g.pts} pts</span>
           ${hint?`<span style="font-size:9px;flex-shrink:0;">${hint}</span>`:''}
         </div>
-        <div class="rank-bar-wrap" style="margin-top:4px;"><div class="rank-bar" style="width:${pct}%;background:${grad};"></div></div>
+        <div class="rank-bar-wrap" style="margin-top:4px;"><div class="rank-bar" style="width:${pct}%;${_skinRk?'':`background:${grad};`}"></div></div>
       </div>
     </div>`;
   }).join('');
@@ -20256,12 +20301,8 @@ function renderAuditLog() {
   el.innerHTML = log.slice(0, 50).map(e => {
     const d = new Date(e.ts);
     const dateStr = d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-    return `<div class="audit-entry">
-      <span class="audit-ts">${dateStr}</span> ·
-      <span class="audit-action">${escapeHTML(e.action)}</span> ·
-      <span class="audit-user">${escapeHTML(e.actor)}</span>
-      ${e.target ? ` · <span style="color:var(--gray-600);">${escapeHTML(e.target)}</span>` : ''}
-    </div>`;
+    // v233: fila con punto de color y hora en mono (antes texto corrido)
+    return `<div class="audit-entry"><span class="audit-dot"></span><div class="audit-main"><span class="audit-ts">${dateStr}</span><span class="audit-action">${escapeHTML(e.action)}</span><span class="audit-user">${escapeHTML(e.actor)}</span>${e.target ? `<span class="audit-target">${escapeHTML(e.target)}</span>` : ''}</div></div>`;
   }).join('');
 }
 
@@ -21449,7 +21490,7 @@ function renderTendencia(valesFiltrados) {
     return '<text x="' + (PADX + i * pasoX) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="8.5" fill="var(--gray-400)">' + _tendenciaEtiqueta(s) + '</text>';
   }).join('');
   cont.innerHTML = `
-    <div class="card" style="padding:12px 14px;">
+    <div class="card vx-tend">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
         <span style="font-size:13px;font-weight:800;">📈 Tendencia de ventas · últimas ${SEMANAS} semanas</span>
         <span style="display:flex;gap:12px;font-size:10.5px;color:var(--gray-400);">
@@ -22881,7 +22922,11 @@ function gestorHeroVars(g){
     +';--gink:'+_mixHex(base,[0,0,0],.55)
     +';--gacc:'+_rgbaHex(base,.24)
     +';--gacc2:'+_mixHex(base,[0,0,0],.28)
-    +';--gsh:'+_hexToRgb(_mixHex(base,[0,0,0],.72)).join(',');
+    +';--gsh:'+_mixHex(base,[0,0,0],.72).replace(/[^\d,]/g,'')+';';
+    // v233 FIX: antes iba _hexToRgb(_mixHex(...)) — pero _mixHex devuelve
+    // 'rgb(r,g,b)' y _hexToRgb no sabe parsearlo: caía SIEMPRE al azul por
+    // defecto y la sombra del color de cada gestor nunca se aplicó. Ahora se
+    // queda solo con los dígitos del rgb().
 }
 
 // ── Tab bar inferior ──
