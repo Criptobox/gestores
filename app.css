@@ -3349,3 +3349,320 @@ body.contrast header .header-right button,
 body.contrast #btnTheme{background:rgba(255,255,255,.1) !important;box-shadow:none !important;}
 body.contrast header .header-date{background:transparent;border:none;box-shadow:none;}
 body.contrast #versionBadge{box-shadow:none !important;}
+
+/* ══════════════════════════════════════════════════════════════════
+   v228 · v17.4 — LA PIEL 3D «¿QUIÉN ERES?» EN EL ADMIN, DE UNA
+   1 · Vales de la bandeja (.vx-card.g-hero): degradado del GESTOR +
+       esquina de vidrio + círculos concéntricos + sombra de su color.
+       El estado sigue leyéndose en la chapa y en la acción rápida.
+   2 · Gestores del admin (.gp-card.gp-3d): la misma tarjeta 3D entera.
+   3 · Rebaja por producto (.rb-linea): conmutador USD/MN por línea.
+   JS inyecta las vars del hero (gestorHeroVars): --g1/--g2/--gink/
+   --gacc/--gacc2/--gsh. La Tienda no lleva vars → superficie neutra.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · VALE con la piel del gestor ── */
+.vx-card.g-hero{
+  isolation:isolate;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  border-color:transparent;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 30px 40px 20px -40px,rgba(var(--gsh,15,42,60),.28) 0 14px 26px -12px;
+}
+/* Esquina de vidrio — el gesto firma, detrás del contenido */
+.vx-card.g-hero::after{
+  content:'';position:absolute;inset:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.46) 0%,rgba(255,255,255,.8) 100%);
+  pointer-events:none;
+}
+/* Círculos concéntricos que asoman por la esquina (decorativos) */
+.vx-card.g-hero .vxh-c{
+  position:absolute;border-radius:50%;z-index:0;display:block;
+  background:var(--gacc,rgba(255,255,255,.24));
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.vx-card.g-hero .vxh-c.c1{width:72px;height:72px;top:-18px;right:-14px;}
+.vx-card.g-hero .vxh-c.c2{width:52px;height:52px;top:-6px;right:-4px;opacity:.75;}
+.vx-card.g-hero > .vx-ava,.vx-card.g-hero > .vx-main{position:relative;z-index:1;}
+/* Riel = acento del gestor (el estado lo cuenta la chapa de la derecha) */
+.vx-card.g-hero::before{
+  background:var(--gacc2,#0369a1);
+  box-shadow:0 0 10px -1px rgba(var(--gsh,15,42,60),.55);
+}
+/* Texto sobre el vidrio con la tinta del gestor */
+.vx-card.g-hero .vx-nombre{color:var(--gink,#0f172a);}
+.vx-card.g-hero .vx-meta{color:var(--gink,#0f172a);opacity:.62;}
+.vx-card.g-hero .vx-precio{
+  background:linear-gradient(135deg,var(--gink,#0f172a),var(--gacc2,#0369a1));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+/* Chips y chapa de estado: vidrio blanco encima del degradado */
+.vx-card.g-hero .vx-badge{background:rgba(255,255,255,.78);}
+.vx-card.g-hero .vx-b-idle{background:rgba(255,255,255,.62);color:var(--gink,#0f172a);}
+.vx-card.g-hero .vx-mini{background:rgba(255,255,255,.62);color:var(--gink,#0f172a);}
+.vx-card.g-hero .vx-mini-red{background:rgba(255,255,255,.78);color:#b91c1c;}
+.vx-card.g-hero .vx-mini-amber{background:rgba(255,255,255,.78);color:#b45309;}
+.vx-card.g-hero .vx-mini-blue{background:rgba(255,255,255,.78);color:var(--gacc2,#0369a1);}
+.vx-card.g-hero .vx-mini-yellow{background:rgba(255,255,255,.78);color:#92400e;}
+/* Avatar más protagonista sobre el degradado */
+.vx-card.g-hero .vx-ava{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 4px 10px -4px rgba(var(--gsh,15,42,60),.6);
+}
+.vx-card.g-hero:hover{
+  transform:translateY(-2px);
+  box-shadow:rgba(var(--gsh,15,42,60),.3) 24px 44px 22px -40px,rgba(var(--gsh,15,42,60),.36) 0 18px 30px -10px;
+}
+.vx-card.g-hero.sel{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  box-shadow:0 0 0 2.5px var(--blue,#0891b2),rgba(var(--gsh,15,42,60),.3) 0 16px 28px -12px;
+}
+.vx-card.g-hero.is-new{
+  box-shadow:0 0 0 3px rgba(14,165,233,.16),rgba(var(--gsh,15,42,60),.3) 0 16px 28px -12px;
+}
+@media (max-width:700px){
+  .vx-card.g-hero .vxh-c.c1{width:56px;height:56px;top:-14px;right:-12px;}
+  .vx-card.g-hero .vxh-c.c2{width:42px;height:42px;top:-4px;right:-3px;}
+}
+
+/* ── 2 · GESTOR DEL ADMIN con la tarjeta 3D entera ── */
+.gp-card.gp-3d{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  border-color:transparent !important;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 34px 46px 22px -40px,rgba(var(--gsh,15,42,60),.3) 0 16px 30px -12px !important;
+}
+.gp-card.gp-3d::after{
+  content:'';position:absolute;inset:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.84) 100%);
+  pointer-events:none;
+}
+.gp-card.gp-3d::before{
+  content:'';position:absolute;z-index:0;top:-22px;right:-18px;
+  width:92px;height:92px;border-radius:50%;
+  background:var(--gacc,rgba(255,255,255,.24));
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  box-shadow:-30px 34px 0 -14px var(--gacc,rgba(255,255,255,.24));
+  pointer-events:none;
+}
+.gp-card.gp-3d > *{position:relative;z-index:1;}
+.gp-card.gp-3d:hover{
+  transform:translateY(-2px);border-color:transparent !important;
+  box-shadow:rgba(var(--gsh,15,42,60),.32) 26px 50px 24px -40px,rgba(var(--gsh,15,42,60),.36) 0 20px 34px -10px !important;
+}
+/* Nombre y subtítulo con la tinta del gestor (¡important: el inline
+   color:var(--text) del markup le ganaría y en oscuro quedaba blanco
+   sobre vidrio claro!) */
+.gp-card.gp-3d .gp-card-top > div > div{color:var(--gink,#0f172a) !important;}
+.gp-card.gp-3d .gp-card-top > div > div + div{opacity:.66;}
+.gp-card.gp-3d .g-avatar{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6),0 4px 10px -4px rgba(var(--gsh,15,42,60),.5);
+}
+/* Botones internos: píldoras de vidrio blanco con tinta del gestor */
+.gp-card.gp-3d .gp-card-actions{border-top:1px solid rgba(255,255,255,.55);}
+.gp-card.gp-3d .gp-card-actions button{
+  background:rgba(255,255,255,.62) !important;
+  border:1px solid rgba(255,255,255,.85) !important;
+  color:var(--gink,#0f172a) !important;
+  border-radius:100px !important;padding:4px 11px !important;font-weight:800;
+  box-shadow:0 1px 5px -1px rgba(var(--gsh,15,42,60),.35);
+  transition:transform .15s cubic-bezier(.2,.8,.2,1),background .15s;
+}
+.gp-card.gp-3d .gp-card-actions button:hover{background:rgba(255,255,255,.88) !important;}
+.gp-card.gp-3d .gp-card-actions button:active{transform:scale(.94);}
+.gp-card.gp-3d [id^="gpw-"]{
+  background:rgba(255,255,255,.72) !important;color:var(--gink,#0f172a) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.9);
+}
+.gp-card.gp-3d .gp-card-com{border-top:1px solid rgba(255,255,255,.55);}
+.gp-card.gp-3d .gp-card-com > span:first-child,
+.gp-card.gp-3d .gp-card-com > span:last-child{color:var(--gink,#0f172a) !important;}
+.gp-card.gp-3d .gp-card-com:hover{opacity:.92;}
+/* Fila superior: botón Eliminar conserva su rojo, ahora en vidrio */
+.gp-card.gp-3d .gp-card-top .btn-ghost{
+  background:rgba(255,255,255,.62) !important;
+  border:1px solid rgba(255,255,255,.85) !important;
+  color:#b91c1c !important;border-radius:100px;
+}
+/* Oscuro: las tarjetas destellan igual que en el selector aprobado */
+body.dark .gp-card.gp-3d{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  border-color:transparent !important;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 34px 46px 22px -40px,rgba(var(--gsh,15,42,60),.36) 0 18px 32px -12px !important;
+}
+body.dark .gp-card.gp-3d::after{
+  background:linear-gradient(0deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.76) 100%);
+}
+
+/* ── 3 · REBAJA POR PRODUCTO: línea en tarjeta + conmutador USD/MN ── */
+.rb-linea{
+  background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+  padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0;
+}
+.rb-l1{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;}
+.rb-nombre{font-size:11.5px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.rb-de{font-size:10px;color:var(--text-muted);font-weight:700;flex-shrink:0;white-space:nowrap;}
+.rb-l2{display:flex;align-items:center;gap:6px;}
+.rb-mon{
+  display:inline-flex;gap:2px;flex-shrink:0;
+  background:var(--surface3);border-radius:100px;padding:2.5px;
+}
+.rb-mon-btn{
+  border:none;background:transparent;border-radius:100px;padding:4px 10px;
+  font-size:10.5px;font-weight:800;color:var(--text-muted);cursor:pointer;
+  font-family:var(--font);letter-spacing:.3px;
+  transition:background .15s,color .15s,transform .12s cubic-bezier(.2,.8,.2,1);
+}
+.rb-mon-btn:active{transform:scale(.93);}
+.rb-mon-btn.act{
+  background:linear-gradient(135deg,#0ea5e9,#0891b2);color:#fff;
+  box-shadow:0 2px 8px -2px rgba(2,132,199,.55);
+}
+.rb-mon-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+/* ── Alto contraste: todo plano y legible ── */
+body.contrast .vx-card.g-hero{background:var(--surface) !important;box-shadow:none !important;}
+body.contrast .vx-card.g-hero::after,
+body.contrast .vx-card.g-hero .vxh-c{display:none;}
+body.contrast .vx-card.g-hero .vx-nombre,
+body.contrast .vx-card.g-hero .vx-precio{-webkit-text-fill-color:initial;background:none;color:var(--text);}
+body.contrast .vx-card.g-hero .vx-meta{color:var(--text-muted);opacity:1;}
+body.contrast .vx-card.g-hero .vx-mini,
+body.contrast .vx-card.g-hero .vx-badge{background:var(--surface3);color:var(--text-muted);}
+body.contrast .vx-card.g-hero::before{background:var(--blue);box-shadow:none;}
+body.contrast .gp-card.gp-3d{background:var(--surface) !important;box-shadow:none !important;}
+body.contrast .gp-card.gp-3d::after,
+body.contrast .gp-card.gp-3d::before{display:none;}
+body.contrast .gp-card.gp-3d .gp-card-top > div > div{color:var(--text);opacity:1;}
+body.contrast .gp-card.gp-3d .gp-card-actions button{
+  background:var(--surface) !important;color:var(--text) !important;
+  border:1.5px solid var(--border) !important;box-shadow:none !important;
+}
+body.contrast .gp-card.gp-3d [id^="gpw-"]{background:var(--surface3) !important;color:var(--text) !important;box-shadow:none;}
+body.contrast .gp-card.gp-3d .gp-card-actions,
+body.contrast .gp-card.gp-3d .gp-card-com{border-top:1px solid var(--border);}
+body.contrast .gp-card.gp-3d .gp-card-com > span:first-child,
+body.contrast .gp-card.gp-3d .gp-card-com > span:last-child{color:var(--text-muted) !important;}
+
+/* ══════════════════════════════════════════════════════════════════
+   v230 · v0.00001 — HISTORIAL y VENTAS DIRECTAS con la piel 3D
+   El usuario dio el «sí dale» a llevar el estilo al resto del admin y
+   reiniciar la etiqueta pública a 0.00001 (programa nuevo).
+   · .hist-hero — renglón del historial con el degradado de SU gestor
+   · .vd-hero   — venta directa en el azul del admin (no hay gestor)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Historial: renglón compacto con la piel del gestor ── */
+.hist-hero{
+  isolation:isolate;position:relative;overflow:hidden;
+  border-color:transparent;border-radius:16px !important;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 24px 34px 16px -36px,rgba(var(--gsh,15,42,60),.24) 0 10px 20px -12px !important;
+}
+.hist-hero::after{
+  content:'';position:absolute;inset:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.76) 100%);
+  pointer-events:none;
+}
+.hist-hero .vxh-c{
+  position:absolute;border-radius:50%;z-index:0;display:block;
+  background:var(--gacc,rgba(255,255,255,.24));
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.hist-hero .vxh-c.c1{width:58px;height:58px;top:-15px;right:-12px;}
+.hist-hero .vxh-c.c2{width:42px;height:42px;top:-5px;right:-3px;opacity:.75;}
+.hist-hero > *{position:relative;z-index:1;}
+.hist-hero .g-avatar{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6),0 2px 6px -2px rgba(var(--gsh,15,42,60),.5);
+}
+/* Texto con la tinta del gestor (!important: el inline del markup manda si no) */
+.hist-hero .hh-nombre{color:var(--gink,#0f172a) !important;}
+.hist-hero .hh-nombre span{color:var(--gacc2,#0369a1) !important;font-weight:800;}
+.hist-hero .hh-sub{color:var(--gink,#0f172a) !important;opacity:.66;}
+.hist-hero .hh-total{color:var(--gacc2,#0369a1) !important;font-weight:800;}
+.hist-hero .sp{background:rgba(255,255,255,.78) !important;}
+/* La alerta de estafa conserva su borde rojo even encima del degradado */
+.hist-hero{transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;}
+.hist-hero:hover{transform:translateY(-1px);box-shadow:rgba(var(--gsh,15,42,60),.28) 20px 40px 18px -36px,rgba(var(--gsh,15,42,60),.32) 0 14px 24px -10px !important;}
+.hist-hero:active{transform:scale(.985);}
+
+/* ── Ventas directas: la piel 3D en azul del admin ── */
+.vd-hero{
+  --g1:#a8e2f2;--g2:#0284c7;--gink:#0c3d54;--gacc:rgba(125,211,252,.3);--gacc2:#0369a1;--gsh:7,59,76;
+  isolation:isolate;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--g1) 0%,var(--g2) 100%) !important;
+  border:1px solid transparent;border-radius:18px;
+  padding:11px 13px;margin-bottom:7px;
+  box-shadow:rgba(var(--gsh),0) 26px 36px 18px -36px,rgba(var(--gsh),.26) 0 12px 22px -12px !important;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;
+}
+.vd-hero::after{
+  content:'';position:absolute;inset:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.44) 0%,rgba(255,255,255,.8) 100%);
+  pointer-events:none;
+}
+.vd-hero .vxh-c{
+  position:absolute;border-radius:50%;z-index:0;display:block;
+  background:var(--gacc);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  pointer-events:none;
+}
+.vd-hero .vxh-c.c1{width:74px;height:74px;top:-18px;right:-14px;}
+.vd-hero .vxh-c.c2{width:54px;height:54px;top:-6px;right:-4px;opacity:.75;}
+.vd-hero > *{position:relative;z-index:1;}
+.vd-hero:hover{transform:translateY(-1.5px);box-shadow:rgba(var(--gsh),.3) 22px 44px 20px -36px,rgba(var(--gsh),.34) 0 16px 28px -10px !important;}
+.vd-hero:active{transform:scale(.985);}
+.vd-r1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.vd-t{font-size:13px;font-weight:800;color:var(--gink);letter-spacing:-.1px;}
+.vd-total{
+  font-size:14.5px;font-weight:900;white-space:nowrap;
+  background:linear-gradient(135deg,var(--gink),var(--gacc2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.vd-meta{font-size:11px;color:var(--gink);opacity:.68;margin-top:3px;}
+.vd-nota{font-size:11px;color:var(--gink);opacity:.82;margin-top:4px;}
+.vd-deshacer{
+  margin-top:8px;font-size:11px;
+  background:rgba(255,255,255,.62) !important;
+  border:1px solid rgba(255,255,255,.85) !important;
+  color:#b91c1c !important;border-radius:100px;
+  box-shadow:0 1px 5px -1px rgba(var(--gsh),.35);
+  transition:transform .15s,background .15s;
+}
+.vd-deshacer:hover{background:rgba(255,255,255,.88) !important;}
+.vd-deshacer:active{transform:scale(.94);}
+
+/* ── Alto contraste: plano otra vez ── */
+body.contrast .hist-hero{
+  background:var(--surface) !important;border:2px solid var(--border);
+  box-shadow:none !important;border-radius:14px !important;
+}
+body.contrast .hist-hero::after,
+body.contrast .hist-hero .vxh-c{display:none;}
+body.contrast .hist-hero .hh-nombre,
+body.contrast .hist-hero .hh-nombre span,
+body.contrast .hist-hero .hh-total{color:var(--text) !important;}
+body.contrast .hist-hero .hh-sub{color:var(--text-muted) !important;opacity:1;}
+body.contrast .hist-hero .sp{background:var(--surface3) !important;}
+body.contrast .vd-hero{
+  background:var(--surface) !important;border:2px solid var(--border);
+  box-shadow:none !important;
+}
+body.contrast .vd-hero::after,
+body.contrast .vd-hero .vxh-c{display:none;}
+body.contrast .vd-hero .vd-t{color:var(--text) !important;}
+body.contrast .vd-hero .vd-total{
+  background:none;-webkit-background-clip:initial;background-clip:initial;
+  -webkit-text-fill-color:initial;color:var(--green) !important;
+}
+body.contrast .vd-hero .vd-meta,
+body.contrast .vd-hero .vd-nota{color:var(--text-muted) !important;opacity:1;}
+body.contrast .vd-deshacer{
+  background:var(--surface) !important;border:1.5px solid var(--border) !important;
+  color:var(--text) !important;box-shadow:none !important;
+}

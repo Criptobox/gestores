@@ -1,10 +1,10 @@
 {
-  "version": 227,
-  "versionStr": "v17.3",
-  "build": 227,
-  "hash": "71812c951b51565d",
-  "hashFull": "71812c951b51565d",
-  "releasedAt": "2026-10-05 16:49",
+  "version": 230,
+  "versionStr": "0.00001",
+  "build": 230,
+  "hash": "ed9eda12fb336874",
+  "hashFull": "ed9eda12fb336874",
+  "releasedAt": "2026-10-05 17:27",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Barra superior con vidrio y degradados del nuevo estilo:",
-    "icono AX mini-tarjeta 3D, botones y chips de vidrio con halo",
-    "Vales del admin: riel degradado por estado, sombra de color y avatares con anillo"
+    "Historial y ventas directas con la piel 3D del nuevo estilo",
+    "Etiqueta de versión reiniciada: programa nuevo empieza en 0.00001",
+    "Cada build subirá un paso: 0.00002, 0.00003…"
   ]
 }

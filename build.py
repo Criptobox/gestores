@@ -60,15 +60,19 @@ VERSION_FILE = ROOT / 'version.json'
 # teléfonos con un número mayor no volverían a ver el aviso y se quedarían
 # clavados hasta que la numeración recuperase el terreno perdido.
 # Así que el contador sigue subiendo por dentro y aparte se calcula una etiqueta
-# bonita para enseñar: la publicación PUBLIC_BASE es la 1.0, y a partir de ahí
-# 1.1, 1.2 … 1.9, 2.0, 2.1 … Sube diez veces más despacio y siempre se lee bien.
-PUBLIC_BASE = 64
+# bonita para enseñar. v230 (petición del usuario: «estamos en un programa
+# nuevo»): la etiqueta pública se REINICIA al esquema 0.00001 y sube de una en
+# una — 0.00001, 0.00002, 0.00003 … La publicación PUBLIC_BASE es la 0.00001.
+# El número interno sigue siendo el que decide si hay actualización.
+PUBLIC_BASE = 229
 
 
 def public_label(version):
-    """Etiqueta pública ('v1.0') para un número de publicación interno."""
-    offset = max(0, int(version) - PUBLIC_BASE)
-    return f'v{1 + offset // 10}.{offset % 10}'
+    """Etiqueta pública ('0.00001') para un número de publicación interno."""
+    offset = max(1, int(version) - PUBLIC_BASE)
+    return '0.' + str(offset).zfill(5)
+    # version 230 → 0.00001 · 231 → 0.00002 · … (la primera build del programa
+    # nuevo ya se enseña como 0.00001)
 
 
 def normalize_content(content, fname):
@@ -85,8 +89,8 @@ def normalize_content(content, fname):
     text = re.sub(r"CACHE\s*=\s*'axontech-v\d+'", "CACHE = 'axontech-vX'", text)
     # Reemplazar ?v=N en referencias a CSS/JS
     text = re.sub(r'\./app(?:\.min)?\.(css|js)\?v=\d+', r'./app.\1?v=X', text)
-    # Reemplazar el texto del badge >vN< y >vN.M<
-    text = re.sub(r'>v\d+(?:\.\d+)?<', '>vX<', text)
+    # Reemplazar el texto del badge (formato viejo vN / vN.M y nuevo 0.000NN)
+    text = re.sub(r'>(?:v\d+(?:\.\d+)?|0\.\d{1,5})<', '>vX<', text)
     # Reemplazar la etiqueta pública inyectada en app.js. Sin esto, cada cambio
     # de etiqueta contaría como cambio real y la siguiente ejecución subiría la
     # versión otra vez, que a su vez cambiaría la etiqueta: un bump en cadena
@@ -100,7 +104,7 @@ def normalize_content(content, fname):
     text = re.sub(r'_LOCAL_BUILD_HASH\s*=\s*null', "_LOCAL_BUILD_HASH = 'X'", text)
     # Reemplazar la versión en version.json (por si se incluye)
     text = re.sub(r'"version"\s*:\s*\d+', '"version": X', text)
-    text = re.sub(r'"versionStr"\s*:\s*"v\d+(?:\.\d+)?"', '"versionStr": "vX"', text)
+    text = re.sub(r'"versionStr"\s*:\s*"(?:v\d+(?:\.\d+)?|0\.\d{1,5})"', '"versionStr": "vX"', text)
     text = re.sub(r'"build"\s*:\s*\d+', '"build": X', text)
     text = re.sub(r'"hash"\s*:\s*"(?:[^"\\]|\\.)*"', '"hash": "X"', text)
     text = re.sub(r'"hashFull"\s*:\s*"(?:[^"\\]|\\.)*"', '"hashFull": "X"', text)
@@ -230,11 +234,10 @@ def update_html_query_version(html_file, new_version):
         content
     )
     # El badge enseña la etiqueta pública, no el contador.
-    # El patrón acepta 'v\d+(\.\d+)?' para reconocer tanto el formato viejo (v62)
-    # como el nuevo (v1.0); con solo `v\d+` dejaría de casar en cuanto la etiqueta
-    # llevara punto y el badge se quedaría congelado en el número antiguo.
+    # El patrón acepta el formato viejo ('v17.5') y el nuevo ('0.00001'); con
+    # solo `v\d+` dejaría de casar en cuanto cambiara el esquema de etiqueta.
     content = re.sub(
-        r'(<span[^>]*id="versionBadge"[^>]*>)v\d+(?:\.\d+)?(</span>)',
+        r'(<span[^>]*id="versionBadge"[^>]*>)(?:v\d+(?:\.\d+)?|0\.\d{1,5})(</span>)',
         rf'\g<1>{public_label(new_version)}\g<2>',
         content
     )

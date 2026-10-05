@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 227;
+const APP_VERSION = 230;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 227;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = 'v17.3';
+let _PUBLIC_VERSION_STR = '0.00001';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -82,7 +82,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = '71812c951b51565d';
+let _LOCAL_BUILD_HASH = 'ed9eda12fb336874';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -8802,14 +8802,13 @@ function renderAdminGestoresList() {
     else if(enSobre.length)comBadgeHTML+=`<span style="background:var(--yellow);color:white;border-radius:20px;font-size:10px;font-weight:700;padding:3px 9px;">✉️ ${enSobre.length}</span>`;
     if(!comBadgeHTML)comBadgeHTML=cobrados.length?`<span style="background:var(--green);color:white;border-radius:20px;font-size:10px;font-weight:700;padding:3px 9px;">✓ al día</span>`:`<span style="color:var(--gray-400);font-size:10px;">Sin comisiones</span>`;
 
-    // v220 · IDEA 4 «Pastel pleno»: la tarjeta COMPLETA va rellena del
-    // pastel sólido del gestor (CSS: --gcard en claro / --gcardD en oscuro).
-    // Sin degradado y sin barra lateral: el borde vuelve a ser el neutro de
-    // siempre. El cuadradito del nombre sigue pleno (v212).
-    // Va como variables CSS porque el modo oscuro pisa los inline con
-    // !important (ver app.css, final).
-    const _cardPastel = g._tienda ? '' : `--gcard:${_pastelClaro(g.color)};--gcardD:${_pastelOscuro(g.color)};`;
-    return `<div class="gp-card" data-gestor-id="${g.id}" style="${_cardPastel}">
+    // v228 · La tarjeta del gestor en el admin lleva AHORA la piel 3D completa
+    // (la del selector aprobado): degradado pastel→pleno, esquina de vidrio,
+    // círculo decorativo y sombra del color — vía gestorHeroVars(). El CSS
+    // (bloque v228) pinta el vidrio y adapta textos/botones a --gink.
+    // La Tienda no tiene color propio: sigue con su superficie neutra.
+    const _cardPastel = g._tienda ? '' : gestorHeroVars(g);
+    return `<div class="gp-card${g._tienda ? '' : ' gp-3d'}" data-gestor-id="${g.id}" style="${_cardPastel}">
       <div class="gp-card-top">
         <div class="g-avatar" style="${hasPhoto?'background:transparent;':'background:'+g.color+';'}width:44px;height:44px;font-size:14px;flex-shrink:0;position:relative;">${gestorAvatarInner(g)}</div>
         <div style="flex:1;min-width:0;">
@@ -9565,7 +9564,14 @@ function buildInboxCard(v) {
   const _meta = [valeNumStr(v), v.articulo || 'Sin artículo', v.direccion || ''].filter(Boolean).join(' · ');
   const _chipHora = _chipHoraEntrega(v);
   const _tieneChips = estafaMatch.length || reserva || _nota || _notaAdmin || m || _chipHora;
-  return `<div class="vx-card st-${_vStatus}${sel ? ' sel' : ''}${isNew ? ' is-new' : ''}" onclick="selectVale(${v.id})">
+  // v228: la tarjeta del vale lleva la PIEL 3D del gestor (la misma del
+  // selector «¿Quién eres?») — degradado pastel→pleno, esquina de vidrio,
+  // círculos decorativos y sombra del color del gestor. La Tienda no tiene
+  // color propio: queda con el vidrio neutro de siempre.
+  const _hero = (g && !g._tienda) ? gestorHeroVars(g) : '';
+  const _clsHero = (g && !g._tienda) ? ' g-hero' : '';
+  return `<div class="vx-card st-${_vStatus}${_clsHero}${sel ? ' sel' : ''}${isNew ? ' is-new' : ''}"${_hero ? ` style="${_hero}"` : ''} onclick="selectVale(${v.id})">
+    ${_clsHero ? '<span class="vxh-c c1" aria-hidden="true"></span><span class="vxh-c c2" aria-hidden="true"></span>' : ''}
     <div class="vx-ava" style="background:${g ? g.color : '#64748b'};color:#fff;">${gestorAvatarInner(g)}</div>
     <div class="vx-main">
       <div class="vx-r1">
@@ -10093,6 +10099,7 @@ function openRebajaAdminModal(id) {
   document.getElementById('rebajaAdminMoneda').value = ((v.rebajaAdminMoneda || 'USD') + '').toUpperCase() === 'MN' ? 'MN' : 'USD';
   document.getElementById('rebajaAdminMotivo').value = v.rebajaAdminMotivo || '';
   document.getElementById('rebajaAdminModal').classList.add('show');
+  _rebajaMonedasLinea = {};   // v228: cada vale se abre con la moneda nativa de sus productos
   _pintarRebajaLineas(v);
   rebajaAdminRefresca();
 }
@@ -10101,6 +10108,18 @@ function openRebajaAdminModal(id) {
 // El precio de cada línea sale del catálogo por la cantidad. Lo que se escriba
 // aquí se le quita a ESA línea, en la moneda de ESE producto, y el corte de
 // dueños lo descuenta de esa mercancía en concreto — sin repartos a ojo.
+// v228: además, cada línea elige SU moneda (USD/MN) con un conmutador — si la
+// rebaja se escribe en la otra moneda se convierte con la tasa del vale y el
+// tope se recalcula en esa moneda. La elección se recuerda por línea mientras
+// el modal está abierto (_rebajaMonedasLinea).
+let _rebajaMonedasLinea = {};
+function _rebajaMaxLinea(v, precioNat, monNat, monElegida) {
+  if (monElegida === monNat) return { max: precioNat, conv: null };
+  const tasa = _tasaDelVale(v);
+  if (!(tasa > 0)) return null;   // sin tasa no se convierte: solo la moneda nativa
+  if (monNat === 'USD') return { max: Math.round(precioNat * tasa), conv: Math.round(precioNat * tasa) };
+  return { max: Math.round((precioNat / tasa) * 100) / 100, conv: Math.round((precioNat / tasa) * 100) / 100 };
+}
 function _pintarRebajaLineas(v) {
   const c = document.getElementById('rebajaAdminLineas');
   if (!c) return;
@@ -10113,21 +10132,42 @@ function _pintarRebajaLineas(v) {
     const p = productoOf(it.id);
     const uds = parseInt(it.qty, 10) || 0;
     const pv = _montoMonedas(p ? p.precio : '');
-    const mon = pv.mn > 0 ? 'MN' : 'USD';
-    const precio = (mon === 'MN' ? pv.mn : pv.usd) * uds;
-    const yaVal = parseFloat(mon === 'MN' ? it.rebajaMN : it.rebajaUSD) || 0;
+    const monNat = pv.mn > 0 ? 'MN' : 'USD';
+    const precioNat = (monNat === 'MN' ? pv.mn : pv.usd) * uds;
     const nombre = p ? (p.name || ('#' + it.id)) : ('Producto #' + it.id + ' (borrado)');
-    if (!(precio > 0)) {
+    if (!(precioNat > 0)) {
       return `<div style="font-size:11px;color:var(--text-muted);">×${uds} ${escapeHTML(nombre)} — sin precio en el catálogo, no se puede rebajar aquí</div>`;
     }
-    return `<div style="display:flex;align-items:center;gap:6px;min-width:0;">
-      <span style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">×${uds} ${escapeHTML(nombre)}</span>
-      <span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">de ${mon === 'MN' ? Math.round(precio) : precio} ${mon}</span>
-      <input type="number" inputmode="decimal" min="0" max="${precio}" step="any" value="${yaVal || ''}" placeholder="0"
-             onchange="cambiarRebajaLinea(${idx}, this.value)"
-             style="width:88px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 6px;font-size:13px;font-weight:700;color:var(--text);">
+    const mon = (_rebajaMonedasLinea[idx] === 'USD' || _rebajaMonedasLinea[idx] === 'MN') ? _rebajaMonedasLinea[idx] : monNat;
+    const info = _rebajaMaxLinea(v, precioNat, monNat, mon);
+    const yaVal = parseFloat(mon === 'MN' ? it.rebajaMN : it.rebajaUSD) || 0;
+    const max = info ? info.max : precioNat;
+    const _deTxt = mon === monNat
+      ? `de ${monNat === 'MN' ? Math.round(precioNat) : precioNat} ${monNat}`
+      : `de ${monNat === 'MN' ? Math.round(precioNat) : precioNat} ${monNat} ≈ ${mon === 'MN' ? Math.round(info.conv) : info.conv} ${mon}`;
+    return `<div class="rb-linea">
+      <div class="rb-l1">
+        <span class="rb-nombre" title="${escapeAttr(nombre)}">×${uds} ${escapeHTML(nombre)}</span>
+        <span class="rb-de">${_deTxt}</span>
+      </div>
+      <div class="rb-l2">
+        <div class="rb-mon" role="group" aria-label="Moneda de la rebaja">
+          <button type="button" class="rb-mon-btn${mon === 'USD' ? ' act' : ''}" onclick="cambiarMonedaLinea(${idx},'USD')"${info ? '' : ' disabled title="Sin tasa para convertir"'}>USD</button>
+          <button type="button" class="rb-mon-btn${mon === 'MN' ? ' act' : ''}" onclick="cambiarMonedaLinea(${idx},'MN')"${info ? '' : ' disabled title="Sin tasa para convertir"'}>MN</button>
+        </div>
+        <input type="number" inputmode="decimal" min="0" max="${max}" step="any" value="${yaVal || ''}" placeholder="0 en ${mon}"
+               onchange="cambiarRebajaLinea(${idx}, this.value)"
+               style="flex:1;min-width:0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 6px;font-size:13px;font-weight:700;color:var(--text);">
+      </div>
     </div>`;
   }).join('');
+}
+// v228: conmutador de moneda por línea — recuerda la elección y repinta.
+function cambiarMonedaLinea(idx, mon) {
+  _rebajaMonedasLinea[idx] = mon;
+  haptic(6);
+  const v = getVales().find(x => x.id === _rebajaAdminValeId);
+  if (v) { _pintarRebajaLineas(v); rebajaAdminRefresca(); }
 }
 function cambiarRebajaLinea(idx, valor) {
   const v = getVales().find(x => x.id === _rebajaAdminValeId);
@@ -10138,8 +10178,12 @@ function cambiarRebajaLinea(idx, valor) {
   const p = productoOf(it.id);
   const uds = parseInt(it.qty, 10) || 0;
   const pv = _montoMonedas(p ? p.precio : '');
-  const mon = pv.mn > 0 ? 'MN' : 'USD';
-  const precio = (mon === 'MN' ? pv.mn : pv.usd) * uds;
+  const monNat = pv.mn > 0 ? 'MN' : 'USD';
+  const precioNat = (monNat === 'MN' ? pv.mn : pv.usd) * uds;
+  const mon = (_rebajaMonedasLinea[idx] === 'USD' || _rebajaMonedasLinea[idx] === 'MN') ? _rebajaMonedasLinea[idx] : monNat;
+  const info = _rebajaMaxLinea(v, precioNat, monNat, mon);
+  if (!info) { showToast('No hay tasa para rebajar en ' + mon + ' esta línea'); return; }
+  const precio = info.max;
   let n = parseFloat(valor);
   if (!isFinite(n) || n < 0) n = 0;
   if (n > precio) { n = precio; showToast('No se puede rebajar más de lo que vale esa línea'); }
@@ -14410,16 +14454,19 @@ function renderVentasDirectas() {
   }
   lista.innerHTML = ventas.map(v => {
     const d = new Date(v.confirmedTs || v.ts);
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:7px;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
-        <div style="font-size:13px;font-weight:700;">${escapeHTML(v.articulo || '—')}</div>
-        <div style="font-size:14px;font-weight:900;color:var(--green);white-space:nowrap;">${escapeHTML(v.total || '—')}</div>
+    // v230: las ventas directas también visten la piel 3D — en azul del admin
+    // (las vars --g1/--g2/--gink van en CSS, que aquí no hay gestor de color).
+    return `<div class="vd-hero">
+      <span class="vxh-c c1" aria-hidden="true"></span><span class="vxh-c c2" aria-hidden="true"></span>
+      <div class="vd-r1">
+        <div class="vd-t">${escapeHTML(v.articulo || '—')}</div>
+        <div class="vd-total">${escapeHTML(v.total || '—')}</div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
+      <div class="vd-meta">
         ${d.toLocaleDateString('es-ES')} ${timeStr(d.getTime())}${valeNumStr(v) ? ' · ' + escapeHTML(valeNumStr(v)) : ''}
       </div>
-      ${v.adminNotes ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📝 ${escapeHTML(v.adminNotes)}</div>` : ''}
-      <button class="btn btn-ghost btn-sm" style="margin-top:7px;font-size:11px;color:var(--orange);" onclick="borrarVentaDirecta(${v.id})">↩️ Deshacer venta</button>
+      ${v.adminNotes ? `<div class="vd-nota">📝 ${escapeHTML(v.adminNotes)}</div>` : ''}
+      <button class="btn btn-ghost btn-sm vd-deshacer" onclick="borrarVentaDirecta(${v.id})">↩️ Deshacer venta</button>
     </div>`;
   }).join('');
 }
@@ -19357,7 +19404,14 @@ function renderHistorial() {
       const estafaMatch=checkEstafaMatch(v);
       const estafaBorder=estafaMatch.length?'border-left:3px solid var(--red);':'';
       const estafaTag=estafaMatch.length?'<span style="background:var(--red);color:white;border-radius:6px;padding:1px 5px;font-size:8px;font-weight:700;margin-left:3px;">🚫</span>':'';
-      html+=`<div class="card" style="padding:8px 12px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:10px;${estafaBorder}" onclick="selectValeFromHistorial(${v.id})">
+      // v230: el historial también lleva la piel 3D del gestor (degradado +
+      // vidrio + tinta del color), como la bandeja y el selector. La Tienda
+      // queda con la tarjeta neutra de siempre.
+      const _hero=(g&&!g._tienda)?gestorHeroVars(g):'';
+      const _hh=(g&&!g._tienda)?' hist-hero':'';
+      const _circ=_hh?'<span class="vxh-c c1" aria-hidden="true"></span><span class="vxh-c c2" aria-hidden="true"></span>':'';
+      html+=`<div class="card${_hh}" style="${_hero?_hero+';':''}padding:8px 12px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:10px;${estafaBorder}" onclick="selectValeFromHistorial(${v.id})">
+        ${_circ}
         <div style="flex-shrink:0;">
           <div class="g-avatar" style="background:${g?g.color:'#888'};width:28px;height:28px;font-size:10px;">${g?escapeHTML(g.initials):'?'}</div>
         </div>
@@ -19366,12 +19420,12 @@ function renderHistorial() {
                "qué vendió Fulano", no "qué le vendimos a Mengano": el cliente
                casi siempre es alguien que aparece una vez, y el gestor es lo
                que se repite y por lo que se recorre la lista. -->
-          <div style="font-size:12px;font-weight:700;">${valeNumStr(v)?`<span style="color:var(--blue);">${valeNumStr(v)}</span> `:''}${g?escapeHTML(g.name):'—'}${estafaTag}</div>
-          <div style="font-size:10px;color:var(--gray-400);">${escapeHTML(v.cliente||'—')}${v.telefono?' · '+escapeHTML(v.telefono):''} · ${timeStr(v.ts)}</div>
+          <div class="hh-nombre" style="font-size:12px;font-weight:700;">${valeNumStr(v)?`<span>${valeNumStr(v)}</span> `:''}${g?escapeHTML(g.name):'—'}${estafaTag}</div>
+          <div class="hh-sub" style="font-size:10px;">${escapeHTML(v.cliente||'—')}${v.telefono?' · '+escapeHTML(v.telefono):''} · ${timeStr(v.ts)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <span class="sp ${s.cls}" style="font-size:9px;">${s.icon?s.icon+' ':''}${s.label}</span>
-          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-top:2px;">${escapeHTML(v.total||'')}</div>
+          <div class="hh-total" style="font-size:11px;font-weight:700;margin-top:2px;">${escapeHTML(v.total||'')}</div>
         </div>
       </div>`;
     });
