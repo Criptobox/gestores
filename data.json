@@ -1,0 +1,66 @@
+{
+  "gestores": [],
+  "mensajeros": [],
+  "productos": [
+    {
+      "id": 1001,
+      "name": "Producto de ejemplo 1",
+      "nombre": "Producto de ejemplo 1",
+      "catId": 10,
+      "photo": "",
+      "imagen": "",
+      "stock": 10,
+      "precio": "$10 USD",
+      "puntos": 1,
+      "comision": "$1 USD",
+      "garantia": "",
+      "descripcion": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio.",
+      "description": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio."
+    },
+    {
+      "id": 1002,
+      "name": "Producto de ejemplo 2",
+      "nombre": "Producto de ejemplo 2",
+      "catId": 20,
+      "photo": "",
+      "imagen": "",
+      "stock": 10,
+      "precio": "$25 USD",
+      "puntos": 1,
+      "comision": "$1 USD",
+      "garantia": "",
+      "descripcion": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio.",
+      "description": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio."
+    },
+    {
+      "id": 1003,
+      "name": "Producto de ejemplo 3",
+      "nombre": "Producto de ejemplo 3",
+      "catId": 30,
+      "photo": "",
+      "imagen": "",
+      "stock": 10,
+      "precio": "$50 USD",
+      "puntos": 1,
+      "comision": "$1 USD",
+      "garantia": "",
+      "descripcion": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio.",
+      "description": "[EJEMPLO]\nEdita o borra este producto desde el panel de administración y crea el catálogo de tu negocio."
+    }
+  ],
+  "categorias": [
+    {
+      "id": 10,
+      "name": "Electrónica"
+    },
+    {
+      "id": 20,
+      "name": "Accesorios"
+    },
+    {
+      "id": 30,
+      "name": "Hogar"
+    }
+  ],
+  "timestamp": "2026-10-02T21:40:51.000Z"
+}

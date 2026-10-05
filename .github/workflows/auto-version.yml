@@ -1,0 +1,90 @@
+name: Auto-versión
+
+# Ejecuta build.py automáticamente cuando cambia alguno de los archivos que el
+# service worker cachea. Sin esto había que acordarse de lanzarlo a mano antes
+# de subir, y si se olvidaba, la clave de caché no cambiaba: el archivo nuevo
+# quedaba en el servidor pero los teléfonos seguían abriendo el viejo. Es lo que
+# tuvo la app rota durante semanas.
+on:
+  push:
+    branches: [main]
+    # Solo estos archivos disparan versión nueva: son exactamente los de
+    # CRITICAL_FILES en build.py. Así los commits de datos ("AXONTECH sync",
+    # que solo tocan data.json) no lanzan una ejecución para nada.
+    paths:
+      - 'app.js'
+      - 'app.css'
+      - 'index.html'
+      - 'admin.html'
+      - 'sw.js'
+    
+
+permissions:
+  contents: write
+
+# Si se suben dos cambios seguidos, que el segundo espere al primero en vez de
+# pisarse: los dos escriben en version.json.
+concurrency:
+  group: auto-version
+  cancel-in-progress: false
+
+jobs:
+  version:
+    # Cortafuegos contra bucles: si el commit lo hizo el propio robot, no se
+    # vuelve a ejecutar. (GitHub ya evita que un push hecho con GITHUB_TOKEN
+    # dispare otro workflow, pero más vale dejarlo explícito.)
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Ejecutar build.py
+        run: python3 build.py
+
+      - name: Publicar la nueva versión si la hubo
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Sin cambios reales en los archivos críticos — no se sube la versión."
+            exit 0
+          fi
+          VER=$(python3 -c "import json;d=json.load(open('version.json'));print(d['versionStr'])")
+          BUILD=$(python3 -c "import json;d=json.load(open('version.json'));print(d['version'])")
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # El push se rechaza si alguien subió algo mientras corría esto. Y aquí
+          # duele más que en la tasa: sin este commit la clave de caché no
+          # cambia y los teléfonos siguen abriendo la versión vieja — que es
+          # exactamente lo que tuvo la app rota durante semanas.
+          #
+          # Al reintentar se coge lo último del servidor y se vuelve a ejecutar
+          # build.py: la versión se calcula a partir de los archivos, así que
+          # tiene que salir de los archivos BUENOS, no de los que había cuando
+          # empezó este trabajo.
+          MENSAJE="Versión generada automáticamente por build.py al detectar cambios en
+          los archivos que cachea el service worker. Sin este paso la clave de
+          caché no cambia y los teléfonos siguen abriendo la versión anterior."
+          for INTENTO in 1 2 3 4 5; do
+            git add -A
+            git commit -m "build: ${VER} (compilación ${BUILD})
+
+          ${MENSAJE}" --quiet
+            if git push; then
+              echo "Publicada ${VER} (compilación ${BUILD}) en el intento ${INTENTO}."
+              exit 0
+            fi
+            echo "· Push rechazado (alguien subió antes). Reintento ${INTENTO}/5…"
+            sleep $((INTENTO * 5))
+            git fetch origin main --depth=1
+            git reset --hard origin/main --quiet
+            python3 build.py
+            if [ -z "$(git status --porcelain)" ]; then
+              echo "Con lo último del servidor ya no hay versión que subir."
+              exit 0
+            fi
+            VER=$(python3 -c "import json;d=json.load(open('version.json'));print(d['versionStr'])")
+            BUILD=$(python3 -c "import json;d=json.load(open('version.json'));print(d['version'])")
+          done
+          echo "::error::No se pudo publicar la versión tras 5 intentos."
+          exit 1

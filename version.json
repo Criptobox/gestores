@@ -1,0 +1,20 @@
+{
+  "version": 224,
+  "versionStr": "v17.0",
+  "build": 224,
+  "hash": "0f95f16177438828",
+  "hashFull": "0f95f16177438828",
+  "releasedAt": "2026-10-04 21:36",
+  "files": [
+    "app.js",
+    "app.css",
+    "index.html",
+    "admin.html",
+    "sw.js"
+  ],
+  "changelog": [
+    "Diseño «fitness premium» en TODA la app (fase 2):",
+    "«¿Quién eres?», formularios, inputs del panel, cards, bandeja y ranking",
+    "Esquinas redondas, cards flotantes, anillos de foco y títulos editoriales"
+  ]
+}

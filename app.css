@@ -1,0 +1,2813 @@
+/* ════════════════════════════════════════════════════════════
+   AXONTECH — app.css  · v77 (pulido app móvil) + v78 (experiencia app)
+   Tema claro/oscuro + layout responsive + modales + componentes
+   ════════════════════════════════════════════════════════════ */
+
+/* ── v78: Sora autohospedada (identidad tipográfica de la app) ──
+   Fuente VARIABLE (un archivo cubre los pesos 400–800, ~25 KB).
+   font-display:swap → si tarda, se ve la fuente del sistema y ya;
+   unicode-range deja que el navegador descargue solo el subset que usa. */
+@font-face{
+  font-family:'Sora';
+  src:url('./fuentes/sora-var-latin-ext.woff2') format('woff2-variations');
+  font-weight:400 800;
+  font-style:normal;
+  font-display:swap;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face{
+  font-family:'Sora';
+  src:url('./fuentes/sora-var-latin.woff2') format('woff2-variations');
+  font-weight:400 800;
+  font-style:normal;
+  font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* ── Variables de color ── */
+:root{
+  --blue:#006d8a;
+  --blue-dk:#004d60;
+  --blue-lt:#E6F4F7;
+  --blue-bd:#BFE3EB;
+  --accent:#00b4d8;
+  --green:#10B981;
+  --green-dk:#059669;
+  --yellow:#F59E0B;
+  --orange:#F97316;
+  --red:#EF4444;
+  --purple:#7C3AED;
+
+  --surface:#ffffff;
+  --surface2:#f7f9fc;
+  --surface3:#eef2f7;
+  --text:#1a1a2e;
+  --text-muted:#64748b;
+  --border:#e2e8f0;
+  --gray-50:#f8fafc;
+  --gray-100:#f1f5f9;
+  --gray-200:#e2e8f0;
+  --gray-300:#cbd5e1;
+  --gray-400:#94a3b8;
+  --gray-500:#64748b;
+  --gray-600:#475569;
+  --gray-700:#334155;
+  --gray-800:#1e293b;
+
+  /* v77 — estilo app móvil: radios grandes y sombras en dos capas
+     (contacto + ambiente) para que las tarjetas se despeguen del fondo. */
+  --radius:24px;
+  --radius-sm:14px;
+  --radius-xs:10px;
+  --radius-lg:30px;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 6px 16px -6px rgba(15,23,42,.10),0 16px 40px -16px rgba(15,23,42,.14);
+  --shadow-lg:0 2px 4px rgba(15,23,42,.06),0 18px 50px -12px rgba(15,23,42,.28);
+  --shadow-pop:0 1px 2px rgba(15,23,42,.06),0 10px 28px -8px rgba(15,23,42,.16),0 28px 64px -20px rgba(15,23,42,.22);
+
+  --header-h:56px;
+  /* v78: Sora en TODA la app (antes solo el sistema ax2). La pila de reserva
+     mantiene el aspecto si la fuente no cargó todavía o no hay red. */
+  --font:'Sora','Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+
+/* ── Modo oscuro ── */
+body.dark{
+  --blue:#00b4d8;
+  --blue-dk:#0EA5E9;
+  --blue-lt:#0c2a33;
+  --blue-bd:#1e3a44;
+  --accent:#0EA5E9;
+  --green:#34D399;
+  --green-dk:#10B981;
+  --yellow:#FBBF24;
+  --orange:#FB923C;
+  --red:#F87171;
+  --purple:#A78BFA;
+
+  --surface:#0f172a;
+  --surface2:#1e293b;
+  --surface3:#334155;
+  --text:#f1f5f9;
+  --text-muted:#94a3b8;
+  --border:#334155;
+  --gray-50:#1e293b;
+  --gray-100:#334155;
+  --gray-200:#475569;
+  --gray-300:#64748b;
+  --gray-400:#94a3b8;
+  --gray-500:#cbd5e1;
+  --gray-600:#e2e8f0;
+  --gray-700:#f1f5f9;
+  --gray-800:#f8fafc;
+
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -10px rgba(0,0,0,.55);
+  --shadow-lg:0 2px 4px rgba(0,0,0,.45),0 22px 56px -14px rgba(0,0,0,.7);
+  --shadow-pop:0 2px 6px rgba(0,0,0,.45),0 24px 64px -16px rgba(0,0,0,.75);
+}
+
+/* ════════════════════════════════════════════════════════════
+   AX2 — sistema de diseño nuevo (v118)
+   ════════════════════════════════════════════════════════════
+   Empieza en 🧑‍💼 Dueños y 💰 Ganancia; el resto del admin se pasa a esto
+   panel por panel, no de golpe. Por eso son variables NUEVAS (prefijo ax2-)
+   en vez de tocar --surface/--text/--border: así ningún panel sin tocar
+   todavía cambia de aspecto por accidente cuando se ajuste esta paleta.
+
+   En oscuro los valores son los del diseño que se aprobó (ámbar + cian sobre
+   azul casi negro). En claro es una traducción propia con el mismo lenguaje
+   —tarjetas con degradado sutil, texto a tres niveles, números en mono—
+   pero en blanco: no es "el oscuro con los colores invertidos", es el
+   mismo sistema pensado para las dos luces.
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --ax2-bg0:#f3f6fb;
+  --ax2-bg1:#eef2f9;
+  --ax2-card:#ffffff;
+  --ax2-card-hi:#ffffff;
+  --ax2-line:#e6ebf3;
+  --ax2-ember:#d97706;
+  --ax2-ember-soft:#f59e0b;
+  --ax2-ember-dim:#fde3b0;
+  --ax2-signal:#0891b2;
+  --ax2-signal-dim:#e0f4f8;
+  --ax2-good:#059669;
+  --ax2-danger:#dc2626;
+  --ax2-text-hi:#0f172a;
+  --ax2-text-mid:#5c6b81;
+  --ax2-text-low:#94a3b8;
+  --ax2-aura1:rgba(8,145,178,.07);
+  --ax2-aura2:rgba(217,119,6,.05);
+  --ax2-shadow:0 1px 2px rgba(15,23,42,.05),0 10px 28px -10px rgba(15,23,42,.14),0 24px 56px -20px rgba(15,23,42,.16);
+  --ax2-font:'Sora',var(--font);
+  --ax2-mono:'JetBrains Mono','Courier New',monospace;
+}
+body.dark{
+  --ax2-bg0:#0a1120;
+  --ax2-bg1:#0e1729;
+  --ax2-card:#111c33;
+  --ax2-card-hi:#15223c;
+  --ax2-line:rgba(120,170,220,.10);
+  --ax2-ember:#f5a623;
+  --ax2-ember-soft:#ffc266;
+  --ax2-ember-dim:#7a5716;
+  --ax2-signal:#22b8cf;
+  --ax2-signal-dim:rgba(34,184,207,.14);
+  --ax2-good:#4ade80;
+  --ax2-danger:#f56565;
+  --ax2-text-hi:#eef4fb;
+  --ax2-text-mid:#9fb1c9;
+  --ax2-text-low:#647c95;
+  --ax2-aura1:rgba(34,184,207,.14);
+  --ax2-aura2:rgba(245,166,35,.07);
+  --ax2-shadow:0 2px 4px rgba(0,0,0,.4),0 18px 48px -14px rgba(0,0,0,.65);
+}
+
+/* El halo del panel: dos degradados radiales muy suaves, como fondo del
+   propio panel en vez de la página entera (la cabecera/barra del admin no
+   entra todavía en este rediseño). */
+.ax2-panel{
+  background:
+    radial-gradient(ellipse 640px 320px at 12% -8%, var(--ax2-aura1), transparent 60%),
+    radial-gradient(ellipse 520px 320px at 100% 0%, var(--ax2-aura2), transparent 55%);
+  border-radius:26px;
+  font-family:var(--ax2-font);
+}
+.ax2-mono{font-family:var(--ax2-mono);}
+
+/* ── Tarjeta base ── */
+.ax2-card{
+  background:linear-gradient(160deg,var(--ax2-card-hi),var(--ax2-card));
+  border:1px solid var(--ax2-line);
+  border-radius:24px;
+  box-shadow:var(--ax2-shadow);
+}
+
+/* ── Cabecera / hero ── */
+.ax2-hero{
+  position:relative;overflow:hidden;
+  padding:16px 16px 14px;margin-bottom:12px;
+}
+.ax2-hero::after{
+  content:"";position:absolute;width:200px;height:200px;right:-70px;top:-90px;
+  background:radial-gradient(circle,var(--ax2-signal-dim),transparent 70%);
+  pointer-events:none;
+}
+
+/* ── Chips de filtro / rango ── */
+.ax2-chip-row{display:flex;gap:7px;flex-wrap:wrap;}
+.ax2-chip{
+  font-size:11.5px;padding:6px 13px;border-radius:100px;
+  background:rgba(127,127,127,.06);border:1px solid var(--ax2-line);
+  color:var(--ax2-text-mid);cursor:pointer;user-select:none;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.ax2-chip .n{font-family:var(--ax2-mono);font-size:10px;opacity:.75;}
+.ax2-chip.active{background:linear-gradient(135deg,var(--ax2-signal),var(--ax2-good) 180%);color:#04222b;font-weight:700;border-color:transparent;}
+body.dark .ax2-chip.active{background:linear-gradient(135deg,var(--ax2-signal),#0e7490);}
+.ax2-chip.danger.active{background:linear-gradient(135deg,var(--ax2-danger),#b33636);color:#fff;}
+.ax2-chip.warn.active{background:linear-gradient(135deg,var(--ax2-ember),#b3790f);color:#fff;}
+
+/* ── Cuadrícula de KPIs ── */
+.ax2-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ax2-kpi{padding:14px 14px;}
+.ax2-kpi.wide{grid-column:1/-1;}
+.ax2-kpi-label{
+  font-size:10.5px;color:var(--ax2-text-low);text-transform:uppercase;
+  letter-spacing:.8px;margin-bottom:7px;display:flex;align-items:center;gap:6px;
+}
+.ax2-kpi-value{font-family:var(--ax2-mono);font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--ax2-text-hi);}
+.ax2-kpi-value.ember{color:var(--ax2-ember-soft);}
+.ax2-kpi-value.good{color:var(--ax2-good);}
+.ax2-kpi-value.danger{color:var(--ax2-danger);}
+.ax2-kpi-sub{font-size:10.5px;color:var(--ax2-text-low);margin-top:5px;}
+.ax2-flow{display:flex;align-items:center;gap:7px;margin-top:11px;font-family:var(--ax2-mono);font-size:11.5px;flex-wrap:wrap;color:var(--ax2-text-mid);}
+.ax2-flow .arrow{color:var(--ax2-text-low);}
+.ax2-flow .neg{color:var(--ax2-ember-soft);}
+.ax2-flow .pos{color:var(--ax2-good);font-weight:700;}
+
+/* ── Encabezado de sección ── */
+.ax2-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:18px 2px 10px;}
+.ax2-section-title{font-size:13.5px;font-weight:700;color:var(--ax2-text-hi);}
+.ax2-section-count{font-family:var(--ax2-mono);font-size:10.5px;color:var(--ax2-text-low);}
+
+/* ── Barras de reparto (payout) ── */
+.ax2-payout-card{padding:14px 14px 6px;}
+.ax2-payout-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.ax2-payout-total-label{font-size:11.5px;color:var(--ax2-text-low);}
+.ax2-payout-total-value{font-family:var(--ax2-mono);font-size:14px;font-weight:700;color:var(--ax2-ember-soft);}
+/* v119: antes era una cuadrícula de 3 columnas con el importe metido en
+   54px fijos — un importe de dos monedas ("$10 USD + 1.500 MN") no cabe ahí y
+   se salía de la tarjeta. Ahora el nombre y el importe van en una fila propia
+   que se reparte el ancho que haga falta, y la barra ocupa toda la fila de
+   abajo: cabe cualquier importe, en el teléfono y en pantallas anchas. */
+.ax2-payout-row{padding:8px 0;border-radius:10px;transition:background .12s;}
+.ax2-payout-row[onclick]{cursor:pointer;}
+.ax2-payout-row[onclick]:hover{background:rgba(127,127,127,.06);}
+.ax2-payout-row-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:5px;}
+.ax2-payout-name{font-size:11.5px;color:var(--ax2-text-mid);overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.ax2-payout-track{height:7px;border-radius:100px;background:rgba(127,127,127,.10);overflow:hidden;}
+.ax2-payout-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--ax2-ember-dim),var(--ax2-ember));}
+.ax2-payout-amt{font-family:var(--ax2-mono);font-size:11.5px;text-align:right;color:var(--ax2-ember-soft);font-weight:600;flex-shrink:0;}
+
+/* ── Fila "se le debe a X" (dentro del modal de un dueño) ──
+   Misma idea que .ax2-payout-row pero sin barra: el nombre ocupa lo que
+   necesite y parte por dentro si hace falta, y el importe se queda anclado a
+   la derecha con su tachado justo debajo. Antes esto era un flex con
+   flex-wrap:wrap y el importe llevaba un <div> dentro de un <span>: con un
+   nombre largo la fila se partía y el tachado acababa flotando solo, lejos
+   del gestor al que pertenecía. */
+.ax2-owe-row{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:7px 0;border-top:1px solid var(--ax2-line);border-radius:8px;
+}
+.ax2-owe-row[onclick]{cursor:pointer;}
+.ax2-owe-row[onclick]:hover{background:rgba(127,127,127,.06);}
+.ax2-owe-name{font-size:12px;font-weight:700;color:var(--ax2-text-hi);min-width:0;overflow-wrap:anywhere;}
+.ax2-owe-amt{
+  font-family:var(--ax2-mono);font-size:12px;font-weight:800;
+  color:var(--ax2-ember-soft);text-align:right;flex-shrink:0;
+}
+
+/* ── Filas de lista (fichas clicables, "ledger") ── */
+.ax2-row-card{padding:0 4px;}
+.ax2-row{
+  display:flex;align-items:center;gap:11px;padding:12px 10px;
+  border-bottom:1px solid var(--ax2-line);cursor:pointer;transition:background .12s;
+}
+.ax2-row:last-child{border-bottom:none;}
+.ax2-row:hover{background:rgba(127,127,127,.05);}
+.ax2-row-avatar{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+  background:var(--ax2-signal-dim);color:var(--ax2-signal);
+}
+.ax2-row-body{flex:1;min-width:0;}
+.ax2-row-title{font-size:13px;font-weight:700;color:var(--ax2-text-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ax2-row-meta{font-size:10.5px;color:var(--ax2-text-low);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.ax2-row-meta .who{color:var(--ax2-signal);}
+.ax2-row-nums{text-align:right;flex-shrink:0;}
+.ax2-row-amount{font-family:var(--ax2-mono);font-size:12.5px;font-weight:700;color:var(--ax2-text-hi);white-space:nowrap;}
+.ax2-row-sub{font-family:var(--ax2-mono);font-size:10.5px;color:var(--ax2-ember-soft);margin-top:2px;white-space:nowrap;}
+.ax2-row-chevron{color:var(--ax2-text-low);font-size:14px;flex-shrink:0;}
+
+/* ── Buscador ── */
+.ax2-search-box{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:rgba(127,127,127,.06);border:1px solid var(--ax2-line);
+  border-radius:14px;padding:9px 12px;
+}
+.ax2-search-box svg{flex-shrink:0;opacity:.5;color:var(--ax2-text-mid);}
+.ax2-search-box input{
+  background:none;border:none;outline:none;width:100%;
+  color:var(--ax2-text-hi);font-family:var(--ax2-font);font-size:12.5px;
+}
+.ax2-search-box input::placeholder{color:var(--ax2-text-low);}
+
+/* ── Campo de texto/fecha suelto (fuera de un search-box) ── */
+.ax2-input{
+  background:rgba(127,127,127,.06);border:1px solid var(--ax2-line);
+  border-radius:10px;padding:8px 12px;font-family:var(--ax2-font);
+  font-size:12.5px;color:var(--ax2-text-hi);outline:none;
+}
+.ax2-input::placeholder{color:var(--ax2-text-low);}
+.ax2-input:focus{border-color:var(--ax2-signal);}
+body.dark .ax2-input{color-scheme:dark;}
+
+/* ── Insignia de stock ── */
+.ax2-badge{
+  font-family:var(--ax2-mono);font-size:11px;font-weight:700;
+  text-align:center;padding:3px 0;border-radius:8px;display:block;
+}
+.ax2-badge.zero{color:var(--ax2-danger);background:rgba(220,38,38,.10);}
+.ax2-badge.low{color:var(--ax2-ember-soft);background:rgba(245,158,11,.12);}
+.ax2-badge.ok{color:var(--ax2-signal);background:var(--ax2-signal-dim);}
+
+/* ── Categorías plegables ── */
+.ax2-cat-card{margin-bottom:10px;overflow:hidden;}
+.ax2-cat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;cursor:pointer;user-select:none;flex-wrap:wrap;}
+.ax2-cat-head-left{display:flex;align-items:center;gap:9px;min-width:0;}
+.ax2-cat-chevron{display:inline-block;color:var(--ax2-text-low);transition:transform .18s,color .18s;font-size:12px;}
+.ax2-cat-card.open .ax2-cat-chevron{transform:rotate(90deg);color:var(--ax2-signal);}
+.ax2-cat-title{font-size:13px;font-weight:700;color:var(--ax2-text-hi);}
+.ax2-cat-count{font-family:var(--ax2-mono);font-size:10.5px;color:var(--ax2-text-low);background:rgba(127,127,127,.08);padding:2px 7px;border-radius:100px;}
+.ax2-cat-stats{font-family:var(--ax2-mono);font-size:10.5px;color:var(--ax2-text-low);text-align:right;}
+.ax2-cat-stats b{color:var(--ax2-good);font-weight:600;}
+.ax2-cat-body{display:none;border-top:1px solid var(--ax2-line);}
+.ax2-cat-card.open .ax2-cat-body{display:block;}
+
+/* ── Tabla dentro de una categoría ── */
+.ax2-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.ax2-table thead th{
+  text-align:right;padding:7px 10px;font-weight:700;color:var(--ax2-text-low);
+  white-space:nowrap;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;
+  background:rgba(127,127,127,.04);
+}
+.ax2-table thead th:first-child{text-align:left;position:sticky;left:0;background:rgba(127,127,127,.04);}
+.ax2-table td{padding:7px 10px;text-align:right;white-space:nowrap;border-top:1px solid var(--ax2-line);color:var(--ax2-text-mid);}
+.ax2-table td:first-child{
+  text-align:left;color:var(--ax2-text-hi);max-width:180px;overflow:hidden;text-overflow:ellipsis;
+  position:sticky;left:0;background:var(--ax2-card);
+}
+.ax2-table tr.sin-costo td:first-child{background:rgba(245,158,11,.05);}
+
+.ax2-cost-input{
+  width:84px;background:rgba(127,127,127,.04);border:1px solid var(--ax2-ember-dim);
+  border-radius:7px;color:var(--ax2-text-hi);font-family:var(--ax2-mono);
+  font-size:11px;padding:5px 7px;text-align:right;outline:none;
+}
+.ax2-cost-input:focus{border-color:var(--ax2-ember);}
+.ax2-cost-input::placeholder{color:var(--ax2-text-low);}
+.ax2-gain{color:var(--ax2-text-low);}
+.ax2-gain.set{color:var(--ax2-good);font-weight:600;}
+
+/* ── Aviso ── */
+.ax2-aviso{
+  background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.30);
+  border-radius:12px;padding:10px 13px;margin-bottom:10px;
+  font-size:11px;line-height:1.55;color:var(--ax2-text-mid);
+}
+.ax2-aviso div{margin:2px 0;}
+
+.ax2-empty{padding:26px 20px;text-align:center;color:var(--ax2-text-low);font-size:12px;}
+
+/* ── Botones pequeños en el lenguaje ax2 ── */
+.ax2-btn{
+  font-family:var(--ax2-font);font-size:11px;font-weight:700;
+  padding:6px 12px;border-radius:10px;cursor:pointer;
+  background:rgba(127,127,127,.06);border:1px solid var(--ax2-line);color:var(--ax2-text-mid);
+}
+.ax2-btn:hover{background:rgba(127,127,127,.12);}
+.ax2-btn.primary{background:linear-gradient(135deg,var(--ax2-signal),#0e7490);color:#fff;border-color:transparent;}
+.ax2-btn.danger{color:var(--ax2-danger);border-color:rgba(220,38,38,.3);}
+
+/* ── Pantallas anchas (PC): el panel deja de estirarse a lo ancho de la
+   ventana entera y se centra con un ancho cómodo de leer, y las cuadrículas
+   de KPI aprovechan el espacio de sobra en vez de dejarlo vacío. Nada de esto
+   toca el móvil, que sigue igual por debajo de este ancho. ── */
+@media (min-width:760px){
+  .ax2-panel{max-width:720px;margin-left:auto;margin-right:auto;}
+  /* auto-fit en vez de un número fijo de columnas: en Dueños solo hay 2
+     tarjetas cortas y con 4 columnas fijas quedaban dos vacías a la derecha;
+     con auto-fit cada tarjeta reparte el ancho que sobra, sean 2 o sean 4. */
+  .ax2-kpi-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  .ax2-payout-row-top{gap:16px;}
+}
+
+/* ── Reset básico ── */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--font);
+  background:var(--surface2);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s,color .25s;
+}
+button{font-family:inherit;}
+input,textarea,select{font-family:inherit;font-size:14px;}
+img{max-width:100%;display:block;}
+
+/* ── Skip link ── */
+.skip-link:focus{top:0 !important;}
+
+/* ── Header ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:linear-gradient(135deg,var(--blue-dk) 0%,var(--blue) 100%);
+  color:#fff;
+  padding:10px 16px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  min-height:var(--header-h);
+}
+header .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+header .brand-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;letter-spacing:1px;font-size:14px;
+  border:1px solid rgba(255,255,255,.2);
+  user-select:none;
+}
+header .brand-name{font-size:15px;font-weight:800;letter-spacing:1.5px;line-height:1;}
+header .brand-sub{font-size:9px;letter-spacing:1.2px;color:rgba(255,255,255,.7);font-weight:600;}
+header #headerGestorName{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;flex:1;min-width:0;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;}
+/* v120: los botones de la derecha (Novedades, saldo, fecha, Stock, Instalar,
+   tema) sumaban 404 px en una pantalla de 390 y sacaban 24 px de barra
+   horizontal en TODA la app del gestor, con vale largo o sin él. Que se
+   encojan y, si aun así no caben, que se pasen a la línea de abajo en vez de
+   empujar la página. */
+header .header-right{display:flex;align-items:center;gap:8px;margin-left:auto;
+  flex-wrap:wrap;justify-content:flex-end;min-width:0;}
+header .header-date{font-size:11px;color:rgba(255,255,255,.7);font-weight:600;white-space:nowrap;}
+#btnTheme{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.85);border-radius:7px;padding:6px 10px;
+  font-size:14px;cursor:pointer;transition:background .15s;
+}
+#btnTheme:hover{background:rgba(255,255,255,.15);}
+
+/* Admin badge in header */
+#adminBadge{
+  background:var(--red);color:#fff;border-radius:10px;
+  font-size:10px;font-weight:700;padding:2px 7px;
+  display:none;margin-left:4px;
+}
+#adminBadge.show{display:inline-block;}
+#inboxCountBadge{display:none;}
+
+/* Admin mode label */
+#adminLabel{
+  display:none;
+  background:rgba(255,255,255,.12);
+  color:#fff;border:1px solid rgba(255,255,255,.25);
+  border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.5px;
+  padding:3px 9px;text-transform:uppercase;
+}
+#btnLogout{
+  display:none;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.35);
+  color:#fca5a5;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;
+}
+#btnAdminAccess{display:none;}
+#btnCatalogo{display:none;}
+
+/* ── Layout ── */
+.layout{display:none;}
+.layout.active{display:grid;}
+/* Desktop SIN gestor: 2 columnas (gestores izq + Top derecha) */
+#layoutGestor{grid-template-columns:280px 1fr;gap:18px;padding:18px;max-width:1100px;margin:0 auto;align-items:start;}
+/* Desktop CON gestor: 1 columna (formulario centrado) */
+#layoutGestor.has-gestor{grid-template-columns:1fr;max-width:720px;}
+#layoutAdmin{grid-template-columns:1fr;padding:14px;gap:14px;}
+
+/* Cuando hay gestor seleccionado, ocultar la columna de gestores y la del Top */
+#layoutGestor.has-gestor .col-left,
+#layoutGestor.has-gestor #rankingColumn{display:none;}
+
+/* ── CRÍTICO: Sin gestor seleccionado, el formulario (col-mid) y secciones
+   asociadas NO deben aparecer — solo se ven gestores y ranking. ──
+   Antes esta regla solo existía dentro del media query @media (max-width:900px),
+   lo que hacía que en escritorio/tablet el form saliera "suelto" abajo.
+   Ahora aplica SIEMPRE (cualquier ancho). */
+#layoutGestor:not(.has-gestor) .col-mid{display:none;}
+#layoutGestor:not(.has-gestor) #valeFormWrapper{display:none;}
+#layoutGestor:not(.has-gestor) #gestorMyValesSection,
+#layoutGestor:not(.has-gestor) #gestorComisionSection,
+#layoutGestor:not(.has-gestor) #gestorPersonalNotifsSection{display:none !important;}
+#layoutGestor:not(.has-gestor) #mobileBackBar{display:none !important;}
+
+/* Mobile back bar */
+#mobileBackBar{display:none;}
+
+/* ── Columnas ── */
+.col{display:flex;flex-direction:column;gap:10px;}
+.lbl{
+  font-size:10px;font-weight:700;color:var(--gray-500);
+  text-transform:uppercase;letter-spacing:.5px;
+  margin:14px 0 6px;
+}
+
+/* ── Empty state ── */
+.es{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 12px;text-align:center;color:var(--gray-400);
+  background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);
+}
+.es-icon{font-size:32px;opacity:.6;margin-bottom:6px;}
+.es-text{font-size:12px;font-weight:600;}
+
+/* ── Cards ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  box-shadow:var(--shadow);
+}
+
+/* ── Gestor selector (left col) ── */
+.g-change{
+  font-size:12px;font-weight:600;color:var(--blue);
+  padding:8px 10px;text-align:center;
+  background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:var(--radius-xs);
+  margin-top:8px;
+}
+.g-change:hover{background:var(--blue);color:#fff;}
+.g-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:10px 12px;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s,background .18s;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05),0 6px 18px -8px rgba(15,23,42,.12);
+}
+.g-item:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 2px 4px rgba(15,23,42,.06),0 14px 32px -10px rgba(0,109,138,.28);}
+.g-item:active{transform:scale(.97);}
+.g-item.active{border-color:var(--blue);background:var(--blue-lt);}
+.g-avatar{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:11px;flex-shrink:0;
+}
+.g-name{flex:1;font-size:13px;font-weight:700;color:var(--text);}
+.g-badge{color:var(--blue);font-weight:800;font-size:13px;}
+
+/* ── Botón "Fijar al inicio" + gestor fijado más grande ── */
+.g-pin-wrap{position:relative;flex-shrink:0;}
+.g-pin-btn{
+  position:absolute;top:-4px;right:-4px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;border:1.5px solid var(--border);
+  font-size:9px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  padding:0;opacity:0;transition:opacity .15s,transform .15s;
+  z-index:2;
+}
+.g-item:hover .g-pin-btn,
+.g-item.active .g-pin-btn,
+.g-pin-btn.g-pinned{opacity:1;}
+.g-pin-btn:hover{transform:scale(1.2);}
+.g-pin-btn.g-pinned{
+  background:#fbbf24;border-color:#f59e0b;
+}
+body.dark .g-pin-btn{background:#1f2937;border-color:var(--border);}
+body.dark .g-pin-btn.g-pinned{background:#fbbf24;border-color:#f59e0b;}
+
+/* Gestor fijado al inicio — se muestra más grande y destacado */
+.g-item-pinned{
+  background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
+  border-color:#f59e0b;border-width:1.5px;
+  padding:14px 14px;
+  box-shadow:0 2px 4px rgba(245,158,11,.14),0 10px 28px -10px rgba(245,158,11,.35);
+}
+.g-item-pinned .g-avatar{width:48px;height:48px;font-size:16px;}
+.g-item-pinned .g-name{font-size:15px;color:#78350f;}
+.g-item-pinned:hover{transform:translateY(-2px);box-shadow:0 3px 6px rgba(245,158,11,.16),0 18px 40px -12px rgba(245,158,11,.45);}
+body.dark .g-item-pinned{
+  background:linear-gradient(135deg,rgba(245,158,11,.18) 0%,rgba(245,158,11,.08) 100%);
+  border-color:#f59e0b;
+}
+body.dark .g-item-pinned .g-name{color:#fcd34d;}
+
+/* Etiqueta "Fijado" bajo el nombre */
+.g-pin-label{
+  display:block;font-size:9px;font-weight:700;color:#b45309;
+  background:rgba(245,158,11,.18);padding:1px 6px;border-radius:4px;
+  margin-top:2px;text-transform:uppercase;letter-spacing:.3px;
+}
+body.dark .g-pin-label{color:#fcd34d;background:rgba(245,158,11,.22);}
+
+/* En móvil (grid horizontal de gestores), el fijado se hace más grande */
+@media (max-width:768px){
+  #gestoresList .g-item-pinned{
+    padding:10px 8px;border-width:2px;
+    grid-column:span 2;
+  }
+  #gestoresList .g-item-pinned .g-avatar{width:44px;height:44px;font-size:14px;}
+  #gestoresList .g-item-pinned .g-name{font-size:13px;}
+}
+
+/* ── Vale form ── */
+.vale-form-header{margin-bottom:12px;}
+.vale-form-header h2{font-size:16px;color:var(--blue-dk);font-weight:800;}
+.vale-form-header p{color:var(--gray-500);font-size:11px;}
+.vale-form-body{display:flex;flex-direction:column;gap:8px;}
+.vf-row{display:flex;gap:10px;align-items:flex-start;}
+.vf-emoji{font-size:14px;flex-shrink:0;margin-top:8px;}
+.vf-inner{flex:1;min-width:0;}
+.vf-label{font-size:10px;font-weight:800;color:#1a1a2e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center;}
+.vf-req{color:var(--red);font-weight:800;}
+.vf-row input,.vf-row textarea{
+  width:100%;background:var(--surface);border:1.5px solid #94a3b8;
+  border-radius:var(--radius-sm);padding:9px 11px;color:#1a1a2e;font-size:13px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.vf-row input::placeholder,.vf-row textarea::placeholder{color:#64748b;font-weight:500;}
+.vf-row input:focus,.vf-row textarea:focus{
+  outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,109,138,.18);
+}
+.vf-row input[readonly]{background:var(--surface2);color:var(--gray-500);}
+.vf-sep{border:none;border-top:1px dashed var(--border);margin:6px 0;}
+.vf-fixed{
+  font-size:11px;color:var(--gray-600);background:var(--surface2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.6;
+}
+
+/* ── Buttons ── */
+.btn{
+  border:1px solid transparent;border-radius:var(--radius-sm);
+  padding:9px 14px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s,background .15s,border-color .15s;
+  background:var(--surface);color:var(--text);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px -6px rgba(15,23,42,.14);
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(0) scale(.97);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none !important;box-shadow:none;}
+.btn-sm{font-size:11px;padding:5px 9px;border-radius:10px;}
+.btn-full{width:100%;}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 2px 6px rgba(0,109,138,.28),0 8px 22px -8px rgba(0,109,138,.45);}
+.btn-blue:hover{background:var(--blue-dk);}
+.btn-green{background:var(--green);color:#fff;box-shadow:0 2px 6px rgba(16,185,129,.28),0 8px 22px -8px rgba(16,185,129,.45);}
+.btn-green:hover{background:var(--green-dk);}
+.btn-red{background:var(--red);color:#fff;box-shadow:0 2px 6px rgba(239,68,68,.28),0 8px 22px -8px rgba(239,68,68,.45);}
+.btn-red:hover{background:#DC2626;}
+.btn-orange{background:var(--orange);color:#fff;box-shadow:0 2px 6px rgba(249,115,22,.28),0 8px 22px -8px rgba(249,115,22,.45);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted);box-shadow:none;}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-wa{background:#25D366;color:#fff;box-shadow:0 2px 6px rgba(37,211,102,.28),0 8px 22px -8px rgba(37,211,102,.45);}
+
+/* ── Catalog CTA (vale form) ── */
+.catalog-cta{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin:4px 0 10px;
+  border-radius:14px;
+  border:3px solid var(--blue);
+  background:#ffffff;
+  color:#0a2540;
+  cursor:pointer;
+  font-weight:700;
+  text-align:left;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 4px 14px rgba(0,109,138,.22), 0 0 0 1px rgba(0,109,138,.10) inset;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  animation:catalogPulse 2.4s ease-in-out infinite;
+}
+.catalog-cta:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 22px rgba(0,109,138,.35), 0 0 0 1px rgba(0,109,138,.15) inset;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dk) 100%);
+  color:#ffffff;
+  border-color:var(--blue-dk);
+}
+.catalog-cta:hover .catalog-cta-title{color:#ffffff;}
+.catalog-cta:hover .catalog-cta-sub{color:rgba(255,255,255,.95);}
+.catalog-cta:hover .catalog-cta-arrow{color:#ffffff;}
+.catalog-cta:active{transform:translateY(0);}
+.catalog-cta-icon{
+  font-size:26px;
+  line-height:1;
+  flex-shrink:0;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));
+  transition:color .15s;
+}
+.catalog-cta-text{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  flex:1;
+  min-width:0;
+}
+.catalog-cta-title{
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:.2px;
+  color:#0a2540;
+  transition:color .15s;
+}
+.catalog-cta-sub{
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--blue);   /* v80: antes #006d8a fijo — ahora sigue la paleta del Diseño */
+  opacity:1;
+  transition:color .15s;
+}
+.catalog-cta-arrow{
+  font-size:26px;
+  font-weight:900;
+  line-height:1;
+  color:var(--blue);   /* v80: idem */
+  flex-shrink:0;
+  transform:translateX(0);
+  transition:transform .15s, color .15s;
+}
+.catalog-cta:hover .catalog-cta-arrow{transform:translateX(4px);}
+@keyframes catalogPulse{
+  0%,100%{box-shadow:0 4px 14px rgba(0,109,138,.22), 0 0 0 1px rgba(0,109,138,.10) inset;}
+  50%{box-shadow:0 6px 20px rgba(0,109,138,.40), 0 0 0 2px rgba(0,109,138,.20) inset;}
+}
+@media (prefers-reduced-motion: reduce){
+  .catalog-cta{animation:none;}
+}
+
+/* ── Catalog CTA en dark mode ── */
+body.dark .catalog-cta{
+  background:linear-gradient(135deg,#0ea5e9 0%,#0284c7 100%);
+  border-color:#38bdf8;
+  color:#ffffff;
+  box-shadow:0 4px 14px rgba(14,165,233,.35), 0 0 0 1px rgba(56,189,248,.20) inset;
+}
+body.dark .catalog-cta-title{color:#ffffff;}
+body.dark .catalog-cta-sub{color:rgba(255,255,255,.92);}
+body.dark .catalog-cta-arrow{color:#ffffff;}
+body.dark .catalog-cta:hover{
+  background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);
+  border-color:#7dd3fc;
+  box-shadow:0 8px 22px rgba(14,165,233,.50), 0 0 0 1px rgba(125,211,252,.30) inset;
+}
+@keyframes catalogPulseDark{
+  0%,100%{box-shadow:0 4px 14px rgba(14,165,233,.35), 0 0 0 1px rgba(56,189,248,.20) inset;}
+  50%{box-shadow:0 6px 20px rgba(14,165,233,.55), 0 0 0 2px rgba(56,189,248,.35) inset;}
+}
+body.dark .catalog-cta{animation:catalogPulseDark 2.4s ease-in-out infinite;}
+
+/* ── Pending Sync Banner (gestor) ── */
+.pending-sync-banner{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  margin:0 0 10px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
+  border:1.5px solid #f59e0b;
+  color:#78350f;
+  font-size:12px;
+  font-weight:700;
+  box-shadow:0 2px 8px rgba(245,158,11,.18);
+  animation:psbPulse 1.8s ease-in-out infinite;
+}
+.pending-sync-banner .psb-icon{
+  font-size:18px;
+  flex-shrink:0;
+  animation:psbSpin 2.5s linear infinite;
+}
+.pending-sync-banner .psb-text{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex:1;
+  min-width:0;
+  line-height:1.3;
+}
+.pending-sync-banner .psb-count{
+  background:#f59e0b;
+  color:#fff;
+  padding:1px 8px;
+  border-radius:10px;
+  font-weight:800;
+  font-size:11px;
+  flex-shrink:0;
+}
+.pending-sync-banner .psb-msg{
+  font-size:11.5px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+@keyframes psbPulse{
+  0%,100%{box-shadow:0 2px 8px rgba(245,158,11,.18);}
+  50%{box-shadow:0 3px 12px rgba(245,158,11,.35);}
+}
+@keyframes psbSpin{
+  0%{transform:rotate(0deg);}
+  25%{transform:rotate(15deg);}
+  50%{transform:rotate(-15deg);}
+  75%{transform:rotate(10deg);}
+  100%{transform:rotate(0deg);}
+}
+@media (prefers-reduced-motion: reduce){
+  .pending-sync-banner,
+  .pending-sync-banner .psb-icon{animation:none;}
+}
+
+/* ── Pending Sync Badge en la lista de Mis Vales ── */
+.mv-pending-sync-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  background:#fde68a;
+  color:#78350f;
+  border:1px solid #f59e0b;
+  border-radius:6px;
+  padding:1px 6px;
+  font-size:9px;
+  font-weight:700;
+  margin-left:6px;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+/* ── Pending Sync Banner en dark mode ── */
+body.dark .pending-sync-banner{
+  background:linear-gradient(135deg,#451a03 0%,#78350f 100%);
+  border-color:#f59e0b;
+  color:#fde68a;
+  box-shadow:0 2px 8px rgba(245,158,11,.30);
+}
+body.dark .pending-sync-banner .psb-count{
+  background:#f59e0b;
+  color:#1a1a2e;
+}
+body.dark .mv-pending-sync-badge{
+  background:rgba(245,158,11,.20);
+  color:#fde68a;
+  border-color:#f59e0b;
+}
+
+/* ── Vale preview ── */
+#previewCard{margin-top:12px;}
+.vale-preview{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;white-space:pre-wrap;font-family:'Courier New',monospace;
+  font-size:11px;line-height:1.5;color:var(--text);
+  /* v120: `pre-wrap` parte por los espacios, pero una dirección de Google Maps
+     pegada es UNA palabra de 130 letras y ahí no hay dónde partir: la caja
+     crecía hasta 1085 px, se llevaba por delante el ancho de toda la página
+     —la barra de pestañas incluida— y el admin tenía que arrastrar la pantalla
+     de lado para leer nada. Con esto el texto sigue abajo, que es lo suyo. */
+  overflow-wrap:anywhere;word-break:break-word;
+}
+/* v120: la tabla de datos del vale, por lo mismo. Sin `table-layout:fixed` el
+   navegador ensancha la columna hasta que quepa la palabra más larga, y da
+   igual el width:100% del padre. Fijo el reparto: 100 px para la etiqueta y el
+   resto para el dato, que ya puede partirse. */
+.vale-datos{width:100%;table-layout:fixed;font-size:12px;border-collapse:collapse;}
+.vale-datos td{overflow-wrap:anywhere;word-break:break-word;}
+.vale-datos td.vale-datos-k{width:100px;color:var(--gray-400);font-weight:600;}
+
+/* ── Modal ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:14px;
+  opacity:0;transition:opacity .2s;
+}
+.modal-bg.show{display:flex;opacity:1;}
+.modal{
+  background:var(--surface);color:var(--text);
+  border-radius:var(--radius);padding:22px;
+  max-width:420px;width:100%;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--shadow-pop);
+  transform:translateY(20px) scale(.98);transition:transform .25s;
+}
+.modal-bg.show .modal{transform:translateY(0) scale(1);}
+.modal-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.modal-sub{font-size:12px;color:var(--text-muted);margin-bottom:14px;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+.modal-btns .btn-full + .btn-full{margin-left:0;}
+.modal input,.modal textarea,.modal select{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:13px;
+  margin-bottom:8px;
+}
+.modal input:focus,.modal textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,109,138,.12);}
+.pass-error{display:none;color:var(--red);font-size:11px;font-weight:600;margin-bottom:6px;}
+
+/* ── Checkbox "Recordar contraseña en este dispositivo" ── */
+.remember-pass-row{
+  display:flex;align-items:center;gap:8px;
+  margin:6px 0 2px;cursor:pointer;user-select:none;
+  padding:6px 8px;border-radius:var(--radius-xs);
+  background:rgba(245,158,11,.06);
+  border:1px solid rgba(245,158,11,.25);
+  transition:background .15s,border-color .15s;
+}
+.remember-pass-row:hover{background:rgba(245,158,11,.12);}
+.remember-pass-row input[type="checkbox"]{
+  width:16px;height:16px;flex-shrink:0;cursor:pointer;accent-color:#f59e0b;margin:0;
+}
+.remember-pass-row span{
+  font-size:12px;font-weight:600;color:var(--text);line-height:1.3;
+}
+.remember-pass-hint{
+  font-size:10px;color:var(--text-muted);margin:0 0 8px 4px;line-height:1.3;
+}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1f2937;color:#fff;padding:11px 18px;border-radius:100px;
+  font-size:13px;font-weight:600;z-index:5000;
+  box-shadow:var(--shadow-pop);
+  opacity:0;pointer-events:none;transition:all .25s;max-width:90%;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── Inbox cards ── */
+.ic{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s;position:relative;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.ic:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 12px 28px -10px rgba(0,109,138,.22);}
+.ic:active{transform:scale(.98);}
+.ic.sel{border-color:var(--blue);background:var(--blue-lt);}
+.ic.is-new{border-left:3px solid var(--blue);}
+.new-dot{
+  position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;
+  background:var(--blue);
+}
+.ic-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.ic-time{font-size:10px;color:var(--gray-400);font-weight:600;}
+.ic-cliente{font-size:13px;font-weight:700;color:var(--text);}
+.ic-preview{font-size:11px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ic-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+
+/* ── Status pills ── */
+.sp{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:3px 10px;border-radius:100px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+  background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);
+}
+.sp-pending{background:rgba(0,109,138,.1);color:var(--blue);}
+.sp-assigned{background:rgba(249,115,22,.12);color:var(--orange);}
+.sp-delivered{background:rgba(124,58,237,.1);color:var(--purple);}
+.sp-confirmed{background:rgba(16,185,129,.1);color:var(--green);}
+.sp-pending_payment{background:rgba(245,158,11,.12);color:var(--yellow);}
+.sp-cancelled{background:rgba(107,114,128,.15);color:var(--gray-500);text-decoration:line-through;}
+
+/* ── My vales cards ── */
+.mv-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.mv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.mv-time{font-size:10px;color:var(--gray-400);font-weight:600;}
+.mv-info{font-size:12px;color:var(--text);margin-bottom:3px;}
+.mv-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.mv-status{font-size:11px;font-weight:700;}
+.st-pending{border-left:3px solid var(--blue);}
+.st-assigned{border-left:3px solid var(--orange);}
+.st-delivered{border-left:3px solid var(--purple);}
+.st-confirmed{border-left:3px solid var(--green);}
+.st-pending_payment{border-left:3px solid var(--yellow);}
+
+/* ── Stats cards ── */
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;text-align:center;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.stat-num{font-size:22px;font-weight:800;line-height:1.1;}
+.stat-lbl{font-size:10px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:3px;}
+
+/* ── Gestor panel cards ──
+   Una tarjeta por gestor con 3 filas apiladas: identidad, acciones y
+   comisiones (plegable) — todo lo suyo en un solo lugar, una sola columna. */
+.gp-card{
+  display:flex;flex-direction:column;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:14px;margin-bottom:10px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px -10px rgba(15,23,42,.12);
+  transition:border-color .15s,transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;
+}
+.gp-card:hover{border-color:var(--blue-bd,rgba(0,109,138,.35));transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 14px 36px -12px rgba(0,109,138,.20);}
+.gp-card-top{display:flex;align-items:center;gap:12px;}
+.gp-card-actions{
+  display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+  padding-top:10px;border-top:1px solid var(--border);
+}
+.gp-card-com{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding-top:10px;border-top:1px solid var(--border);
+}
+.gp-card-com:hover{opacity:.8;}
+
+/* ── Mensajero cards ── */
+.m-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;cursor:pointer;margin-bottom:6px;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s,background .18s;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.m-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 12px 28px -10px rgba(0,109,138,.22);}
+.m-card.active{border-color:var(--blue);background:var(--blue-lt);}
+.m-item{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:8px 10px;margin-bottom:6px;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s,background .18s;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+}
+.m-item:hover{border-color:var(--blue);transform:translateY(-1px);}
+.m-item.active{border-color:var(--blue);background:var(--blue-lt);}
+.m-av{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--gray-200);color:var(--text);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;
+}
+.m-name{flex:1;font-size:13px;font-weight:700;}
+.m-del{
+  background:rgba(239,68,68,.1);color:var(--red);border:none;
+  width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;
+}
+
+/* ── Confirmados / Pendientes ── */
+.sc{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:9px 12px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.sc-g{font-size:12px;font-weight:700;}
+.sc-t{font-size:10px;color:var(--gray-400);}
+.sc-m{font-size:11px;color:var(--gray-500);}
+.sc-ok{border-left:3px solid var(--green);}
+.sc-pend{border-left:3px solid var(--yellow);}
+
+/* ── Product picker ── */
+.picker-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:8px 10px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+  transition:border-color .15s,background .15s,transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s;
+}
+.picker-pill:active{transform:scale(.98);}
+.picker-pill.selected{border-color:var(--blue);background:var(--blue-lt);}
+.picker-pill-info{flex:1;min-width:0;}
+.picker-pill-name{font-size:12px;font-weight:700;}
+.picker-pill-price{font-size:11px;color:var(--blue);font-weight:600;}
+.picker-pill-qty{display:flex;align-items:center;gap:6px;}
+.picker-pill-qty button{
+  width:26px;height:26px;border-radius:9px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;font-weight:800;font-size:14px;
+  transition:transform .12s;
+}
+.picker-pill-qty button:active{transform:scale(.9);}
+.picker-pill-qty button:disabled{opacity:.4;cursor:not-allowed;}
+.picker-pill-qty span{min-width:18px;text-align:center;font-weight:700;}
+.out-of-stock{opacity:.55;}
+.oos-badge{
+  background:var(--red);color:#fff;border-radius:4px;
+  font-size:9px;font-weight:800;padding:1px 5px;margin-left:5px;
+}
+.pcat-tab{
+  border:1px solid var(--border);background:var(--surface);color:var(--text-muted);
+  border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;
+  transition:all .15s;
+}
+.pcat-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.pcat-tab:hover{border-color:var(--blue);}
+
+/* Admin picker cards (for edit/admin vale generation) */
+.apcard{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:8px 10px;margin-bottom:6px;cursor:pointer;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+  transition:border-color .15s,background .15s;
+}
+.apcard.picked{border-color:var(--blue);background:var(--blue-lt);}
+.apcard-info{flex:1;min-width:0;}
+.apcard-name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.apcard-cat{
+  font-size:9px;font-weight:800;color:#fff;padding:1px 6px;border-radius:6px;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.apcard-garantia{font-size:9px;color:var(--gray-500);}
+.apcard-price{font-size:11px;color:var(--blue);font-weight:700;}
+.apcard-controls{display:flex;align-items:center;gap:6px;}
+.apcard-controls .btn-minus,.apcard-controls .btn-plus{
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--gray-200);
+  background:var(--surface);cursor:pointer;font-weight:800;font-size:14px;color:var(--text);
+}
+.qty-val{min-width:18px;text-align:center;font-weight:700;}
+/* v119: la cantidad se escribe a mano. Doscientos metros de cable de red no se
+   marcan tocando el "+" doscientas veces. Se le quitan las flechitas que pone
+   el navegador a los campos numéricos: en 26 px de alto son intocables y solo
+   estorban al número. */
+input.qty-val{
+  width:48px;height:26px;padding:0 3px;
+  border:1px solid var(--border);border-radius:6px;
+  background:var(--surface);color:var(--text);font-size:12px;
+  -moz-appearance:textfield;appearance:textfield;
+}
+input.qty-val:focus{border-color:var(--blue);outline:none;}
+input.qty-val:disabled{opacity:.4;}
+input.qty-val::-webkit-outer-spin-button,
+input.qty-val::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+/* ── Stock panel ── */
+.prod-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:10px 12px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+}
+.prod-card.agotado{opacity:.65;}
+.prod-card.fully-reserved{
+  background:linear-gradient(135deg, rgba(180,83,9,.05), rgba(245,158,11,.08));
+  border-color:rgba(245,158,11,.35);
+}
+.prod-card.partial-reserved{
+  border-color:rgba(245,158,11,.25);
+}
+.prod-name{font-size:13px;font-weight:700;}
+.prod-cat-tag{
+  font-size:9px;background:var(--blue-lt);color:var(--blue);
+  padding:1px 6px;border-radius:6px;font-weight:700;
+}
+.prod-price{font-size:11px;color:var(--blue);font-weight:700;}
+.stock-section-header{
+  font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;
+  letter-spacing:.5px;padding:10px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:8px;
+}
+.stock-section-header.reserved-section-header{
+  color:#b45309;
+}
+.agotado-badge{
+  background:rgba(239,68,68,.1);color:var(--red);border-radius:10px;
+  font-size:9px;padding:2px 7px;font-weight:700;
+}
+
+/* ── Reserved badge (panel de stock y picker) ── */
+.reserved-badge{
+  display:inline-block;background:rgba(245,158,11,.15);color:#b45309;
+  border:1px solid rgba(245,158,11,.4);border-radius:6px;
+  font-size:9px;padding:1px 6px;font-weight:800;letter-spacing:.3px;
+  margin-left:4px;vertical-align:middle;
+}
+.reserved-badge.reserved-full,
+.reserved-badge.picker-reserved-badge{
+  background:#f59e0b;color:white;border-color:#b45309;
+}
+.reserved-badge.picker-reserved-badge.partial{
+  background:rgba(245,158,11,.15);color:#b45309;border-color:rgba(245,158,11,.4);
+}
+.reserved-count-badge{
+  background:#f59e0b;color:white;border-radius:10px;
+  font-size:9px;padding:2px 7px;font-weight:800;
+}
+/* Picker: productos totalmente reservados opacos */
+.picker-pill.fully-reserved{
+  opacity:.5;pointer-events:none;
+}
+.picker-pill.partial-reserved{
+  border-color:rgba(245,158,11,.45);
+  background:rgba(245,158,11,.04);
+}
+.apcard.apcard-blocked{
+  opacity:.55;
+}
+
+/* ── Ranking ── */
+.rank-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;margin-bottom:6px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.rank-pos{font-size:18px;font-weight:900;width:30px;text-align:center;}
+.rank-name{font-size:12px;font-weight:700;flex:1;}
+.rank-pts{font-size:12px;font-weight:800;color:var(--blue);}
+.rank-bar-wrap{
+  background:var(--gray-100);border-radius:8px;height:6px;margin-top:5px;overflow:hidden;
+}
+.rank-bar{height:100%;border-radius:8px;transition:width .6s;}
+.rank-hint{font-size:10px;color:var(--gray-500);margin-top:3px;}
+
+/* ── Admin nav ── */
+.admin-nav{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:8px;
+  position:sticky;top:calc(var(--header-h) + 8px);z-index:50;
+  scrollbar-width:none;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px -8px rgba(15,23,42,.10);
+}
+.admin-nav::-webkit-scrollbar{display:none;}
+.anav-btn{
+  white-space:nowrap;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-muted);border-radius:100px;padding:8px 13px;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:5px;
+}
+.anav-btn:hover{border-color:var(--blue);color:var(--blue);}
+.anav-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+/* ── Admin panels ── */
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+
+/* Gestores admin layout */
+#adminValesPanel{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;align-items:start;}
+#adminValesPanel.active{display:grid;}
+@media (max-width:768px){
+  #adminValesPanel.active{display:flex;flex-direction:column;}
+}
+
+/* Detalle del vale */
+.det-empty{text-align:center;padding:30px 10px;color:var(--gray-400);}
+.det-empty-icon{font-size:40px;margin-bottom:6px;opacity:.5;}
+.det-gestor-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.mensajero-row{
+  background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px;
+  font-size:12px;color:var(--text);margin-bottom:8px;
+}
+.det-actions{display:flex;flex-direction:column;gap:6px;}
+
+/* ── Glow overlay (goal celebration) ── */
+.glow-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:radial-gradient(circle,rgba(0,0,0,.85) 0%,rgba(0,0,0,.95) 100%);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .5s;overflow:hidden;
+}
+.glow-overlay.active{opacity:1;}
+.glow-rings{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.glow-ring{
+  position:absolute;border:3px solid;border-radius:50%;
+  opacity:0;animation:glowPulse 2s ease-in-out infinite;
+}
+@keyframes glowPulse{
+  0%{transform:scale(.3);opacity:0;}
+  50%{opacity:.4;}
+  100%{transform:scale(1.5);opacity:0;}
+}
+.glow-close{
+  position:absolute;top:20px;right:20px;
+  background:rgba(255,255,255,.15);border:none;color:#fff;
+  width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;
+}
+.glow-announcement{position:relative;z-index:2;text-align:center;color:#fff;padding:20px;max-width:480px;width:90%;}
+.glow-meta-label{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:6px;font-weight:600;}
+.glow-title{
+  font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:24px;
+  opacity:0;transform:scale(.5);transition:all .8s;
+}
+.glow-title.show{opacity:1;transform:scale(1);}
+.glow-winners-list{display:flex;flex-direction:column;gap:10px;}
+.glow-winner-row{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;padding:10px 14px;
+  opacity:0;transform:translateX(-30px);transition:all .5s;
+}
+.glow-winner-row.show{opacity:1;transform:translateX(0);}
+.glow-winner-place{font-size:22px;font-weight:900;width:36px;text-align:center;}
+.glow-winner-avatar{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#fff;font-size:14px;
+}
+.glow-winner-info{flex:1;text-align:left;}
+.glow-winner-name{font-size:14px;font-weight:800;}
+.glow-winner-pts{font-size:12px;color:rgba(255,255,255,.7);}
+.glow-winner-badge{
+  font-size:10px;font-weight:800;padding:3px 9px;border-radius:10px;
+  background:rgba(255,255,255,.15);color:#fff;
+}
+.glow-badge-1{background:linear-gradient(135deg,#F59E0B,#EF4444);}
+.glow-badge-2{background:linear-gradient(135deg,#94A3B8,#64748B);}
+.glow-badge-3{background:linear-gradient(135deg,#cd7f32,#b36200);}
+
+/* Rank notification (top-right) */
+.rank-notif{
+  position:fixed;top:80px;right:16px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow-lg);z-index:9000;
+  transform:translateX(120%);transition:transform .4s;max-width:300px;
+}
+.rank-notif.show{transform:translateX(0);}
+.rank-notif-icon{font-size:32px;}
+.rank-notif-place{font-size:13px;font-weight:900;}
+.rank-notif-text{font-size:11px;color:var(--text-muted);}
+.rank-notif-pts{font-size:12px;font-weight:700;color:var(--blue);}
+
+/* Rank notif cards (multiple) */
+.rank-notif-card{
+  position:fixed;right:16px;z-index:8999;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:10px 14px;box-shadow:var(--shadow-lg);max-width:280px;
+  transform:translateX(120%);transition:transform .5s,opacity .5s;
+}
+.rank-notif-card.show{transform:translateX(0);}
+.rank-notif-card.hide{opacity:0;transform:translateX(120%);}
+.rank-notif-card-header{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.rank-notif-card-icon{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#fff;font-size:10px;
+}
+.rank-notif-card-title{flex:1;font-size:12px;font-weight:800;}
+.rank-notif-card-time{font-size:9px;color:var(--gray-400);}
+.rank-notif-card-body{font-size:11px;color:var(--text);}
+.rank-notif-card-place{font-size:10px;font-weight:700;margin-top:4px;}
+.rank-place-1{color:#F59E0B;}
+.rank-place-2{color:#94A3B8;}
+.rank-place-3{color:#cd7f32;}
+
+/* Goal banner */
+#goalBanner{
+  position:fixed;top:74px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#F59E0B,#EF4444);
+  color:#fff;border-radius:14px;padding:12px 18px;
+  display:flex;align-items:center;gap:12px;z-index:9998;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90%;
+  transition:transform .4s,opacity .4s;
+}
+#goalBanner.hide{opacity:0;transform:translateX(-50%) translateY(-20px);}
+
+/* ── Notification banner (admin top) ── */
+#notifBanner{
+  display:none;position:fixed;top:var(--header-h);left:0;right:0;
+  background:var(--blue);color:#fff;padding:10px 16px;
+  font-size:13px;font-weight:700;z-index:200;text-align:center;
+  animation:slideDown .3s;
+}
+#notifBanner.show{display:block;}
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+
+/* ── Notif list items ── */
+.gnotif-item{
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:10px 12px;margin-bottom:6px;position:relative;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+.gnotif-item.unread{border-left:3px solid var(--blue);background:var(--blue-lt);}
+.gnotif-item.type-agotado{border-left:3px solid var(--red);}
+.gnotif-item.type-low{border-left:3px solid var(--yellow);}
+.gnotif-item.type-restocked{border-left:3px solid var(--green);}
+.gnotif-item.type-ok{border-left:3px solid var(--green);}
+.gnotif-icon{font-size:18px;flex-shrink:0;}
+.gnotif-text{flex:1;font-size:12px;color:var(--text);line-height:1.5;}
+.gnotif-time{font-size:10px;color:var(--gray-400);font-weight:600;flex-shrink:0;}
+
+/* ── Estafa panel ── */
+.estafa-form-row{margin-bottom:8px;}
+.estafa-form-row input,.estafa-form-row textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:12px;
+}
+.estafa-entry{
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);
+  border-radius:16px;padding:10px 12px;margin-bottom:6px;
+}
+
+/* ── Online/offline indicator ── */
+#syncIndicator{
+  position:fixed;bottom:14px;left:14px;z-index:500;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:5px 11px;font-size:11px;font-weight:700;color:var(--text-muted);
+  display:flex;align-items:center;gap:6px;box-shadow:var(--shadow);
+  transition:all .2s;
+}
+#syncIndicator.online{color:var(--green);border-color:var(--green);}
+#syncIndicator.offline{color:var(--red);border-color:var(--red);}
+#syncIndicator.pending{color:var(--yellow);border-color:var(--yellow);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block;}
+.sync-dot.pulse{animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── Session timeout warning ── */
+#sessionWarning{
+  display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);
+  background:var(--yellow);color:#1a1a2e;border-radius:10px;padding:10px 16px;
+  font-size:12px;font-weight:700;z-index:9500;box-shadow:var(--shadow-lg);
+}
+#sessionWarning.show{display:block;}
+
+/* ── Audit log entries ── */
+.audit-entry{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:8px 11px;margin-bottom:5px;font-size:11px;
+}
+.audit-ts{color:var(--gray-400);font-weight:600;font-size:10px;}
+.audit-action{font-weight:700;color:var(--blue);}
+.audit-user{color:var(--text-muted);}
+
+/* ── Responsive ── */
+/* Tablets y mobile pequeño: layout en 1 columna */
+@media (max-width:900px){
+  #layoutGestor{
+    grid-template-columns:1fr;
+    padding:12px;
+    gap:12px;
+  }
+  #layoutGestor.has-gestor{grid-template-columns:1fr;}
+
+  /* Mostrar el botón "Volver" solo cuando hay gestor seleccionado en móvil */
+  #mobileBackBar{
+    display:flex;align-items:center;gap:10px;margin-bottom:10px;
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:8px 12px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+  }
+  #mobileBackBar button{
+    background:var(--blue);color:#fff;border:none;border-radius:100px;padding:6px 12px;
+    font-size:12px;font-weight:700;cursor:pointer;
+  }
+
+  /* En móvil: 1 sola columna. Sin gestor: gestores arriba + Top abajo.
+     Con gestor: solo formulario.
+     (Las reglas de ocultar col-mid sin gestor son globales arriba,
+     así que aquí solo ajustamos el back bar.) */
+  .col-left{display:block;}
+  .col-right{display:block;}
+  /* col-left y col-right se ocultan via la regla global .has-gestor de arriba */
+}
+
+/* Móvil pequeño: ajustes finos */
+@media (max-width:640px){
+  /* Header más compacto */
+  header{padding:8px 10px;gap:6px;flex-wrap:wrap;min-height:50px;}
+  header .brand-icon{width:32px;height:32px;font-size:12px;border-radius:8px;}
+  header .brand-name{font-size:13px;letter-spacing:1px;}
+  header .brand-sub{font-size:8px;letter-spacing:.8px;}
+  header #headerGestorName{font-size:11px;}
+  header .header-date{display:none;}
+  header .header-right{gap:4px;}
+  header .header-right button{padding:4px 8px;font-size:11px;}
+  #btnTheme{padding:4px 8px;font-size:13px;}
+
+  /* Modales casi pantalla completa en móvil: bottom-sheet estilo app nativa */
+  .modal{
+    padding:14px;
+    max-width:100% !important;
+    width:100% !important;
+    border-radius:26px 26px 0 0;
+    max-height:92vh;
+  }
+  .modal-bg{padding:0;align-items:flex-end;}
+  .modal-title{font-size:15px;}
+  .modal-sub{font-size:11px;}
+  .modal-btns{grid-template-columns:1fr 1fr;gap:6px;}
+
+  /* Layout admin: 1 columna */
+  #adminValesPanel{grid-template-columns:1fr !important;}
+
+  /* Stat cards más compactas */
+  .stat-card{padding:8px 6px;}
+  .stat-num{font-size:18px;}
+  .stat-lbl{font-size:9px;}
+
+  /* Vale form: inputs más grandes para touch */
+  .vf-row input,.vf-row textarea{padding:11px 12px;font-size:14px;}
+  .vf-label{font-size:9px;}
+  .vf-emoji{font-size:15px;}
+
+  /* Catalog CTA en móvil: un toque más grande para touch */
+  .catalog-cta{padding:14px 14px;gap:10px;}
+  .catalog-cta-icon{font-size:26px;}
+  .catalog-cta-title{font-size:15px;}
+  .catalog-cta-sub{font-size:11px;}
+  .catalog-cta-arrow{font-size:26px;}
+
+  /* Botones más grandes para touch */
+  .btn{padding:11px 14px;font-size:13px;}
+  .btn-sm{padding:7px 10px;font-size:11px;}
+
+  /* Glow overlay */
+  .glow-title{font-size:22px;}
+  .glow-winner-row{padding:8px 10px;}
+  .glow-winner-name{font-size:13px;}
+  .glow-winner-pts{font-size:11px;}
+
+  /* Gestor items más grandes para touch */
+  .g-item{padding:12px 14px;}
+  .g-avatar{width:36px;height:36px;font-size:12px;}
+  .g-name{font-size:14px;}
+
+  /* Picker pills más anchas */
+  .picker-pill{padding:10px 12px;}
+  .picker-pill-name{font-size:13px;}
+  .picker-pill-qty button{width:30px;height:30px;font-size:16px;}
+  /* v119: la casilla de la cantidad, a la altura de los botones de al lado */
+  input.qty-val{height:30px;width:54px;font-size:14px;}
+
+  /* Cards con menos padding para aprovechar pantalla */
+  .card{padding:12px 14px;border-radius:22px;}
+
+  /* Admin nav: que los botones ocupen ancho completo en móvil */
+  .admin-nav{padding:6px;gap:4px;position:sticky;top:50px;}
+  .anav-btn{flex:1;justify-content:center;padding:8px 6px;font-size:11px;}
+
+  /* Sync indicator más discreto */
+  #syncIndicator{padding:4px 9px;font-size:10px;bottom:10px;left:10px;}
+
+  /* Floating + button más pequeño */
+  .btn[style*="border-radius:50%"]{width:48px !important;height:48px !important;font-size:20px !important;bottom:14px !important;right:14px !important;}
+
+  /* Inputs en modales admin: padding mayor para touch */
+  #adminValeModal input,#adminValeModal textarea,#adminValeModal select,
+  #editValeModal input,#editValeModal textarea,
+  #productModal input,#productModal textarea,#productModal select{
+    padding:10px 12px;font-size:14px;
+  }
+
+  /* Historial y stats: tap targets más grandes */
+  .audit-entry{padding:10px 12px;font-size:12px;}
+  .rank-row{padding:10px 12px;}
+  .rank-name{font-size:13px;}
+
+  /* Bandeja inbox cards más anchas */
+  .ic{padding:11px 13px;}
+  .ic-cliente{font-size:14px;}
+
+  /* mf-card / mv-info más legible */
+  .mv-card{padding:11px 13px;}
+  .mv-info{font-size:13px;}
+
+  /* Gestor list en grid de 3 columnas en móvil para aprovechar pantalla */
+  #gestoresList{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:5px;
+  }
+  #gestoresList .g-item{margin-bottom:0;padding:8px 6px;gap:4px;flex-direction:column;text-align:center;justify-content:center;}
+  #gestoresList .g-item .g-name{font-size:11px;text-align:center;line-height:1.2;}
+  #gestoresList .g-item .g-avatar{width:32px;height:32px;font-size:11px;}
+  #gestoresList .g-item .g-badge{font-size:10px;}
+  /* Cuando solo hay 1 gestor o el último queda solo, que ocupe ambas columnas */
+  #gestoresList .es{grid-column:1/-1;}
+
+  /* Top Gestores: hacer las filas más compactas en móvil */
+  .rank-row{padding:7px 10px;gap:8px;margin-bottom:4px;}
+  .rank-pos{font-size:18px;width:28px;text-align:center;flex-shrink:0;}
+  .rank-name{font-size:12px;}
+  .rank-pts{font-size:11px;}
+  .rank-bar-wrap{height:5px;margin-top:4px;}
+  .rank-hint{font-size:9px;margin-top:2px;}
+  /* Avatar del ranking más pequeño en móvil */
+  .rank-row .g-avatar{width:24px !important;height:24px !important;font-size:9px !important;}
+}
+
+/* Muy pequeño (<=380px): iPhone SE, Galaxy Fold cubierto */
+@media (max-width:380px){
+  header{padding:6px 8px;}
+  header .brand-sub{display:none;}
+  header .brand-name{font-size:12px;}
+  #layoutGestor{padding:10px;gap:10px;}
+  .card{padding:10px 12px;}
+  .lbl{font-size:9px;margin:10px 0 5px;}
+  .modal{padding:12px;}
+  .modal-title{font-size:14px;}
+  .stat-num{font-size:16px;}
+  .anav-btn{font-size:10px;padding:7px 4px;}
+}
+
+/* Hide scrollbars for picker tabs */
+#pickerCatTabs,#catalogCatTabs,#catalogAdminCatTabs,#av-pickerCatTabs{scrollbar-width:none;}
+#pickerCatTabs::-webkit-scrollbar,#catalogCatTabs::-webkit-scrollbar,#catalogAdminCatTabs::-webkit-scrollbar,#av-pickerCatTabs::-webkit-scrollbar{display:none;}
+
+/* Inputs/textarea inside #av-* (admin vale generator) inherit modal styling */
+#adminValeModal input,#adminValeModal textarea,#adminValeModal select,
+#editValeModal input,#editValeModal textarea,
+#productModal input,#productModal textarea,#productModal select{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:13px;margin-bottom:6px;
+}
+#adminValeModal input:focus,#adminValeModal textarea:focus,
+#editValeModal input:focus,#editValeModal textarea:focus,
+#productModal input:focus,#productModal textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,109,138,.12);}
+
+/* Comision summary line */
+.com-summary-line{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;
+  font-size:12px;margin-top:6px;flex-wrap:wrap;gap:6px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODO OSCURO — Override de colores hardcoded en modales dinámicos
+   ════════════════════════════════════════════════════════════ */
+body.dark .modal{background:var(--surface);color:var(--text);}
+body.dark .modal input,body.dark .modal textarea,body.dark .modal select{
+  background:var(--surface2) !important;color:var(--text) !important;border-color:var(--border) !important;
+}
+body.dark .modal input::placeholder,body.dark .modal textarea::placeholder{color:var(--gray-400);}
+body.dark .modal-title{color:var(--text);}
+body.dark .modal-sub{color:var(--text-muted);}
+body.dark .card{background:var(--surface);color:var(--text);border-color:var(--border);}
+body.dark .lbl{color:var(--gray-400);}
+body.dark .es{background:var(--surface);border-color:var(--border);color:var(--gray-400);}
+body.dark .es-text{color:var(--gray-400);}
+
+/* Forzar color de texto oscuro sobre fondos amarillos (notas admin) */
+body.dark [style*="background:var(--yellow)"],
+body.dark [style*="background:#FFFBEB"],
+body.dark [style*="background:#fffbeb"]{
+  color:#1a1a2e !important;background:var(--yellow) !important;font-weight:700;
+}
+
+/* Botones que pierden contraste */
+body.dark .btn-ghost{background:var(--surface2);color:var(--text-muted);border-color:var(--border);}
+body.dark .btn-ghost:hover{background:var(--surface3);color:var(--text);}
+
+/* Status pills en dark */
+body.dark .sp{background:var(--surface2);color:var(--text-muted);border-color:var(--border);}
+body.dark .sp-pending{background:rgba(0,180,216,.15);color:var(--blue);}
+body.dark .sp-assigned{background:rgba(251,146,60,.15);color:var(--orange);}
+body.dark .sp-delivered{background:rgba(167,139,250,.15);color:var(--purple);}
+body.dark .sp-confirmed{background:rgba(52,211,153,.15);color:var(--green);}
+body.dark .sp-pending_payment{background:rgba(251,191,36,.15);color:var(--yellow);}
+body.dark .sp-cancelled{background:rgba(156,163,175,.15);color:var(--gray-400);text-decoration:line-through;}
+
+/* Inputs en general */
+body.dark input,body.dark textarea,body.dark select{
+  background:var(--surface2);color:var(--text);border-color:#475569;
+}
+body.dark input::placeholder,body.dark textarea::placeholder{color:#94a3b8;}
+
+/* Formulario del vale en dark: bordes y textos más visibles */
+body.dark .vf-label{color:#f1f5f9;}
+body.dark .vf-row input,
+body.dark .vf-row textarea{
+  background:#0f172a;
+  color:#f8fafc;
+  border:1.5px solid #64748b;
+}
+body.dark .vf-row input::placeholder,
+body.dark .vf-row textarea::placeholder{color:#cbd5e1;}
+body.dark .vf-row input:focus,
+body.dark .vf-row textarea:focus{
+  border-color:#38bdf8;
+  box-shadow:0 0 0 3px rgba(56,189,248,.20);
+}
+body.dark .vf-row input[readonly]{background:var(--surface3) !important;color:var(--gray-400) !important;}
+
+/* Tarjetas y secciones con backgrounds claros hardcoded */
+body.dark .mv-card,
+body.dark .sc,
+body.dark .gp-card,
+body.dark .m-card,
+body.dark .m-item,
+body.dark .ic,
+body.dark .picker-pill,
+body.dark .apcard,
+body.dark .prod-card,
+body.dark .rank-row,
+body.dark .audit-entry{
+  background:var(--surface) !important;border-color:var(--border) !important;color:var(--text) !important;
+}
+body.dark .mv-info,body.dark .sc-g,body.dark .g-name,body.dark .m-name,
+body.dark .ic-cliente,body.dark .picker-pill-name,body.dark .apcard-name,
+body.dark .prod-name,body.dark .rank-name{color:var(--text) !important;}
+body.dark .mv-time,body.dark .sc-t,body.dark .sc-m,body.dark .ic-time,
+body.dark .ic-preview,body.dark .rank-hint{color:var(--gray-400) !important;}
+
+/* Stat cards */
+body.dark .stat-card{background:var(--surface);border-color:var(--border);}
+body.dark .stat-lbl{color:var(--gray-400);}
+
+/* Modal backdrop en dark */
+body.dark .modal-bg{background:rgba(0,0,0,.7);}
+
+/* Confirm action modal text */
+body.dark #confirmActionSub{color:var(--text-muted);}
+
+/* Glow overlay (mantener texto blanco) */
+body.dark .glow-winner-name,body.dark .glow-winner-pts,
+body.dark .glow-title{color:#fff !important;}
+
+/* Toast (mantener fondo oscuro, ya está bien) */
+body.dark .toast{background:#0f172a;color:var(--text);border:1px solid var(--border);}
+
+/* WhatsApp button (mantener verde) */
+.wa-btn,.float-wa{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff !important;}
+
+/* fix: fondo de secciones expandibles en dark */
+body.dark #gestorManagerSection > div,
+body.dark #mensajeroManagerSection > div{color:var(--text);}
+
+/* fix: text en admin nav cuando inactivo */
+body.dark .anav-btn{background:var(--surface);color:var(--text-muted);border-color:var(--border);}
+body.dark .anav-btn:hover{color:var(--blue);border-color:var(--blue);}
+body.dark .anav-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+/* fix: link en dark */
+body.dark a{color:var(--blue);}
+
+/* ══════════════════════════════════════════
+   PWA INSTALL BANNER (Android + iPhone)
+   ══════════════════════════════════════════ */
+.install-banner{
+  position:fixed;bottom:0;left:0;right:0;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+  color:#fff;padding:14px 16px;z-index:4500;
+  transform:translateY(110%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+  box-shadow:0 -6px 24px rgba(0,0,0,.35);
+  border-top:3px solid #0ea5e9;
+}
+.install-banner.show{transform:translateY(0);}
+.install-banner-inner{
+  max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px;
+}
+.install-banner-icon{font-size:28px;flex-shrink:0;line-height:1;}
+.install-banner-text{flex:1;min-width:0;}
+.install-banner-title{font-size:14px;font-weight:800;color:#fff;letter-spacing:.2px;}
+.install-banner-sub{font-size:11px;color:#cbd5e1;margin-top:2px;line-height:1.4;}
+.install-banner-actions{display:flex;gap:6px;flex-shrink:0;}
+.install-banner-btn-primary{
+  background:#0ea5e9;color:#fff;border:none;border-radius:8px;
+  padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;
+  box-shadow:0 2px 8px rgba(14,165,233,.4);transition:transform .12s;
+}
+.install-banner-btn-primary:active{transform:scale(.96);}
+.install-banner-btn-secondary{
+  background:transparent;color:#cbd5e1;border:1px solid #475569;
+  border-radius:8px;padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;
+}
+.install-banner-btn-secondary:hover{background:rgba(255,255,255,.06);}
+
+/* Instrucciones especiales para iPhone/iPad */
+.install-banner-ios{
+  margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  font-size:11px;color:#fbbf24;font-weight:700;
+  background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);
+  padding:5px 9px;border-radius:6px;
+}
+.install-banner-ios .ios-step{display:inline-flex;align-items:center;gap:3px;}
+.install-banner-ios .ios-share{
+  /* SF Symbols "Share" glyph — solo visible en iOS, fallback a texto en otros */
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro",sans-serif;
+  font-size:14px;color:#fff;background:#0ea5e9;border-radius:4px;padding:1px 4px;
+}
+.install-banner-ios .ios-arrow{color:#94a3b8;font-weight:800;}
+.install-banner-manual{margin-top:6px;padding:6px 8px;background:rgba(252,211,77,.08);border:1px solid rgba(252,211,77,.35);border-radius:6px;font-size:11px;color:#fcd34d;line-height:1.5;}
+.install-banner-manual .manual-step1,
+.install-banner-manual .manual-step2{padding:1px 0;}
+.install-banner-manual .manual-tip{margin-top:4px;font-size:10.5px;color:#fde68a;line-height:1.4;}
+
+/* Modo oscuro del banner (ya es oscuro por defecto, pero ajustamos bordes) */
+body.dark .install-banner{background:linear-gradient(135deg,#000 0%,#0f172a 100%);}
+
+/* Móvil: compactar banner */
+@media (max-width:520px){
+  .install-banner{padding:12px 12px 14px;}
+  .install-banner-icon{font-size:22px;}
+  .install-banner-title{font-size:13px;}
+  .install-banner-sub{font-size:10px;}
+  .install-banner-btn-primary{padding:7px 12px;font-size:11px;}
+  .install-banner-btn-secondary{padding:7px 9px;font-size:11px;}
+  .install-banner-ios{font-size:10px;padding:4px 7px;}
+  .install-banner-manual{font-size:10px;}
+  .install-banner-manual .manual-step1,
+  .install-banner-manual .manual-step2{padding:1px 0;color:#e2e8f0;}
+  .install-banner-manual .manual-tip{margin-top:3px;color:#fcd34d;line-height:1.35;}
+}
+
+/* ── PWA Install Help Modal ── */
+.pwa-help-block{margin-bottom:14px;padding:12px 14px;background:var(--surface2,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:var(--radius-sm);}
+body.dark .pwa-help-block{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);}
+.pwa-help-title{font-size:13px;font-weight:800;color:var(--blue-dk,#075985);margin-bottom:8px;line-height:1.3;}
+body.dark .pwa-help-title{color:#7dd3fc;}
+.pwa-help-subtitle{font-size:12px;font-weight:700;color:var(--text,#0f172a);margin:10px 0 4px;}
+body.dark .pwa-help-subtitle{color:#e2e8f0;}
+.pwa-help-steps{margin:6px 0 8px 18px;padding:0;font-size:12px;line-height:1.55;color:var(--text,#0f172a);}
+body.dark .pwa-help-steps{color:#cbd5e1;}
+.pwa-help-steps li{margin-bottom:4px;}
+.pwa-help-note{font-size:11px;color:var(--gray-600,#475569);line-height:1.45;margin:6px 0 0;}
+body.dark .pwa-help-note{color:#94a3b8;}
+
+/* ══════════════════════════════════════════
+   GESTOR AVATAR — soporte de foto de perfil
+   ══════════════════════════════════════════ */
+.g-avatar{overflow:hidden;position:relative;}
+
+/* Wrapper interno que envuelve SOLO la imagen.
+   Mantiene el clipping circular sin afectar al resto del avatar
+   (que puede tener botones hijos position:absolute que desbordan). */
+.g-avatar-img-wrap{
+  display:block;width:100%;height:100%;
+  overflow:hidden;border-radius:inherit;
+}
+.g-avatar-img-wrap img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+
+/* Wrapper del avatar del banner (gestor activo) — más grande y con botones overlay.
+   NO tiene overflow:hidden para que los botones 📷/✕ (que desbordan) se vean. */
+#bannerAvatarWrap{position:relative;flex-shrink:0;}
+#bannerAvatar{
+  position:relative;overflow:hidden;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Botón 📷 cámara en el banner del gestor activo */
+#bannerAvatarCam{
+  position:absolute;right:-6px;bottom:-6px;
+  width:22px;height:22px;border-radius:50%;
+  background:#0ea5e9;color:#fff;border:2px solid #fff;
+  font-size:11px;line-height:1;padding:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .12s;
+  z-index:5;
+}
+#bannerAvatarCam:hover{transform:scale(1.15);}
+#bannerAvatarCam:active{transform:scale(.95);}
+
+/* Botón ✕ quitar foto en el banner del gestor activo */
+#bannerAvatarRemove{
+  position:absolute;left:-6px;top:-6px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--red);color:#fff;border:2px solid #fff;
+  font-size:12px;line-height:1;padding:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .12s;
+  z-index:5;
+}
+#bannerAvatarRemove:hover{transform:scale(1.15);}
+#bannerAvatarRemove:active{transform:scale(.95);}
+
+/* En lista de gestores (g-item), los avatares pequeños no tienen botón cámara —
+   la foto se cambia desde el banner del gestor activo o desde el panel admin */
+#gestoresList .g-avatar{overflow:hidden;}
+
+/* Avatar preview en el modal Editar Gestor — wrapper para que el overflow:hidden
+   del .g-avatar no recorte nada raro (no hay botones overlay aquí) */
+#editGestorAvatar{overflow:hidden;}
+
+/* v69: rejilla de "Mis números" del gestor.
+   Estaba como estilo en línea en index.html con 4 columnas fijas, y un estilo en
+   línea no admite media queries: en pantallas estrechas las cuatro tarjetas se
+   apretaban tanto que "Conversión" y su porcentaje se salían de la caja. Aquí
+   puede adaptarse: 2x2 en móviles estrechos, 4 en fila a partir de 430 px.
+   El hero de comisión y la meta llevan grid-column:1/-1, así que siguen
+   ocupando la fila completa con cualquiera de los dos anchos. */
+#gestorHistDashboard{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:6px;
+  margin-bottom:8px;
+}
+@media (min-width:430px){
+  #gestorHistDashboard{grid-template-columns:repeat(4,1fr);}
+}
+
+/* v71: botones de acción de las tarjetas de producto del admin.
+   Estaban con font-size:10px y padding:3px 7px puestos a mano en cada uno, lo
+   que dejaba un área de toque de unos 24x20 px — menos de la mitad de los 44 px
+   que recomiendan Apple y Google para el dedo. En el móvil había que apuntar, y
+   dos de esos botones son borrar producto y ajustar inventario: fallar el toque
+   ahí sale caro.
+   Se agrupan aquí para que todos midan lo mismo y no vuelvan a divergir. */
+.btn-icono{
+  font-size:15px;
+  line-height:1;
+  min-width:40px;
+  min-height:38px;
+  padding:8px 10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+}
+/* Variante con texto al lado del icono (p. ej. "📥 Reponer"), que necesita
+   respirar un poco más a los lados pero mantiene la misma altura. */
+.btn-icono.con-texto{
+  font-size:12px;
+  font-weight:700;
+  padding:8px 12px;
+}
+
+/* v77: campos que rellena la app sola.
+   Se bloquean para que no se puedan pisar sin querer —el caso típico es tocar
+   el precio después de elegir productos del catálogo y que deje de cuadrar con
+   lo que suma la app— y se pintan distintos para que se vea que no es un fallo
+   del teclado, sino que ese dato lo calcula la aplicación. */
+.vf-auto-lock{
+  background:var(--surface2) !important;
+  color:var(--text-muted) !important;
+  cursor:not-allowed;
+  border-style:dashed !important;
+}
+.vf-auto-lock:focus{outline:none;box-shadow:none;}
+
+/* v140: en el teléfono (390 px) Estadísticas y Ventas directas se salían por
+   el lado: una tabla ancha estiraba la columna de la rejilla (los hijos de un
+   grid no encogen por debajo de su contenido si no se les dice). Ahora la
+   columna no pasa del ancho de la pantalla y lo ancho se desplaza dentro. */
+.layout.active > *{min-width:0;}
+.admin-panel{min-width:0;max-width:100%;}
+#statsGananciaTabla, #adminDirectasPanel table{overflow-x:auto;max-width:100%;}
+#statsGananciaTabla{display:block;}
+
+/* ════════════════════════════════════════════════════════════
+   v77 — CAPA DE PULIDO "APP MÓVIL"
+   Tarjetas redondeadas pronunciadas + feedback táctil + coherencia dark.
+   Va al final a propósito: gana sobre todo lo de arriba sin tocar la lógica.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Header: botones en formato píldora (pisan los border-radius inline) ── */
+header .header-right button{
+  border-radius:100px !important;
+  padding:5px 12px !important;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:background .15s,transform .12s cubic-bezier(.2,.8,.2,1) !important;
+}
+header .header-right button:active{transform:scale(.94);}
+#btnTheme{
+  border-radius:100px !important;width:34px;height:30px;padding:0 !important;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+#btnLogout{border-radius:100px !important;}
+header .brand-icon{
+  border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+/* ── Fondo del body: un aire más "app" con dos halos suaves ── */
+body{
+  background:
+    radial-gradient(ellipse 900px 480px at 110% -10%, rgba(0,180,216,.06), transparent 60%),
+    radial-gradient(ellipse 700px 420px at -10% 110%, rgba(0,109,138,.05), transparent 55%),
+    var(--surface2);
+  background-attachment:fixed;
+}
+body.dark{
+  background:
+    radial-gradient(ellipse 900px 480px at 110% -10%, rgba(14,165,233,.08), transparent 60%),
+    radial-gradient(ellipse 700px 420px at -10% 110%, rgba(14,116,144,.10), transparent 55%),
+    var(--surface2);
+  background-attachment:fixed;
+}
+
+/* ── Tarjetas de listas: lift + press uniformes ── */
+.mv-card,.sc,.prod-card,.rank-row,.gnotif-item,.audit-entry,.estafa-entry{
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s;
+}
+.rank-row:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 10px 26px -10px rgba(0,109,138,.20);}
+.apcard:active,.prod-card:active{transform:scale(.98);}
+
+/* ── Botones dentro de modales: píldora para acciones principales ── */
+.modal-btns .btn,.btn-full{border-radius:var(--radius-sm);}
+.modal-btns .btn-blue,.modal-btns .btn-green{box-shadow:0 2px 6px rgba(0,0,0,.14),0 8px 22px -8px rgba(0,0,0,.25);}
+
+/* ── Sync indicator flotante: más app ── */
+#syncIndicator{
+  border-radius:100px;padding:6px 13px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:var(--shadow);
+}
+
+/* ── Rank notif: tarjeta flotante pronunciada ── */
+.rank-notif,.rank-notif-card{
+  border-radius:20px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:var(--shadow-pop);
+}
+
+/* ── Goal banner y banner de instalación ── */
+#goalBanner{border-radius:20px;}
+.install-banner-btn-primary,.install-banner-btn-secondary{border-radius:100px;}
+.install-banner{border-radius:20px 20px 0 0;border-top-width:2px;}
+
+/* ── Install banner no tapa con esquinas duras ── */
+.pending-sync-banner{border-radius:16px;}
+
+/* ── Dark: sombras más presentes para que el lift se note igual ── */
+body.dark .card,
+body.dark .g-item,
+body.dark .mv-card,
+body.dark .ic,
+body.dark .stat-card,
+body.dark .gp-card,
+body.dark .m-card,
+body.dark .m-item,
+body.dark .sc,
+body.dark .prod-card,
+body.dark .rank-row,
+body.dark .picker-pill,
+body.dark .apcard,
+body.dark .gnotif-item,
+body.dark .admin-nav{
+  box-shadow:0 1px 2px rgba(0,0,0,.45),0 10px 30px -10px rgba(0,0,0,.55);
+}
+body.dark .g-item:hover,
+body.dark .ic:hover,
+body.dark .m-card:hover{
+  box-shadow:0 2px 6px rgba(0,0,0,.5),0 16px 40px -12px rgba(14,165,233,.35);
+}
+body.dark .btn{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -8px rgba(0,0,0,.5);}
+body.dark .btn-ghost{box-shadow:none;}
+
+/* ── Accesibilidad: sin transformes si el usuario lo prefiere ── */
+@media (prefers-reduced-motion:reduce){
+  .g-item,.ic,.m-card,.m-item,.gp-card,.picker-pill,.btn,.rank-row,.prod-card,.apcard{
+    transition:none;
+  }
+  .g-item:hover,.ic:hover,.m-card:hover,.gp-card:hover,.rank-row:hover{transform:none;}
+  .g-item:active,.ic:active,.m-card:active,.picker-pill:active,.btn:active,.apcard:active,.prod-card:active{transform:none;}
+}
+
+/* ════════════════════════════════════════════════════════════
+   v78 — CAPA "EXPERIENCIA APP"
+   Tab bar inferior · header glass · skeletons · hero por gestor ·
+   avatar squircle · check animado · modo alto contraste.
+   Va al final a propósito: gana sobre v77 sin tocar la lógica.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 1. TAB BAR INFERIOR (solo gestor, solo móvil) ── */
+#tabbar{
+  position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  z-index:150;display:none;
+  grid-template-columns:repeat(4,1fr);gap:2px;
+  padding:6px;
+  background:rgba(255,255,255,.72);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);
+  backdrop-filter:blur(18px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:24px;
+  box-shadow:0 2px 6px rgba(15,23,42,.08),0 14px 38px -10px rgba(15,23,42,.30);
+}
+body.dark #tabbar{
+  background:rgba(15,23,42,.78);
+  border-color:rgba(51,65,85,.7);
+  box-shadow:0 2px 6px rgba(0,0,0,.5),0 16px 44px -10px rgba(0,0,0,.65);
+}
+.tab-btn{
+  appearance:none;border:none;background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:7px 2px;border-radius:18px;
+  color:var(--gray-500);font-family:inherit;
+  transition:background .18s,color .18s,transform .12s cubic-bezier(.2,.8,.2,1);
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.tab-btn .tab-ico{font-size:19px;line-height:1;filter:grayscale(1) opacity(.75);transition:filter .18s,transform .18s;}
+.tab-btn .tab-lbl{font-size:9.5px;font-weight:700;letter-spacing:.2px;}
+.tab-btn:active{transform:scale(.92);}
+.tab-btn.active{
+  background:var(--blue-lt);color:var(--blue-dk);
+}
+.tab-btn.active .tab-ico{filter:none;transform:translateY(-1px) scale(1.08);}
+body.dark .tab-btn.active{background:rgba(14,165,233,.16);color:#7dd3fc;}
+@media (max-width:768px){
+  body[data-page="gestor"] #tabbar{display:grid;}
+  /* Aire para que la barra no tape el contenido ni el botón flotante */
+  body[data-page="gestor"]{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+  body[data-page="gestor"] #syncIndicator{bottom:calc(88px + env(safe-area-inset-bottom,0px));}
+  body[data-page="gestor"] .btn[style*="border-radius:50%"]{bottom:calc(92px + env(safe-area-inset-bottom,0px)) !important;}
+  /* v78: con tab bar, el header pierde los botones que ahora viven ahí:
+     Stock → pestaña Catálogo · Tema → hoja de Perfil. Así el header ya
+     no se desborda ni se parte en dos líneas (el scroll del header muere). */
+  body[data-page="gestor"] #btnCatalogo{display:none !important;}
+  body[data-page="gestor"] #btnTheme{display:none !important;}
+  /* El banner de instalación se eleva para no tapar la tab bar */
+  body[data-page="gestor"] .install-banner.show{
+    bottom:calc(78px + env(safe-area-inset-bottom,0px));
+    left:10px;right:10px;border-radius:20px;
+  }
+}
+@media (min-width:769px){ #tabbar{display:none !important;} }
+
+/* ── 2. HEADER GLASS al hacer scroll ── */
+header{transition:background .28s ease,box-shadow .28s ease;}
+header.ax-scrolled{
+  background:linear-gradient(135deg,rgba(0,61,77,.80) 0%,rgba(0,109,138,.80) 100%);
+  -webkit-backdrop-filter:blur(16px) saturate(1.6);
+  backdrop-filter:blur(16px) saturate(1.6);
+  box-shadow:0 4px 18px rgba(0,0,0,.22);
+}
+body.dark header.ax-scrolled{
+  background:linear-gradient(135deg,rgba(3,24,32,.82) 0%,rgba(6,52,66,.82) 100%);
+}
+
+/* ── 3. SKELETON LOADERS ── */
+.skel{
+  position:relative;overflow:hidden;
+  background:var(--gray-200);border-radius:8px;
+}
+body.dark .skel{background:#22344a;}
+.skel::after{
+  content:'';position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  animation:skelSweep 1.25s ease-in-out infinite;
+}
+body.dark .skel::after{
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+}
+@keyframes skelSweep{100%{transform:translateX(100%);}}
+.skel-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:12px 14px;margin-bottom:6px;
+  box-shadow:var(--shadow);
+}
+.skel-ava{width:36px;height:36px;border-radius:32%;flex-shrink:0;}
+.skel-lines{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
+.skel-line{height:10px;border-radius:100px;}
+.skel-line.w60{width:60%;} .skel-line.w40{width:40%;}
+.skel-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+}
+.skel-tile{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:14px 8px;box-shadow:var(--shadow);
+}
+.skel-tile .skel-ava{width:34px;height:34px;}
+.skel-tile .skel-line{width:82%;}
+@media (prefers-reduced-motion:reduce){ .skel::after{animation:none;} }
+
+/* ── 4. HERO DE COLOR por gestor + avatar squircle ──
+   JS inyecta --g1 (tinte claro), --g2 (tinte suave) y --gbd (borde tinte)
+   derivados del color del gestor. El nombre SIEMPRE con contraste alto. */
+/* v220 · IDEA 4 «Pastel pleno»: el tile COMPLETO va relleno del pastel
+   sólido del gestor (--g1 pastel claro en claro / --g2 tinte profundo en
+   oscuro). Sin degradado y sin barras laterales: el relleno pleno + el
+   avatar pleno llevan la identidad. --gbd sigue llegando pero no se usa. */
+.g-item.g-hero{
+  background:var(--g1,#e6f4f7);
+  border-color:var(--border);
+}
+.g-item.g-hero:hover{
+  background:var(--g1,#e6f4f7);
+}
+body.dark .g-item.g-hero{
+  background:var(--g2,#0d2539);
+}
+body.dark .g-item.g-hero:hover{
+  background:var(--g2,#0d2539);
+}
+/* El fijado conserva su identidad ámbar: empata especificidad y va después */
+.g-item.g-item-pinned{
+  background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
+  border-color:#f59e0b;
+}
+body.dark .g-item.g-item-pinned{
+  background:linear-gradient(135deg,rgba(245,158,11,.18) 0%,rgba(245,158,11,.08) 100%);
+  border-color:#f59e0b;
+}
+/* Activo dentro del hero: anillo azul, relleno pastel intacto */
+.g-item.g-hero.active{
+  background:var(--g1,#e6f4f7);
+  border-color:var(--blue);
+  box-shadow:0 0 0 2px var(--blue-lt),0 6px 18px -8px rgba(0,109,138,.35);
+}
+body.dark .g-item.g-hero.active{
+  background:var(--g2,#0d2539);
+}
+/* Squircle (superelipse aprox.): avatares de círculo a redondeado-suave */
+.g-avatar,.ag-avatar,.glow-winner-avatar,.rank-avatar,.g-avatar-img-wrap{
+  border-radius:32% !important;
+}
+.g-item .g-avatar{box-shadow:0 2px 6px -1px rgba(15,23,42,.28),inset 0 1px 0 rgba(255,255,255,.25);}
+
+/* ── 5. CHECK ANIMADO de éxito (vale enviado / comisión cobrada) ── */
+.ax-success{
+  position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%) translateY(14px) scale(.85);
+  z-index:1200;display:flex;align-items:center;gap:9px;
+  max-width:88vw;
+  background:linear-gradient(135deg,#10B981,#059669);
+  color:#fff;padding:11px 18px 11px 14px;border-radius:100px;
+  font-size:13px;font-weight:800;letter-spacing:.2px;white-space:nowrap;
+  box-shadow:0 10px 34px -6px rgba(16,185,129,.55),0 2px 8px rgba(0,0,0,.18);
+  opacity:0;pointer-events:none;
+  transition:opacity .22s ease,transform .32s cubic-bezier(.2,.9,.3,1.35);
+}
+.ax-success.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+.ax-success svg{width:24px;height:24px;flex-shrink:0;}
+.ax-success .axc-ring{stroke:rgba(255,255,255,.4);stroke-width:2;fill:none;}
+.ax-success .axc-mark{
+  stroke:#fff;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:26;stroke-dashoffset:26;
+}
+.ax-success.show .axc-mark{animation:axCheckDraw .42s .12s ease-out forwards;}
+@keyframes axCheckDraw{to{stroke-dashoffset:0;}}
+@media (prefers-reduced-motion:reduce){
+  .ax-success.show .axc-mark{animation:none;stroke-dashoffset:0;}
+  .ax-success{transition:opacity .15s;transform:translateX(-50%);}
+}
+
+/* ── 6. MODO ALTO CONTRASTE (trabajar a pleno sol) ──
+   Se activa con body.contrast. Texto más grueso/oscuro, bordes marcados
+   y CERO sombras ni transparencias: la pantalla se lee al sol. */
+body.contrast{
+  --shadow:none !important;
+  --shadow-lg:none !important;
+  --shadow-pop:none !important;
+  --border:#64748b;
+  --text:#000000;
+  --text-muted:#334155;
+  background:#ffffff !important;
+  font-weight:500;
+}
+body.dark.contrast{
+  --border:#cbd5e1;
+  --text:#ffffff;
+  --text-muted:#e2e8f0;
+  background:#0a0f18 !important;
+}
+body.contrast .card,body.contrast .g-item,body.contrast .mv-card,body.contrast .ic,
+body.contrast .modal,body.contrast .stat-card,body.contrast .rank-row,body.contrast .picker-pill,
+body.contrast .prod-card,body.contrast .m-card,body.contrast .gp-card,body.contrast .apcard,
+body.contrast .audit-entry,body.contrast .gnotif-item,body.contrast .es{
+  box-shadow:none !important;
+  border:2px solid var(--border) !important;
+}
+body.contrast .btn,body.contrast header,body.contrast #tabbar,
+body.contrast header .header-right button,body.contrast .modal-btns .btn{
+  box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+body.contrast header{background:var(--blue-dk) !important;}
+body.contrast header.ax-scrolled{background:var(--blue-dk) !important;}
+body.contrast .btn{font-weight:800;border:2px solid transparent;}
+body.contrast .btn-ghost,body.contrast .btn-blue{border-color:var(--border);}
+body.contrast .lbl{color:#000;font-weight:800;}
+body.dark.contrast .lbl{color:#fff;}
+body.contrast .g-name,body.contrast .es-text,body.contrast .mv-info{font-weight:800;}
+body.contrast .g-item.g-hero,
+body.contrast .g-item.g-hero.active{background:var(--surface) !important;}
+body.contrast .g-item.g-item-pinned{background:var(--surface) !important;}
+body.contrast #tabbar{
+  background:#ffffff !important;border:2px solid #334155 !important;
+}
+body.dark.contrast #tabbar{background:#0a0f18 !important;border-color:#e2e8f0 !important;}
+body.contrast .tab-btn{color:#334155;}
+body.dark.contrast .tab-btn{color:#e2e8f0;}
+body.contrast .tab-btn.active{background:var(--blue-lt);color:var(--blue-dk);}
+body.dark.contrast .tab-btn.active{background:#0c2a33;color:#7dd3fc;}
+body.contrast .vf-row input,body.contrast .vf-row textarea{font-size:15px;font-weight:600;border:2px solid #334155;}
+body.contrast .vf-label{font-size:10.5px;color:#000;}
+body.dark.contrast .vf-label{color:#fff;}
+body.contrast .ax-success{box-shadow:none;border:2px solid #059669;}
+
+/* ── 7. HOJA DE PERFIL (pestaña Perfil de la tab bar) ── */
+#perfilSheet{
+  position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  z-index:400;
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:26px;
+  padding:16px 16px 14px;
+  box-shadow:var(--shadow-pop);
+  transform:translateY(calc(100% + 24px));
+  transition:transform .34s cubic-bezier(.2,.85,.25,1);
+  max-height:min(70vh,480px);overflow-y:auto;
+}
+#perfilSheet.open{transform:translateY(0);}
+#perfilSheet .pf-grab{
+  width:42px;height:5px;border-radius:100px;background:var(--gray-300);
+  margin:0 auto 12px;
+}
+#perfilSheet .pf-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+#perfilSheet .pf-avatar{
+  width:52px;height:52px;border-radius:32%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:16px;flex-shrink:0;
+  background:var(--gray-400);
+}
+#perfilSheet .pf-name{font-size:15px;font-weight:800;color:var(--text);line-height:1.2;}
+#perfilSheet .pf-sub{font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;}
+#perfilSheet .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#perfilSheet .pf-btn{
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:16px;padding:11px 12px;cursor:pointer;
+  font-family:inherit;font-size:12.5px;font-weight:700;color:var(--text);
+  transition:transform .12s cubic-bezier(.2,.8,.2,1),background .15s;
+  text-align:left;width:100%;
+}
+#perfilSheet .pf-btn:active{transform:scale(.96);}
+#perfilSheet .pf-btn .pf-ico{font-size:17px;flex-shrink:0;}
+#perfilSheet .pf-btn .pf-state{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.4px;color:var(--blue);background:var(--blue-lt);border-radius:100px;padding:2px 8px;}
+#perfilSheet .pf-btn .pf-state.off{color:var(--gray-500);background:var(--gray-100);}
+#perfilSheet .pf-btn.wide{grid-column:1/-1;}
+#perfilSheet .pf-ver{margin-top:12px;text-align:center;font-size:10px;color:var(--gray-400);font-weight:600;}
+#pfBackdrop{
+  position:fixed;inset:0;z-index:390;background:rgba(15,23,42,.35);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+#pfBackdrop.open{opacity:1;pointer-events:auto;}
+/* v78: mientras la hoja de perfil está abierta, el banner de instalación
+   se desliza fuera — se pelearía por la misma esquina inferior. */
+body.pf-open .install-banner{bottom:0 !important;transform:translateY(110%) !important;}
+/* v78: ídem con CUALQUIER modal abierto — los botones del pie del modal
+   quedaban tapados por el banner. */
+body.ax-modal-open .install-banner{bottom:0 !important;transform:translateY(110%) !important;}
+body.contrast #perfilSheet{border:2px solid var(--border);box-shadow:none;}
+
+/* ════════════════════════════════════════════════════════════════════
+   v80 · MARCA / DISEÑO — soporte de logo subido desde 🎨 Diseño
+   El color lo inyecta app.js (#axonMarcaVars); aquí solo va la forma
+   de los elementos que ahora pueden llevar imagen dentro.
+   ════════════════════════════════════════════════════════════════════ */
+header .brand-icon img{
+  width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;
+}
+#axon-splash .axon-splash-logo img{display:block;}
+#dn-prev-icon img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;}
+#dn-logo-prev img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* ════════════════════════════════════════════════════════════
+   v208 — APARTADO DE VALES (bandeja del admin, estilo referencia)
+   Cabecera con conteo de atención · stats de dinero · píldoras de
+   estado · chips de gestor · tarjeta de vale con franja de acento,
+   avatar, chapa de tiempo y acción rápida.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Cabecera ── */
+#valesHead{padding:2px 2px 0;}
+.vx-h-title{font-size:21px;font-weight:800;letter-spacing:-.4px;color:var(--text);line-height:1.15;}
+.vx-h-sub{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:3px;}
+.vx-h-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 3px rgba(16,185,129,.16);}
+.vx-h-dot.warn{background:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.16);}
+
+/* ── Stats de dinero ── */
+.vx-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.vx-stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:10px 11px 9px;min-width:0;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .16s,border-color .16s;
+}
+.vx-stat[onclick]{cursor:pointer;}
+.vx-stat[onclick]:hover{border-color:var(--blue-bd);transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 12px 28px -12px rgba(0,109,138,.22);}
+.vx-stat[onclick]:active{transform:scale(.96);}
+.vx-stat-k{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vx-stat-n{font-size:19px;font-weight:800;line-height:1.15;margin-top:2px;letter-spacing:-.3px;}
+.vx-stat-s{font-size:9.5px;font-weight:700;color:var(--gray-400);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vx-st-cobrar .vx-stat-n{color:#d97706;}
+.vx-st-hoy .vx-stat-n{color:var(--green);}
+.vx-st-com .vx-stat-n{color:var(--blue);}
+body.dark .vx-st-cobrar .vx-stat-n{color:#FBBF24;}
+
+/* ── Píldoras de filtro de estado ── */
+/* v208 FIX: los contenedores son ítems flex de la columna del panel; sin
+   min-width:0 el flex no los deja encoger por debajo del ancho de su
+   contenido y el scroll horizontal se vuelve desborde de la pantalla. */
+#adminValesPanel > div{min-width:0;}
+#valesHead,#valesStats,#valesPills,#valesChips{min-width:0;}
+#valesPills,#valesChips{overflow-x:auto;}
+.vx-pills,.vx-chips{
+  display:flex;gap:8px;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  padding:2px;scroll-snap-type:x proximity;
+}
+.vx-pills::-webkit-scrollbar,.vx-chips::-webkit-scrollbar{display:none;}
+.vx-pill{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:100px;
+  padding:8px 15px;font-size:12.5px;font-weight:700;color:var(--text);
+  font-family:var(--font);cursor:pointer;white-space:nowrap;scroll-snap-align:start;
+  transition:background .15s,color .15s,border-color .15s,transform .15s cubic-bezier(.2,.8,.2,1);
+}
+.vx-pill:active{transform:scale(.95);}
+.vx-pill.act{background:var(--text);border-color:var(--text);color:var(--surface);}
+.vx-pill-n{
+  min-width:19px;height:19px;padding:0 5px;border-radius:10px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;background:var(--surface3);color:var(--text-muted);
+}
+.vx-pill.act .vx-pill-n{background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor;}
+
+/* ── Chips de gestor ── */
+.vx-chip{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:100px;
+  padding:5px 12px 5px 5px;font-size:12px;font-weight:700;color:var(--text);
+  font-family:var(--font);cursor:pointer;white-space:nowrap;scroll-snap-align:start;
+  transition:border-color .15s,box-shadow .15s,transform .15s cubic-bezier(.2,.8,.2,1);
+}
+.vx-chip:active{transform:scale(.95);}
+.vx-chip.act{border-color:var(--blue);box-shadow:0 0 0 2.5px var(--blue-lt);}
+.vx-chip-n{color:var(--text-muted);font-weight:800;font-size:11px;}
+.vx-chip.act .vx-chip-n{color:var(--blue);}
+/* v211: chip "＋N más" — abre el selector completo en bottom-sheet */
+.vx-chip-more{border-style:dashed;color:var(--text-muted);}
+.vx-chip-more.act{border-style:solid;color:var(--blue);}
+body.dark .vx-chip-more{color:var(--gray-400);}
+
+/* ── v211 · Selector de gestor (bottom-sheet con rejilla) ──
+   Sustituye a la cinta interminable: los chips caben 3 y el resto vive aquí,
+   con avatar grande, nombre completo y cuántos vales activos lleva cada uno. */
+#vxGestorPicker{position:fixed;inset:0;z-index:9990;}
+.vxp-backdrop{position:absolute;inset:0;background:rgba(2,8,23,.45);opacity:0;transition:opacity .22s ease;}
+.vxp-sheet{
+  position:absolute;left:0;right:0;bottom:0;
+  transform:translateY(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  background:var(--surface);border-radius:24px 24px 0 0;
+  padding:10px 16px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -14px 44px rgba(2,8,23,.28),0 4px 18px rgba(2,8,23,.12);
+}
+#vxGestorPicker.open .vxp-backdrop{opacity:1;}
+#vxGestorPicker.open .vxp-sheet{transform:translateY(0);}
+.vxp-grip{width:42px;height:4.5px;border-radius:100px;background:var(--border);margin:2px auto 12px;}
+.vxp-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14.5px;color:var(--text);margin-bottom:12px;letter-spacing:-.2px;}
+.vxp-x{border:none;background:var(--surface3);width:29px;height:29px;border-radius:100px;font-size:12px;font-weight:800;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .15s;}
+.vxp-x:active{transform:scale(.92);}
+.vxp-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px;
+  max-height:min(54vh,400px);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:2px;overscroll-behavior:contain;
+}
+.vxp-tile{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:13px 6px 11px;border:1.5px solid var(--border);border-radius:18px;
+  background:var(--surface);cursor:pointer;font-family:var(--font);
+  transition:border-color .15s,box-shadow .15s,transform .15s cubic-bezier(.2,.8,.2,1);
+}
+.vxp-tile:active{transform:scale(.95);}
+.vxp-tile.act{border-color:var(--blue);box-shadow:0 0 0 2.5px var(--blue-lt);background:var(--blue-lt);}
+.vxp-tile .vx-ava{width:40px;height:40px;font-size:14px;}
+.vxp-nombre{font-size:11.5px;font-weight:700;color:var(--text);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.1px;}
+.vxp-n{font-size:9.5px;font-weight:800;color:var(--text-muted);background:var(--surface3);padding:2px 8px;border-radius:9px;white-space:nowrap;}
+.vxp-tile.act .vxp-n{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;color:var(--blue);}
+body.dark .vxp-sheet{box-shadow:0 -14px 44px rgba(0,0,0,.55);}
+body.contrast .vxp-tile{border-width:2px;}
+body.contrast .vxp-tile.act{border-color:#000;box-shadow:none;}
+body.dark.contrast .vxp-tile.act{border-color:#e2e8f0;}
+
+/* ── Tarjeta de vale ── */
+.vx-card{
+  position:relative;display:flex;gap:11px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:11px 12px 11px 17px;margin-bottom:8px;cursor:pointer;overflow:hidden;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px -10px rgba(15,23,42,.12);
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s;
+  content-visibility:auto;contain-intrinsic-size:auto 96px;
+}
+.vx-card:hover{border-color:var(--blue-bd);transform:translateY(-1px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 14px 32px -12px rgba(0,109,138,.22);}
+.vx-card:active{transform:scale(.985);}
+/* Franja de acento por estado (la de la referencia, redondeada y flotante) */
+.vx-card::before{
+  content:'';position:absolute;left:5px;top:12px;bottom:12px;width:4px;
+  border-radius:100px;background:var(--blue);
+}
+.vx-card.st-pending::before{background:var(--blue);}
+.vx-card.st-assigned::before{background:var(--orange);}
+.vx-card.st-delivered::before{background:var(--purple);}
+.vx-card.st-pending_payment::before{background:var(--yellow);}
+.vx-card.st-confirmed::before{background:var(--green);}
+.vx-card.st-cancelled::before{background:var(--gray-400);}
+.vx-card.is-new{border-color:var(--blue-bd);}
+body.dark .vx-card.is-new{border-color:#1e3a44;}
+.vx-card.is-new::before{box-shadow:0 0 8px 0 var(--blue);}
+.vx-card.sel{border-color:var(--blue);background:var(--blue-lt);}
+.vx-ava{
+  width:38px;height:38px;border-radius:32%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:13px;letter-spacing:.3px;
+  overflow:hidden;user-select:none;
+}
+.vx-ava .g-avatar-img-wrap{display:block;width:100%;height:100%;overflow:hidden;border-radius:inherit;}
+.vx-ava .g-avatar-img-wrap img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;}
+.vx-main{flex:1;min-width:0;}
+.vx-r1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.vx-nombre{font-size:13.5px;font-weight:800;color:var(--text);letter-spacing:-.2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vx-badge{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:4px;
+  border-radius:100px;padding:3px 9px;font-size:9.5px;font-weight:800;white-space:nowrap;
+}
+.vx-b-new{background:rgba(14,165,233,.14);color:#0369a1;}
+.vx-b-late{background:rgba(239,68,68,.13);color:#dc2626;}
+.vx-b-warn{background:rgba(245,158,11,.15);color:#b45309;}
+.vx-b-idle{background:var(--surface3);color:var(--text-muted);}
+.vx-b-calle{background:rgba(249,115,22,.14);color:#c2410c;}
+.vx-b-conf{background:rgba(124,58,237,.12);color:#6d28d9;}
+.vx-b-cobro{background:rgba(245,158,11,.15);color:#b45309;}
+body.dark .vx-b-new{background:rgba(14,165,233,.2);color:#7DD3FC;}
+body.dark .vx-b-late{background:rgba(248,113,113,.18);color:#FCA5A5;}
+body.dark .vx-b-warn,body.dark .vx-b-cobro{background:rgba(251,191,36,.16);color:#FCD34D;}
+body.dark .vx-b-idle{background:var(--surface3);color:var(--text-muted);}
+body.dark .vx-b-calle{background:rgba(251,146,60,.18);color:#FDBA74;}
+body.dark .vx-b-conf{background:rgba(167,139,250,.16);color:#C4B5FD;}
+.vx-meta{font-size:11px;color:var(--gray-500);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vx-minis{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-width:0;}
+.vx-mini{
+  display:inline-flex;align-items:center;gap:3px;max-width:100%;
+  border-radius:8px;padding:2px 7px;font-size:9.5px;font-weight:700;
+  background:var(--surface3);color:var(--text-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.vx-mini-red{background:rgba(239,68,68,.13);color:#dc2626;}
+.vx-mini-amber{background:rgba(180,83,9,.13);color:#b45309;}
+.vx-mini-blue{background:rgba(0,109,138,.1);color:var(--blue);}
+.vx-mini-yellow{background:rgba(245,158,11,.2);color:#92400e;}
+body.dark .vx-mini-red{color:#FCA5A5;}
+body.dark .vx-mini-amber{color:#FCD34D;}
+body.dark .vx-mini-blue{color:#67e8f9;}
+body.dark .vx-mini-yellow{color:#FDE68A;}
+.vx-r2{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.vx-precio{font-size:14.5px;font-weight:800;color:var(--text);letter-spacing:-.2px;}
+.vx-accion{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+  border:none;border-radius:12px;padding:8px 14px;
+  font-size:12px;font-weight:800;color:#fff;font-family:var(--font);
+  cursor:pointer;letter-spacing:.1px;white-space:nowrap;
+  transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s,filter .15s;
+}
+.vx-accion:hover{filter:brightness(1.05);}
+.vx-accion:active{transform:scale(.93);}
+.vx-a-cyan{background:linear-gradient(135deg,#22D3EE,#0284C7);box-shadow:0 4px 12px -4px rgba(2,132,199,.45);}
+.vx-a-orange{background:linear-gradient(135deg,#FBBF24,#F97316);box-shadow:0 4px 12px -4px rgba(249,115,22,.45);}
+.vx-a-purple{background:linear-gradient(135deg,#A78BFA,#7C3AED);box-shadow:0 4px 12px -4px rgba(124,58,237,.45);}
+.vx-a-green{background:linear-gradient(135deg,#34D399,#059669);box-shadow:0 4px 12px -4px rgba(5,150,105,.45);}
+
+/* ── Rendimiento: las listas largas se pintan por trozos ── */
+.ic,.mv-card,.sc{content-visibility:auto;contain-intrinsic-size:auto 84px;}
+
+/* ── Alto contraste: plano, bordes gruesos, sin gradientes ── */
+body.contrast .vx-card,body.contrast .vx-stat,body.contrast .vx-chip,body.contrast .vx-pill{
+  box-shadow:none !important;border:2px solid var(--border);
+}
+body.contrast .vx-card::before{left:0;top:0;bottom:0;width:6px;border-radius:0;}
+body.contrast .vx-badge{background:#fff;color:#000;border:1.5px solid #000;}
+body.dark.contrast .vx-badge{background:#0a0f18;color:#fff;border-color:#e2e8f0;}
+body.contrast .vx-accion{background:var(--surface) !important;color:#000 !important;border:2px solid #000;box-shadow:none !important;}
+body.dark.contrast .vx-accion{background:#0a0f18 !important;color:#fff !important;border-color:#e2e8f0;}
+body.contrast .vx-pill.act{background:#000;color:#fff;border-color:#000;}
+body.dark.contrast .vx-pill.act{background:#fff;color:#0a0f18;border-color:#fff;}
+body.contrast .vx-chip.act{border-color:#000;box-shadow:none;}
+body.dark.contrast .vx-chip.act{border-color:#e2e8f0;}
+
+/* ══════════════════════════════════════════════════════════════════
+   v209 — CAPA FINAL
+   1. Barra de exportación (Estadísticas) · 2. Reporte PDF imprimible
+   3. Modo solo lectura · 4. Ajustes de avisos
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Exportar CSV/PDF ── */
+.exp-bar{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:10px 12px;margin-bottom:18px;
+}
+.exp-lbl{font-size:11px;font-weight:700;color:var(--gray-500);margin-right:2px;}
+.exp-btn{
+  background:var(--surface2,var(--surface));border:1px solid var(--border);
+  font-weight:700;border-radius:100px;transition:all .15s;
+}
+.exp-btn:hover{border-color:var(--blue);color:var(--blue);}
+.exp-btn:active{transform:scale(.96);}
+.exp-pdf{background:var(--blue) !important;border-color:var(--blue) !important;color:#fff !important;}
+
+/* ── 2. Reporte imprimible (oculto en pantalla, único en impresión) ── */
+#printReport{display:none;}
+@media print{
+  body.printing-report > *:not(#printReport){display:none !important;}
+  body.printing-report #printReport{
+    display:block !important;padding:24px;color:#000;background:#fff;
+    font-size:12px;
+  }
+  body.printing-report #printReport h1{font-size:20px;margin:0 0 4px;}
+  body.printing-report #printReport h2{font-size:14px;margin:18px 0 6px;border-bottom:2px solid #333;padding-bottom:3px;}
+  .pr-sub{font-size:10px;color:#555;margin-bottom:14px;}
+  .pr-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+  .pr-card{border:1px solid #ccc;border-radius:8px;padding:8px 10px;}
+  .pr-card span{display:block;font-size:9px;text-transform:uppercase;color:#555;letter-spacing:.4px;}
+  .pr-card b{font-size:16px;}
+  #printReport table{width:100%;border-collapse:collapse;font-size:11px;}
+  #printReport th,#printReport td{border:1px solid #bbb;padding:5px 8px;text-align:left;}
+  #printReport th{background:#f0f0f0;font-weight:700;}
+}
+
+/* ── 3. Modo solo lectura ── */
+/* Se esconden las acciones de escritura más visibles; las demás quedan
+   bloqueadas por el guarda en _enqueueSB y el 403 del interceptor. */
+body.ronly #btnFabVale,
+body.ronly .vx-accion,
+body.ronly .admin-panel .btn-blue,
+body.ronly .admin-panel .btn-danger,
+body.ronly .admin-panel .btn-green{display:none !important;}
+body.ronly #roLabel{display:flex !important;align-items:center;}
+body.dark #roLabel{background:#c2410c;}
+body.contrast #roLabel{border:2px solid #000;border-radius:7px;}
+
+/* ── 4. Ajustes de avisos (nada extra: botones reutilizan .btn) ── */
+#notifValesBtn{min-width:110px;}
+
+/* ═══════════════════════════════════════════════════════════════
+   v220 · IDEA 4 «PASTEL PLENO» en todos los lugares del gestor
+   (elección del usuario tras probar la Idea 5 en modo oscuro). El
+   elemento COMPLETO va relleno del pastel SÓLIDO del gestor, sin
+   degradado y sin barras laterales ni bordes de color: la tarjeta
+   «es» el color. Bordes neutros muy sutiles.
+   Variables inline desde app.js:
+     · gp-card del admin        → --gcard (claro) / --gcardD (oscuro)
+     · .pf-fill (bandeja Vales, tiles del picker, Estadísticas)
+                                → --pfL (claro) / --pfD (oscuro)
+     · .rank-row.g-rank (Ranking) → mismas --pfL/--pfD vía _pfVars()
+   Colores OPACOS de por sí (mezcla sólida). Reglas AL FINAL para
+   ganarle al barrido del modo oscuro.
+   ═══════════════════════════════════════════════════════════════ */
+.gp-card{background:var(--gcard,var(--surface));border-left-color:var(--border);}
+.gp-card:hover{border-left-color:var(--border);}
+body.dark .gp-card{background:var(--gcardD,var(--gcard,var(--surface))) !important;border-left-color:var(--border) !important;}
+.pf-fill{background:var(--pfL,var(--surface)) !important;}
+body.dark .pf-fill{background:var(--pfD,var(--pfL,var(--surface))) !important;}
+.rank-row.g-rank{background:var(--pfL,var(--surface)) !important;}
+body.dark .rank-row.g-rank{background:var(--pfD,var(--pfL,var(--surface))) !important;}
+
+/* ═══════════════════════════════════════════════════════════════
+   v222 · «FITNESS PREMIUM» GLOBAL — el lenguaje del preview aprobado
+   llevado a TODA la app (gestor e inbox admin), no solo a un panel.
+   ═══════════════════════════════════════════════════════════════
+   Recetas (idénticas al preview que viste):
+   1 · PÁGINA con degradado suave que entra por arriba. En la vista
+       del gestor el color sale de SU color (app.js pone --pgTopL en
+       claro y --pgTopD en oscuro, mismo sistema v221). En el admin,
+       que no tiene un solo gestor, entra el azul neutro de la marca.
+   2 · NAVY PREMIUM en oscuro: superficies un tono más elevadas
+       (#131C2C / #1B2534, las del preview) y bordes casi invisibles
+       → las tarjetas «flotan» como en la captura de referencia.
+   3 · CARDS flotantes: borde sutil, sombra difusa grande.
+   4 · Títulos editoriales (.sec-title) con palabra en cursiva serif.
+   5 · Píldoras de período, chips de icono tintados, anillos SVG y
+       mini-barras de la semana (componentes del dashboard nuevo).
+   Nada de esto toca los colores únicos por gestor (v221) ni la
+   lógica: es solo la piel. body.contrast mantiene sus overrides.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1 · Degradado de página (top colorido → funde con la superficie) */
+body{
+  background-image:linear-gradient(180deg,var(--pgTopL,var(--blue-lt)) 0%,rgba(255,255,255,0) 520px);
+  background-repeat:no-repeat;
+}
+body.dark{
+  background-color:#0F172A;
+  background-image:linear-gradient(180deg,var(--pgTopD,#0C2A33) 0%,rgba(0,0,0,0) 520px);
+}
+
+/* 2 · Navy premium en oscuro (superficies elevadas del preview) */
+body.dark{
+  --surface:#131C2C;
+  --surface2:#1B2534;
+  --surface3:#243146;
+  --border:rgba(148,163,184,.16);
+}
+
+/* 3 · Cards flotantes: borde que casi desaparece, la sombra sostiene */
+.card{border-color:rgba(226,232,240,.6);}
+body.dark:not(.contrast) .card{border-color:rgba(255,255,255,.07);}
+
+/* 4 · Títulos editoriales de sección (con palabra en cursiva serif) */
+.sec-title{
+  font-size:19px;font-weight:800;letter-spacing:-.3px;
+  margin:16px 2px 8px;color:var(--text);
+}
+.sec-title em{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;}
+.sec-sub{font-size:11px;font-weight:700;color:var(--text-muted);margin:-6px 2px 10px;}
+
+/* 5 · Píldoras de período del Inicio del gestor */
+#gestorHistPeriodFilter .btn{
+  border-radius:100px;background:var(--surface);border:1px solid var(--border);
+  box-shadow:0 4px 12px -8px rgba(15,23,42,.20);font-weight:700;
+}
+#gestorHistPeriodFilter .btn-ghost{background:var(--surface);}
+#gestorHistPeriodFilter .btn-blue{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 6px 16px -6px rgba(0,109,138,.55);}
+body.dark #gestorHistPeriodFilter .btn{background:var(--surface2);}
+body.dark #gestorHistPeriodFilter .btn-blue{box-shadow:0 6px 16px -6px rgba(0,180,216,.40);}
+
+/* 6 · Componentes del dashboard (chips, anillos, barras, píldoras) */
+.fx-chip{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:18px;flex-shrink:0;}
+.fx-ring{position:relative;flex-shrink:0;}
+.fx-ring svg{transform:rotate(-90deg);display:block;}
+.fx-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:800;}
+.fx-bars{display:flex;align-items:flex-end;gap:9px;height:58px;margin-top:12px;padding:0 4px;}
+.fx-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.fx-bar i{display:block;width:9px;border-radius:100px;background:var(--gray-200);position:relative;}
+body.dark .fx-bar i{background:#2A3B54;}
+.fx-bar i::before{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:inherit;}
+.fx-bar em{font-style:normal;font-size:8.5px;font-weight:800;color:var(--text-muted);}
+.fx-bar.hot i{background:var(--blue);}
+body.dark .fx-bar.hot i{background:var(--accent);}
+.fx-bar.hot em{color:var(--blue);}
+body.dark .fx-bar.hot em{color:var(--accent);}
+.fx-pill{font-size:9.5px;font-weight:800;border-radius:100px;padding:3px 9px;display:inline-block;white-space:nowrap;}
+.fx-pill.up{background:rgba(16,185,129,.14);color:var(--green-dk);}
+body.dark .fx-pill.up{color:#34D399;}
+.fx-pill.down{background:rgba(239,68,68,.12);color:var(--red);}
+.fx-pill.flat{background:var(--gray-100);color:var(--gray-500);}
+.fx-pill.ink{background:#0B1220;color:#fff;}
+body.dark .fx-pill.ink{background:#05080F;border:1px solid rgba(255,255,255,.12);}
+
+/* 7 · Avatar squircle para las tarjetas de vales del gestor */
+.mv-av{
+  width:38px;height:38px;border-radius:13px;flex-shrink:0;
+  display:grid;place-items:center;font-size:11.5px;font-weight:800;
+}
+
+/* 8 · Admin: píldora activa del nav con sombra de marca */
+.anav-btn.active{box-shadow:0 6px 16px -6px rgba(0,109,138,.50);}
+body.dark .anav-btn.active{box-shadow:0 6px 16px -6px rgba(0,180,216,.40);}
+
+/* ═══════════════════════════════════════════════════════════════
+   v223 · «FITNESS PREMIUM» · FASE 2 — remata lo que quedaba con la
+   piel vieja (petición: "aplica los diseños a todo").
+   ═══════════════════════════════════════════════════════════════
+   La v222 llevó el lenguaje al dashboard, títulos y superficies.
+   Aquí entra el resto:
+     · «¿Quién eres?»: título editorial + tiles y píldora premium
+     · Formulario del vale: inputs tintados con anillo de foco
+     · Inputs y buscadores del panel (ax2): mismo trato
+     · Cards de todo el panel: radio 20-22px y sombra flotante
+     · Bandeja/picker/Estadísticas: esquinas premium
+   SOLO piel: ni un color por gestor cambia (--g1/--g2/--gcard/
+   --pfL/--pfD siguen mandando) y body.contrast sigue sin sombras.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1 · «¿Quién eres?» — título editorial (la palabra clave va en cursiva) */
+.col-left>.lbl{
+  font-size:19px;font-weight:800;letter-spacing:-.3px;
+  color:var(--text);text-transform:none;margin:2px 2px 10px;
+}
+.col-left>.lbl em{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;}
+
+/* 2 · Tiles del selector: radio 22, sombra flotante, avatar con anillo */
+.g-item.g-hero{
+  border-radius:22px;
+  box-shadow:0 2px 4px rgba(15,23,42,.05),0 16px 36px -14px rgba(15,23,42,.22);
+}
+.g-item.g-hero:hover{
+  box-shadow:0 3px 6px rgba(15,23,42,.06),0 22px 46px -14px rgba(15,23,42,.30);
+}
+.g-item.g-hero .g-name{font-size:13.5px;font-weight:800;letter-spacing:-.2px;}
+.g-item.g-hero .g-avatar{box-shadow:0 0 0 2px rgba(255,255,255,.60),0 4px 10px -2px rgba(15,23,42,.32);}
+body.dark .g-item.g-hero .g-avatar{box-shadow:0 0 0 2px rgba(255,255,255,.16),0 4px 12px -2px rgba(0,0,0,.50);}
+
+/* 3 · «← Cambiar gestor»: píldora flotante en vez del botón plano */
+.g-change{
+  border-radius:100px;background:var(--surface);border:1px solid var(--border);
+  font-weight:800;padding:11px 12px;
+  box-shadow:0 4px 14px -8px rgba(15,23,42,.22);
+}
+.g-change:hover{background:var(--surface2);color:var(--blue);}
+body.dark .g-change{background:var(--surface2);}
+
+/* 4 · Formulario del vale: inputs tintados, radio 14, anillo de foco */
+.vf-row input,.vf-row textarea{
+  border-radius:14px;border-color:rgba(148,163,184,.55);
+  background:rgba(127,127,127,.04);
+}
+.vf-row input:focus,.vf-row textarea:focus{box-shadow:0 0 0 3.5px rgba(0,109,138,.14);}
+body.dark .vf-row input,body.dark .vf-row textarea{
+  border-color:rgba(148,163,184,.30);background:rgba(255,255,255,.045);
+}
+body.dark .vf-row input:focus,body.dark .vf-row textarea:focus{box-shadow:0 0 0 3.5px rgba(56,189,248,.16);}
+.vale-form-header h2{font-size:19px;letter-spacing:-.3px;}
+
+/* 5 · Inputs y buscadores del panel (ax2) */
+.ax2-search-box{border-radius:14px;}
+.ax2-search-box:focus-within{border-color:var(--ax2-signal);box-shadow:0 0 0 3px rgba(0,109,138,.10);}
+.ax2-input{border-radius:14px;border-color:rgba(148,163,184,.35);}
+.ax2-input:focus{box-shadow:0 0 0 3px rgba(0,109,138,.12);}
+body.dark .ax2-input{border-color:rgba(148,163,184,.22);}
+
+/* 6 · Cards de todo el panel: flotan igual que el dashboard */
+.gp-card{
+  border-radius:22px;
+  box-shadow:0 2px 4px rgba(15,23,42,.05),0 18px 44px -16px rgba(15,23,42,.22);
+}
+.stat-card{border-radius:20px;box-shadow:0 2px 4px rgba(15,23,42,.04),0 14px 34px -14px rgba(15,23,42,.18);}
+.m-card{border-radius:20px;}
+.vx-card{border-radius:20px;box-shadow:0 2px 4px rgba(15,23,42,.04),0 14px 34px -14px rgba(15,23,42,.18);}
+.rank-row{box-shadow:0 2px 4px rgba(15,23,42,.04),0 12px 30px -12px rgba(15,23,42,.16);}
+body.dark:not(.contrast) .gp-card,
+body.dark:not(.contrast) .stat-card,
+body.dark:not(.contrast) .m-card,
+body.dark:not(.contrast) .vx-card,
+body.dark:not(.contrast) .rank-row,
+body.dark:not(.contrast) .g-item{border-color:rgba(255,255,255,.07);}
+
+/* 7 · Bandeja / picker / Estadísticas: esquinas premium — el color
+     sigue llegando por el relleno v221 (el inline manda en color;
+     aquí solo redondeamos lo que el inline dejaba a 10px) */
+.pf-fill{border-radius:20px !important;}
+.vxp-tile{border-radius:20px;}
+
+/* 8 · Kickers (➕ Agregar gestor, 📋 Historial…): alineados al lenguaje
+     editorial — más peso y aire, siguen siendo kickers pequeños */
+.lbl{letter-spacing:.8px;font-weight:800;}

@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AXONTECH · Gestión de Ventas</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006d8a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AXONTECH">
+  <link rel="apple-touch-icon" href="./iconos/icon-192.png">
+  <link rel="preload" href="./fuentes/sora-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./app.css?v=224">
+  <!-- v211 RENDIMIENTO: pre cargamos el JS principal desde el head (el navegador
+       empieza a bajarlo en seguido, no cuando llega al final del body) y se
+       ejecuta con defer: no bloquea el parseo ni el primer pintado del splash. -->
+  <link rel="preload" href="./app.min.js?v=224" as="script" fetchpriority="high">
+  <style>
+    /* Splash screen inline — no depende de app.css.
+       Se muestra INMEDIATAMENTE al cargar el HTML, antes de que app.js termine.
+       Se quita desde init() en app.js o por timeout de seguridad (8s). */
+    #axon-splash{position:fixed;inset:0;background:linear-gradient(135deg,#003a4d 0%,#006d8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .4s ease;}
+    #axon-splash.hide{opacity:0;pointer-events:none;}
+    #axon-splash .axon-splash-logo{font-size:42px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.4);margin-bottom:18px;}
+    #axon-splash .axon-splash-sub{font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.65);text-transform:uppercase;margin-bottom:28px;font-weight:600;}
+    #axon-splash .axon-splash-spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:axon-spin .9s linear infinite;}
+    @keyframes axon-spin{to{transform:rotate(360deg);}}
+    @media (prefers-reduced-motion:reduce){#axon-splash .axon-splash-spin{animation-duration:2s;}}
+  </style>
+</head>
+<body data-page="gestor">
+
+<!-- ══ SPLASH (se quita desde app.js init()) ══ -->
+<div id="axon-splash" role="status" aria-live="polite" aria-label="Cargando AXONTECH">
+  <div class="axon-splash-logo">AXONTECH</div>
+  <div class="axon-splash-sub">Gestión de Ventas</div>
+  <div class="axon-splash-spin"></div>
+</div>
+<script>
+  // Timeout de seguridad: si init() no termina en 8s, quitar el splash igual.
+  window.__axonHideSplash = function(){
+    var s = document.getElementById('axon-splash');
+    if(s){s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},450);}
+  };
+  setTimeout(window.__axonHideSplash, 8000);
+</script>
+
+<!-- Skip to content link for keyboard users -->
+<a href="#main-content" class="skip-link" style="position:absolute;top:-100px;left:0;background:var(--blue);color:white;padding:8px 16px;z-index:9999;font-size:14px;font-weight:700;text-decoration:none;" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">Saltar al contenido</a>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="brand">
+    <div class="brand-icon" id="brandTap">AX</div>
+    <div>
+      <div class="brand-name">AXONTECH</div>
+      <div class="brand-sub">GESTIÓN DE VENTAS</div>
+    </div>
+    <!-- Banner pequeño de versión: chip discreto que muestra la versión actual.
+         Al hacer clic, dispara una verificación manual de actualizaciones. -->
+    <span id="versionBadge"
+          onclick="checkVersion(true)"
+          title="Versión actual · Toca para buscar actualizaciones"
+          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">v17.0</span>
+  </div>
+  <span id="headerGestorName"></span>
+  <div class="header-right">
+    <!-- v213: chip de estado offline — la app sigue funcionando sin red -->
+    <span id="offlineChip" style="display:none;align-items:center;gap:4px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.45);color:#fcd34d;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;white-space:nowrap;">📴 Sin conexión</span>
+    <button onclick="openNotifsModal()" title="Ver Novedades" aria-label="Ver novedades" style="position:relative;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+      📢 Novedades <span id="notifUnreadBadge" style="display:none;background:var(--red);color:white;border-radius:10px;padding:1px 5px;font-size:9px;"></span>
+    </button>
+    <!-- v89: tasa informal del USD (elToque). El valor y su fecha los pinta
+         renderTasaBadge(); al tocarlo se abre el detalle y se puede refrescar
+         o escribir a mano. -->
+    <button id="tasaUSDBadge" onclick="openTasaModal()" title="Tasa del dólar" aria-label="Tasa del dólar" style="display:none;align-items:center;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;">💵 <span id="tasaUSDValor">—</span></button>
+    <div class="header-date" id="headerDate"></div>
+    <button id="btnCatalogo" onclick="openGestorCatalog()" title="Ver catálogo de productos" aria-label="Ver catálogo de stock" style="display:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;">📦 Stock</button>
+    <button id="btnPWAInstallHeader" title="Instalar AXONTECH en tu teléfono" aria-label="Instalar app" style="display:none;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;">📲 Instalar</button>
+    <button id="btnTheme" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro/oscuro">🌙</button>
+  </div>
+</header>
+
+<!-- Banner flotante de actualización disponible: se muestra solo cuando
+     checkVersion() detecta que version.json tiene una versión mayor que la local. -->
+<div id="updateBanner"
+     style="display:none;position:fixed;top:0;left:0;right:0;z-index:9000;background:linear-gradient(90deg,#10B981,#059669);color:white;padding:10px 14px;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);">
+  <span id="updateBannerText">🔄 Nueva versión disponible</span>
+  <button onclick="applyUpdate()" style="background:white;color:#059669;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:800;cursor:pointer;">Recargar ahora</button>
+  <button onclick="dismissUpdate()" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">Más tarde</button>
+</div>
+
+<!-- ══════════ GESTOR LAYOUT ══════════ -->
+<div class="layout active" id="layoutGestor" role="main">
+
+  <!-- Col 1: Selector de gestores (izquierda en desktop, arriba en móvil) -->
+  <div class="col col-left">
+    <div class="lbl">¿Quién <em>eres</em>?</div>
+    <div id="gestoresList">
+      <div class="es"><div class="es-icon">👤</div><div class="es-text">El admin aún no ha configurado gestores</div></div>
+    </div>
+    <div class="g-change" onclick="changeGestor()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')changeGestor()" style="cursor:pointer;">← Cambiar gestor</div>
+  </div>
+
+  <!-- Col 2: Top Gestores (derecha en desktop SIN gestor, oculto cuando hay gestor) -->
+  <div class="col col-right" id="rankingColumn">
+    <div id="gestorRankingSection" style="margin-bottom:14px;">
+      <div class="sec-title" style="margin-top:0;">🏆 Top <em>gestores</em></div>
+      <div class="card" style="padding:14px 16px;">
+        <div id="rankingList"><div class="es"><div class="es-text">Sin datos aún</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Col 3: Vale form (centro en desktop cuando hay gestor, oculto cuando no) -->
+  <div class="col col-mid">
+    <div id="mobileBackBar">
+      <button onclick="changeGestor()">← Volver</button>
+      <span id="mobileBackName" style="font-size:13px;font-weight:700;color:var(--blue-dk);"></span>
+    </div>
+    <div class="card" id="gestorBanner" style="background:var(--blue-lt);border-color:var(--blue-bd);display:none;align-items:center;gap:10px;margin-bottom:14px;">
+      <div class="g-avatar" id="bannerAvatar" style="width:40px;height:40px;font-size:14px;background:var(--gray-300);">?</div>
+      <div>
+        <div style="font-size:10px;color:var(--gray-600);font-weight:700;letter-spacing:.5px;" id="bannerLbl">SELECCIONA TU NOMBRE</div>
+        <div style="font-size:15px;font-weight:700;color:var(--blue-dk);" id="bannerName">Selecciona tu nombre →</div>
+      </div>
+    </div>
+
+    <!-- Notificaciones personales (visible solo para el gestor logueado) -->
+    <div id="gestorPersonalNotifsSection" style="display:none;margin-bottom:14px;">
+      <div class="lbl" style="margin-top:0;">🔔 Mis Alertas</div>
+      <div id="gestorPersonalNotifsList"></div>
+    </div>
+
+    <div id="valeFormWrapper">
+    <div id="pendingSyncBanner" class="pending-sync-banner" style="display:none;">
+      <span class="psb-icon">📡</span>
+      <span class="psb-text">
+        <span class="psb-count" data-pending-count>0</span>
+        <span class="psb-msg" data-pending-msg>vales pendientes de sincronizar</span>
+      </span>
+    </div>
+    <div class="vale-form-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 style="margin:0;">"AXONTECH" 🔥</h2>
+        <p style="margin:4px 0 0;font-size:11px;">Completa los campos y envía</p>
+      </div>
+    </div>
+    <div class="vale-form-body">
+
+      <div class="vf-row vf-auto">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Promotor <span style="color:var(--blue);font-size:9px;">● Auto</span></span></div>
+          <input type="text" id="vf-promotor" readonly placeholder="Selecciona tu nombre arriba">
+        </div>
+      </div>
+
+      <hr class="vf-sep">
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Nombre Cliente <span class="vf-req">*</span></span></div>
+          <input type="text" id="vf-cliente" placeholder="Nombre completo del cliente" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Teléfono Cliente <span class="vf-req">*</span></span></div>
+          <input type="tel" id="vf-telefono" placeholder="Número de teléfono" oninput="this.value=this.value.replace(/[^0-9]/g,'');onFormInput()" inputmode="numeric" pattern="[0-9]*">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Dirección Cliente <span class="vf-req">*</span></span></div>
+          <input type="text" id="vf-direccion" placeholder="Dirección de entrega" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <!-- v18: Checkbox recogida en tienda -->
+      <div class="vf-row">
+        <span class="vf-emoji">🏪</span>
+        <div class="vf-inner">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-size:13px;font-weight:600;color:var(--text);">
+            <input type="checkbox" id="vf-recogidaTienda" onchange="onRecogidaTiendaChange()" style="width:18px;height:18px;accent-color:var(--blue);cursor:pointer;">
+            <span>Recogida en tienda (sin envío a domicilio)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- v18: Ubicación compartida (link de Google Maps) -->
+      <div class="vf-row" id="vf-ubicacionRow">
+        <span class="vf-emoji">📍</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Ubicación (Google Maps)</span></div>
+          <input type="text" id="vf-ubicacion" placeholder="Pega aquí el link de la ubicación compartida" oninput="onFormInput()" style="font-size:11px;">
+        </div>
+      </div>
+
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Mensajería / costo</span></div>
+          <input type="text" id="vf-mensajeria" placeholder="Ej: Gratis / $2 USD" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <!-- v104: la hora a la que el cliente espera el pedido. Un vale mandado a
+           las 10 de la mañana para entregar a las 3 de la tarde se quedaba
+           enterrado entre los demás y se pasaba la hora. Poniéndola aquí, el
+           admin recibe un aviso una hora antes. Es opcional: si se deja vacío,
+           todo funciona igual que siempre. -->
+      <div class="vf-row">
+        <span class="vf-emoji">⏰</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Día y hora de entrega <span style="font-weight:400;color:var(--text-muted);font-size:10px;">· opcional, avisa al admin 1 h antes</span></span></div>
+          <!-- v131: el día también. Antes solo había hora y se daba por hecho que
+               era el mismo día del vale: un pedido para el sábado no había forma
+               de apuntarlo. Sin día, sigue siendo el día del vale. -->
+          <div style="display:flex;gap:6px;">
+            <input type="date" id="vf-fechaEntrega" oninput="onFormInput()" style="flex:1.3;min-width:0;">
+            <input type="time" id="vf-horaEntrega" oninput="onFormInput()" style="flex:1;min-width:0;">
+          </div>
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label">
+            <span>Artículo y cantidad <span class="vf-req">*</span></span>
+          </div>
+          <button type="button" class="catalog-cta" id="btnPickProducts" onclick="openProductPicker()">
+            <span class="catalog-cta-icon">📦</span>
+            <span class="catalog-cta-text">
+              <span class="catalog-cta-title">Seleccionar del catálogo <span class="vf-req">*</span></span>
+              <span class="catalog-cta-sub">Obligatorio: sin esto el vale no da puntos ni descuenta stock</span>
+            </span>
+            <span class="catalog-cta-arrow">›</span>
+          </button>
+          <div id="selectedProductsList" style="display:none;"></div>
+          <textarea id="vf-articulo" rows="2" placeholder="Los productos aparecerán aquí al elegirlos arriba" oninput="onFormInput()"></textarea>
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio USD / Zelle</span></div>
+          <input type="text" id="vf-precioUSD" placeholder="Del catálogo" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio MN</span></div>
+          <input type="text" id="vf-precioMN" placeholder="Del catálogo" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Vuelto</span></div>
+          <input type="text" id="vf-vuelto" placeholder="Ej: 500 MN / 0" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">🔸</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Total a pagar <span class="vf-req">*</span></span></div>
+          <input type="text" id="vf-total" placeholder="Total final" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <!-- v131: notas del gestor para el admin: lo que no cabe en ningún campo
+           ("llamar antes de ir", "paga la mamá", "portero sin timbre"). -->
+      <div class="vf-row">
+        <span class="vf-emoji">📝</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Notas para el admin <span style="font-weight:400;color:var(--text-muted);font-size:10px;">· opcional</span></span></div>
+          <textarea id="vf-notasGestor" rows="2" maxlength="400" placeholder="Ej: llamar antes de ir · el cliente paga mitad en MN" oninput="onFormInput()" style="width:100%;resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <hr class="vf-sep">
+
+      <!-- v69: campos que casi nunca se tocan, plegados para acortar el formulario.
+           De 17 campos en pantalla a 13. NO se pliegan los de precio (mensajería,
+           precio USD/MN, vuelto) porque alimentan el cálculo automático del total,
+           ni los cinco obligatorios (cliente, teléfono, dirección, artículo, total).
+           Se abre solo al editar un vale que ya traiga alguno relleno. -->
+      <div onclick="toggleVfExtras()" id="vfExtrasToggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:9px 12px;margin:4px 0 2px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;user-select:none;">
+        <span style="font-size:12px;font-weight:700;color:var(--text-muted);">➕ Más detalles <span style="font-weight:500;">· carnet, garantía, comisión</span></span>
+        <span id="vfExtrasArrow" style="color:var(--gray-400);font-size:12px;">▼</span>
+      </div>
+      <div id="vfExtras" style="display:none;">
+      <div class="vf-row">
+        <span class="vf-emoji">🪪</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Carnet de identidad</span></div>
+          <input type="text" inputmode="numeric" id="vf-carnet" placeholder="Opcional — Carnet del cliente" oninput="onFormInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <span class="vf-emoji">★</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Garantía</span></div>
+          <input type="text" id="vf-garantia" placeholder="Ej: 6 meses" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <div class="vf-row">
+        <span class="vf-emoji">💰</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Comisión del gestor <span style="color:var(--green);font-size:9px;">● Auto</span></span></div>
+          <input type="text" id="vf-comisionGestor" placeholder="Se calcula del catálogo" oninput="onFormInput()">
+        </div>
+      </div>
+
+      <!-- v75: el gestor puede renunciar a parte de su comisión en este vale
+           (cliente frecuente, cierre de venta, producto con un defecto leve…).
+           Ese dinero no se le acredita a nadie: deja de cobrarse y punto. No
+           toca el precio que paga el cliente ni el stock. -->
+      <div class="vf-row">
+        <span class="vf-emoji">🤝</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Rebajo de mi comisión <span style="color:var(--text-muted);font-weight:500;font-size:9px;">opcional</span></span></div>
+          <div style="display:flex;gap:6px;">
+            <input type="number" inputmode="decimal" id="vf-comisionCedida" min="0" step="0.5" placeholder="0" oninput="onCesionComisionInput()" style="flex:1;">
+            <select id="vf-comisionCedidaMoneda" onchange="onCesionComisionInput()" style="width:88px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 8px;font-size:13px;color:var(--text);">
+              <option value="USD">USD</option>
+              <option value="MN">MN</option>
+            </select>
+          </div>
+          <div id="vf-cesionNota" style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.35;"></div>
+          <input type="text" id="vf-cesionMotivo" placeholder="Motivo (ej: cliente frecuente)" oninput="onFormInput()" style="margin-top:6px;display:none;">
+        </div>
+      </div>
+
+      <div class="vf-row vf-auto">
+        <span class="vf-emoji">📅</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Fecha y hora de Venta <span style="color:var(--blue);font-size:9px;">● Auto</span></span></div>
+          <input type="text" id="vf-fecha" readonly>
+        </div>
+      </div>
+      </div>
+
+      <hr class="vf-sep">
+
+      <div class="vf-fixed">
+        <span data-linea-dir><b>🧭 Dirección de la tienda:</b><br>
+        * <span class="js-dir"></span><br><br></span>
+        <b>🚨 ATENCIÓN 🚨</b><br>
+        • Horarios de atención: 9:00am - 7:00pm.<br>
+        * Solo aceptamos hasta cinco billetes de 1 USD por compra.<br>
+        * Los pagos en MN deben ser con denominación de 50 en adelante.<br>
+        * Solo se aceptan billetes en buen estado (ni rotos ni manchados)
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="previewCard" class="card" style="display:none;">
+      <div style="font-size:10px;font-weight:700;color:var(--gray-400);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">Vista previa del vale</div>
+      <div class="vale-preview" id="valePreviewText" style="font-size:11px;max-height:200px;overflow-y:auto;"></div>
+      
+      <div style="margin-top:10px;">
+        <button class="btn btn-blue btn-full" id="sendValeBtn" onclick="sendVale()" disabled>📤 Enviar al Admin</button>
+      </div>
+      <div id="ticketClientSection" style="margin-top:14px;border-top:1px dashed var(--gray-300);padding-top:12px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">— Opciones para el Cliente —</div>
+        <button class="btn btn-full btn-sm" style="background:#F59E0B;color:white;" onclick="openTicketModal()">🎫 Generar Ticket de Recogida</button>
+      </div>
+
+    </div>
+    </div><!-- /valeFormWrapper -->
+
+    <!-- Mis Vales (aquí para que se vea en móvil cuando hay gestor seleccionado) -->
+        <div id="gestorMyValesSection" style="display:none;padding-top:4px;">
+      <!-- v222: saludo fitness premium (avatar squircle + fecha + vales en curso) -->
+      <div id="gestorGreet" style="display:none;"></div>
+      <!-- NEW: Resumen dashboard with period chips -->
+      <div class="sec-title" style="margin-top:6px;">📊 Mi <em>Resumen</em></div>
+      <div class="sec-sub" id="gestorResumenSub"></div>
+      <div id="gestorHistDashboard"></div>
+      <div id="gestorHistPeriodFilter" style="display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap;">
+        <button class="btn btn-blue btn-sm" data-period="ciclo" onclick="setGestorHistPeriod('ciclo')" style="display:none;">Este ciclo</button>
+        <button class="btn btn-ghost btn-sm" data-period="month" onclick="setGestorHistPeriod('month')">Este mes</button>
+        <button class="btn btn-ghost btn-sm" data-period="last" onclick="setGestorHistPeriod('last')">Mes pasado</button>
+        <button class="btn btn-ghost btn-sm" data-period="all" onclick="setGestorHistPeriod('all')">Todo</button>
+      </div>
+
+      <div class="sec-title">Vales <em>activos</em></div>
+      <div id="gestorMyVales"></div>
+      
+      <div style="margin-top:20px;">
+        <div onclick="toggleGestorHistorial()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+          <span class="lbl" style="margin:0;">📋 Historial (Completados)</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="gestorHistCount" style="background:var(--gray-200);color:var(--gray-600);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:700;"></span>
+            <span id="gestorHistArrow" style="color:var(--gray-400);font-size:13px;">▼</span>
+          </div>
+        </div>
+        <div id="gestorHistorialList" style="display:none;"></div>
+        <div id="gestorHistClearBtn" style="display:none;margin-top:6px;text-align:center;">
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;" onclick="clearGestorHistory()">🙈 Ocultar historial</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mis Comisiones Pendientes -->
+    <div id="gestorComisionSection" style="display:none;padding-top:4px;">
+      <div class="sec-title" style="margin-top:14px;">💰 Mis <em>Comisiones</em></div>
+      <div id="gestorComisionList"></div>
+    </div>
+
+  </div>
+</div><!-- /layoutGestor -->
+
+<!-- ── MODAL: Contraseña Gestor ── -->
+<div class="modal-bg" id="gestorPassModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Acceso Gestor</div>
+    <div class="modal-sub" id="gestorPassModalSub">Ingresa tu contraseña</div>
+    <input type="password" id="gestorPassInput" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitGestorPass()">
+    <div class="pass-error" id="gestorPassError">Contraseña incorrecta</div>
+    <label class="remember-pass-row" for="gestorPassRemember">
+      <input type="checkbox" id="gestorPassRemember">
+      <span>Recordar contraseña en este dispositivo</span>
+    </label>
+    <div class="remember-pass-hint">Solo en tu móvil/PC. No la uses en dispositivos compartidos.</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-full" onclick="closeGestorPassModal()">Cancelar</button>
+      <button class="btn btn-blue btn-full" id="gestorPassSubmit" onclick="submitGestorPass()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Product Picker ── -->
+<div class="modal-bg" id="productPickerModal">
+  <div class="modal" style="max-width:580px;width:92%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <!-- Header (fixed) -->
+    <div style="padding:22px 22px 10px;flex-shrink:0;">
+      <div class="modal-title">📦 Catálogo de Productos</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+        <input type="search" id="pickerSearch" placeholder="Buscar producto..." oninput="renderPickerProducts()" style="flex:1;margin-bottom:0;">
+        <button type="button" class="btn btn-blue btn-sm" onclick="abrirScanner('picker')" title="Escanear código de barras" aria-label="Escanear código de barras" style="padding:8px 12px;font-size:15px;flex-shrink:0;">📷</button>
+      </div>
+      <div id="pickerCatTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
+    </div>
+    <!-- Scrollable content -->
+    <div style="flex:1;overflow-y:auto;min-height:0;padding:0 22px;">
+      <div id="pickerProductGrid" style="display:flex;flex-wrap:wrap;gap:6px;padding:2px;"></div>
+    </div>
+    <!-- Selected + Buttons (fixed at bottom) -->
+    <div style="flex-shrink:0;padding:0 22px 22px;border-top:1px solid var(--gray-200);margin-top:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray-600);margin:8px 0 6px;">Seleccionados:</div>
+      <div id="pickerSelectedList" style="min-height:28px;max-height:80px;overflow-y:auto;"></div>
+      <div class="modal-btns" style="margin-top:8px;">
+        <button class="btn btn-ghost btn-full" onclick="closeProductPicker()">Cancelar</button>
+        <button class="btn btn-blue btn-full" onclick="confirmPickerSelection()">Agregar al vale ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Catálogo Gestor (solo lectura) ── -->
+<div class="modal-bg" id="gestorCatalogModal">
+  <div class="modal" style="max-width:500px;width:94%;">
+    <div class="modal-title">📦 Catálogo de Productos</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+      <input type="search" id="catalogSearch" placeholder="Buscar producto..." oninput="renderGestorCatalog()" style="flex:1;margin-bottom:0;">
+      <button type="button" class="btn btn-blue btn-sm" onclick="abrirScanner('catalogo')" title="Escanear código de barras" aria-label="Escanear código de barras" style="padding:8px 12px;font-size:15px;flex-shrink:0;">📷</button>
+    </div>
+    <div id="catalogCatTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
+    <div id="gestorCatalogList" style="max-height:360px;overflow-y:auto;"></div>
+    <div class="modal-btns" style="margin-top:10px;">
+      <button class="btn btn-green" onclick="generateCatalogPDF()" style="flex:1;">📄 PDF Catálogo</button>
+      <button class="btn btn-blue" onclick="document.getElementById('gestorCatalogModal').classList.remove('show')" style="flex:1;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Confirmar Acción ── -->
+<div class="modal-bg" id="confirmActionModal">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-title" id="confirmActionTitle">¿Confirmar acción?</div>
+    <div class="modal-sub" id="confirmActionSub"></div>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeConfirmAction()">Cancelar</button>
+      <button type="button" class="btn btn-blue btn-full" id="confirmActionOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Sync indicator (online/offline/pending writes) -->
+<div id="syncIndicator" class="online">
+  <span class="sync-dot"></span>
+  <span id="syncLabel">En línea</span>
+</div>
+
+<!-- Notification banner (for incoming vale alerts when in admin mode) -->
+<div id="notifBanner"><span id="notifBannerText"></span></div>
+
+<!-- ══ PWA INSTALL BANNER (Android + iPhone + Xiaomi) ══ -->
+<div id="pwaInstallBanner" class="install-banner" role="dialog" aria-label="Instalar aplicación">
+  <div class="install-banner-inner">
+    <div class="install-banner-icon">📲</div>
+    <div class="install-banner-text">
+      <div class="install-banner-title">Instala AXONTECH</div>
+      <div class="install-banner-sub" id="pwaInstallSub">Acceso rápido desde tu pantalla de inicio</div>
+      <!-- Instrucciones especiales para iPhone/iPad (oculto en Android) -->
+      <div id="pwaInstallIOSHint" class="install-banner-ios" style="display:none;">
+        <span class="ios-step"><span class="ios-share">􀈂</span> Compartir</span>
+        <span class="ios-arrow">→</span>
+        <span class="ios-step">Añadir a pantalla de inicio</span>
+      </div>
+      <!-- Instrucciones manuales para Xiaomi Mi Browser / Huawei / UC (oculto por defecto) -->
+      <div id="pwaInstallManualHint" class="install-banner-manual" style="display:none;">
+        <div class="manual-step1">1. Toca el menú ⋮ (arriba a la derecha)</div>
+        <div class="manual-step2">2. Elige "Añadir a pantalla de inicio"</div>
+        <div class="manual-tip">💡 Instala <b>Chrome</b> desde la Play Store para tener aviso automático de instalación.</div>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button id="pwaInstallBtn" type="button" class="install-banner-btn-primary">Instalar</button>
+      <button type="button" class="install-banner-btn-secondary" onclick="openPWAInstallHelp()">¿Cómo?</button>
+      <button type="button" class="install-banner-btn-secondary" onclick="_dismissPWAInstall()">Ahora no</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Ayuda de Instalación PWA ── -->
+<div class="modal-bg" id="pwaInstallHelpModal">
+  <div class="modal" style="max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📲 Instalar AXONTECH</div>
+    <div class="modal-sub" style="margin-bottom:14px;">
+      Navegador detectado: <b id="pwaHelpBrowser">—</b>
+    </div>
+
+    <!-- BLOQUE: Chrome / Edge / Samsung con beforeinstallprompt -->
+    <div id="pwaHelpChrome" class="pwa-help-block">
+      <div class="pwa-help-title">✅ Tu navegador soporta instalación directa</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa el botón <b>"Instalar ahora"</b> abajo.</li>
+        <li>Confirma el aviso que aparece en pantalla.</li>
+        <li>Aparecerá un icono de AXONTECH en tu pantalla de inicio. ¡Listo!</li>
+      </ol>
+      <p class="pwa-help-note">También puedes usar el menú ⋮ del navegador → <b>Instalar app</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Chrome / Edge SIN beforeinstallprompt (caso del teléfono problemático) -->
+    <div id="pwaHelpChromeNoPrompt" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Tu Chrome no mostró el aviso automático</div>
+      <p class="pwa-help-note">A veces Chrome no ofrece instalar la app aunque el sitio sea una PWA válida (puede pasar por Chrome muy antiguo, modo escritorio activado, o almacenamiento lleno). Usa cualquiera de estos métodos alternativos:</p>
+
+      <div class="pwa-help-subtitle">Método 1 — Compartir para agregar a inicio (más rápido):</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"📤 Compartir / Agregar a inicio"</b> abajo.</li>
+        <li>En la hoja de compartir que se abre, busca y elige <b>"Añadir a pantalla de inicio"</b> (en Samsung, Xiaomi y Pixel suele aparecer como destino de compartir).</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+
+      <div class="pwa-help-subtitle">Método 2 — Escanear QR desde otro móvil:</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"🖼️ Ver código QR"</b> abajo.</li>
+        <li>Abre la <b>cámara</b> de otro teléfono que sí tenga Chrome actualizado.</li>
+        <li>Apunta la cámara al código QR que aparece en pantalla.</li>
+        <li>En ese móvil sí saldrá el aviso automático de instalación.</li>
+      </ol>
+
+      <div class="pwa-help-subtitle">Método 3 — Copiar URL y enviarla:</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"📋 Copiar URL"</b> abajo.</li>
+        <li>Pégala en un chat de WhatsApp o Telegram.</li>
+        <li>Ábrela desde otro teléfono con Chrome actualizado.</li>
+      </ol>
+
+      <p class="pwa-help-note">💡 Si nada de esto funciona, actualiza Chrome desde la Play Store o instala <b>Chrome Beta</b>. En Chrome moderno (90+) la opción "Instalar app" debería aparecer en el menú ⋮.</p>
+    </div>
+
+    <!-- BLOQUE: Samsung Internet -->
+    <div id="pwaHelpSamsung" class="pwa-help-block">
+      <div class="pwa-help-title">📱 Samsung Internet</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>☰</b> (arriba a la derecha o abajo).</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Samsung Internet soporta instalación de apps web en versiones recientes. Si no ves la opción, actualiza el navegador desde Galaxy Store o Play Store.</p>
+    </div>
+
+    <!-- BLOQUE: Opera / Brave / Vivaldi -->
+    <div id="pwaHelpOpera" class="pwa-help-block">
+      <div class="pwa-help-title">🌐 Opera / Brave / Vivaldi</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú del navegador (⋮ o el icono del navegador abajo).</li>
+        <li>Busca <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Estos navegadores están basados en Chromium, así que la opción debería estar disponible en versiones recientes.</p>
+    </div>
+
+    <!-- BLOQUE: Kiwi Browser -->
+    <div id="pwaHelpKiwi" class="pwa-help-block">
+      <div class="pwa-help-title">🥝 Kiwi Browser</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Kiwi está basado en Chromium y soporta instalación de apps web en versiones recientes.</p>
+    </div>
+
+    <!-- BLOQUE: Xiaomi Mi Browser -->
+    <div id="pwaHelpXiaomi" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Navegador Mi de Xiaomi</div>
+      <p class="pwa-help-note">El navegador que viene preinstalado en tu Xiaomi <b>no permite</b> instalar apps web con un solo botón. Tienes dos opciones:</p>
+      <div class="pwa-help-subtitle">Opción A — Instalar manualmente en Mi Browser:</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el icono de menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> (o "Añadir a inicio").</li>
+        <li>Confirma. Aparecerá un icono en tu pantalla de inicio.</li>
+      </ol>
+      <div class="pwa-help-subtitle">Opción B — Usar Chrome (recomendado):</div>
+      <ol class="pwa-help-steps">
+        <li>Abre la <b>Play Store</b> e instala <b>Chrome</b> (gratis).</li>
+        <li>Abre Chrome y entra a AXONTECH.</li>
+        <li>Te saldrá un aviso automático para instalar con un toque.</li>
+      </ol>
+      <p class="pwa-help-note">La opción B da mejor experiencia: aviso automático, notificaciones push y actualizaciones sin tener que re-abrir el navegador.</p>
+    </div>
+
+    <!-- BLOQUE: Huawei Browser -->
+    <div id="pwaHelpHuawei" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Navegador Huawei</div>
+      <p class="pwa-help-note">El navegador Huawei no soporta instalación directa con un botón.</p>
+      <div class="pwa-help-subtitle">Opción A — Manual:</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <div class="pwa-help-subtitle">Opción B — AppGallery + Chrome:</div>
+      <ol class="pwa-help-steps">
+        <li>En <b>AppGallery</b> busca e instala <b>Chrome</b>.</li>
+        <li>Abre Chrome y entra a AXONTECH — te saldrá aviso automático.</li>
+      </ol>
+    </div>
+
+    <!-- BLOQUE: iPhone / iPad -->
+    <div id="pwaHelpIphone" class="pwa-help-block">
+      <div class="pwa-help-title">📱 iPhone / iPad (Safari)</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el icono <b>Compartir</b> <span style="font-size:18px;">􀈂</span> (cuadro con flecha hacia arriba, abajo en Safari).</li>
+        <li>Desplázate y elige <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Pulsa <b>"Añadir"</b>. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">Si usas Chrome en iPhone, el proceso es el mismo: menú ⋮ → <b>"Añadir a pantalla de inicio"</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Firefox móvil -->
+    <div id="pwaHelpFirefox" class="pwa-help-block">
+      <div class="pwa-help-title">🦊 Firefox</div>
+      <ol class="pwa-help-steps">
+        <li>Abre el menú del navegador (icono ☰ abajo o arriba).</li>
+        <li>Busca la opción <b>"Instalar app"</b> o <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Firefox aún no soporta el aviso automático de instalación. Para mejor experiencia te recomendamos <b>Chrome</b>, <b>Edge</b> o <b>Samsung Internet</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Android genérico (navegadores menores) -->
+    <div id="pwaHelpGeneric" class="pwa-help-block">
+      <div class="pwa-help-title">🌐 Tu navegador en Android</div>
+      <ol class="pwa-help-steps">
+        <li>Abre el menú del navegador (suele ser un icono <b>⋮</b> o <b>☰</b>).</li>
+        <li>Busca la opción <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Para mejor experiencia te recomendamos <b>Chrome</b>, <b>Edge</b> o <b>Samsung Internet</b>, que soportan instalación con un solo toque.</p>
+    </div>
+
+    <!-- BLOQUE: Desktop -->
+    <div id="pwaHelpDesktop" class="pwa-help-block">
+      <div class="pwa-help-title">💻 Navegador de escritorio</div>
+      <p class="pwa-help-note">Para instalar AXONTECH en tu computadora:</p>
+      <ol class="pwa-help-steps">
+        <li><b>Chrome / Edge:</b> menú ⋮ → <b>"Instalar AXONTECH…"</b> o busca el icono <b>⊕</b> en la barra de direcciones.</li>
+        <li><b>Brave:</b> menú ⋮ → <b>"Instalar AXONTECH…"</b>.</li>
+        <li><b>Firefox:</b> todavía no soporta instalación de PWAs en desktop.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Para usar AXONTECH cómodamente en el móvil, abre este enlace desde tu teléfono.</p>
+    </div>
+
+    <!-- BLOQUE: WebView (FB/IG/WA) -->
+    <div id="pwaHelpWebView" class="pwa-help-block">
+      <div class="pwa-help-title">🔒 Estás dentro de otra app</div>
+      <p class="pwa-help-note">Estás viendo AXONTECH dentro del navegador de Facebook, Instagram o WhatsApp. Para instalarlo necesitas abrirlo en un navegador real:</p>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Abrir en Chrome"</b> o <b>"Abrir en navegador"</b>.</li>
+        <li>Una vez en Chrome, verás el aviso automático <b>"Instalar app"</b>.</li>
+      </ol>
+      <p class="pwa-help-note">💡 También puedes copiar la URL y pegarla directamente en Chrome.</p>
+    </div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button id="pwaHelpInstallNowBtn" type="button" class="btn btn-blue btn-full" style="display:none;">Instalar ahora</button>
+      <button id="pwaHelpShareBtn" type="button" class="btn btn-green btn-full" style="display:none;">📤 Compartir / Agregar a inicio</button>
+      <button id="pwaHelpQRBtn" type="button" class="btn btn-full" style="background:#7c3aed;color:#fff;">🖼️ Ver código QR</button>
+      <button id="pwaHelpCopyBtn" type="button" class="btn btn-ghost btn-full">📋 Copiar URL</button>
+      <button type="button" class="btn btn-ghost btn-full" onclick="closePWAInstallHelp()">Cerrar</button>
+    </div>
+    <p style="font-size:10px;color:var(--muted,#94a3b8);text-align:center;margin-top:10px;line-height:1.4;">
+      💡 Mantén pulsado el botón 📲 del header para ver el diagnóstico técnico.
+    </p>
+  </div>
+</div>
+
+<!-- ── MODAL: Ticket de Cliente ── -->
+<div class="modal-bg" id="ticketModal" onclick="if(event.target===this)closeTicketModal()">
+  <div class="modal" style="max-width:340px;width:92%;background:transparent;box-shadow:none;padding:0;">
+    
+    <!-- Banner verde (visible solo después de enviar un vale) -->
+    <div id="ticketSuccessBanner" style="display:none; background:#10B981; color:white; padding:12px 14px; border-radius:12px; margin-bottom:10px; text-align:center; font-weight:700; font-size:13px; line-height:1.4; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+      ✓ Vale enviado al administrador.<br>Comparte este ticket con el cliente.
+    </div>
+
+    <!-- The Ticket Visual -->
+    <div class="ticket" id="ticketVisual" style="background: white; color: #111827; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative;">
+      <div class="t-head" style="background: #f3f4f6; text-align: center; padding: 20px 15px; border-bottom: 2px dashed #d1d5db; position: relative;">
+        <div style="font-size: 20px; font-weight: 900; color: #006d8a; letter-spacing: 2px; margin-bottom: 4px;">AXONTECH</div>
+        <div style="font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Pase de Recogida en Tienda</div>
+      </div>
+      <div class="t-body" style="padding: 20px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;"><span style="color:#6b7280; font-weight:600;">Atendido por:</span><span id="tk-gestor" style="color:#006d8a; font-weight:800; font-size:15px; text-align:right;"></span></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;"><span style="color:#6b7280; font-weight:600;">Cliente:</span><span id="tk-cliente" style="font-weight:800; text-align:right; max-width:60%;"></span></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;"><span style="color:#6b7280; font-weight:600;">Artículo:</span><span id="tk-articulo" style="font-weight:800; text-align:right; max-width:60%;"></span></div>
+        <!-- v79: fila de rebaja. Solo se muestra si el gestor rebajó algo, y va
+             antes del total para que se lea "precio, descuento, total". Al cliente
+             le interesa ver el descuento que le han hecho. -->
+        <div id="tk-rebajaRow" style="display:none; justify-content:space-between; margin-bottom:10px; font-size:13px;"><span style="color:#6b7280; font-weight:600;">Rebaja:</span><span id="tk-rebaja" style="color:#b45309; font-weight:700;"></span></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;"><span style="color:#6b7280; font-weight:600;">Total a Pagar:</span><span id="tk-total" style="font-weight:800; text-align:right; max-width:60%; font-size:15px;"></span></div>
+        
+        <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 12px; border-radius: 8px; font-size: 11px; margin-top: 20px; color: #b45309; font-weight: 700; text-align: center; line-height: 1.5;">
+          📍 Muestre esta pantalla en el mostrador para que le entreguen su pedido rápidamente y se asigne la venta a su promotor.
+        </div>
+      </div>
+      <div class="t-foot" style="text-align: center; padding: 15px; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; background: #f9fafb; font-weight: 600;" data-linea-dir>
+        <span class="js-dir"></span>
+      </div>
+    </div>
+    
+    <!-- Controls -->
+    <div style="margin-top: 15px; background:#1f2937; padding:15px; border-radius:14px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-full" style="background: #3b82f6; color: white;" onclick="shareTicketImage()">📸 Compartir como Imagen</button>
+      <button class="btn btn-full" style="background: #10B981; color: white;" onclick="copyTicketText()">💬 Copiar texto para WhatsApp</button>
+      <button class="btn btn-ghost btn-full" style="background:rgba(255,255,255,0.1); border:none; color:white;" onclick="closeTicketModal()">Cerrar</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ── MODAL: Detalle de Vale Gestor ── -->
+<div class="modal-bg" id="gestorValeModal">
+  <div class="modal" style="max-width:360px;width:92%;">
+    <div class="modal-title" style="margin-bottom:12px;">📋 Detalle de la Venta</div>
+    <div id="gestorValeModalContent" style="font-size:13px;line-height:1.6;color:var(--text);margin-bottom:16px;"></div>
+    <div class="modal-btns">
+      <button class="btn btn-blue btn-full" onclick="document.getElementById('gestorValeModal').classList.remove('show')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL: Novedades ── -->
+<div class="modal-bg" id="notifsModal">
+  <div class="modal" style="max-width:400px;width:92%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="modal-title" style="margin:0;">📢 Novedades</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearGestorNotifs()" style="font-size:10px;padding:4px 8px;">Limpiar</button>
+    </div>
+    <div id="gestorNotifsSection" style="display:block;">
+      <div id="gestorNotifsList" style="max-height:60vh;overflow-y:auto;padding-right:4px;"></div>
+    </div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn btn-blue btn-full" onclick="closeNotifsModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ v78: TAB BAR INFERIOR (solo gestor, solo móvil) ══ -->
+<nav id="tabbar" aria-label="Navegación principal">
+  <button class="tab-btn active" data-tab="inicio" type="button" onclick="tabGo('inicio')">
+    <span class="tab-ico" aria-hidden="true">🏠</span><span class="tab-lbl">Inicio</span>
+  </button>
+  <button class="tab-btn" data-tab="catalogo" type="button" onclick="tabGo('catalogo')">
+    <span class="tab-ico" aria-hidden="true">📦</span><span class="tab-lbl">Catálogo</span>
+  </button>
+  <button class="tab-btn" data-tab="vales" type="button" onclick="tabGo('vales')">
+    <span class="tab-ico" aria-hidden="true">🧾</span><span class="tab-lbl">Mis vales</span>
+  </button>
+  <button class="tab-btn" data-tab="perfil" type="button" onclick="tabGo('perfil')">
+    <span class="tab-ico" aria-hidden="true">👤</span><span class="tab-lbl">Perfil</span>
+  </button>
+</nav>
+
+<!-- ══ v78: HOJA DE PERFIL (se abre con la pestaña Perfil) ══ -->
+<div id="pfBackdrop" onclick="closePerfil()" aria-hidden="true"></div>
+<div id="perfilSheet" role="dialog" aria-label="Perfil y ajustes">
+  <div class="pf-grab"></div>
+  <div class="pf-head">
+    <div class="pf-avatar" id="pfAvatar">?</div>
+    <div style="min-width:0;flex:1;">
+      <div class="pf-name" id="pfName">Sin gestor seleccionado</div>
+      <div class="pf-sub" id="pfSub">Elige tu nombre para empezar</div>
+    </div>
+  </div>
+  <div class="pf-grid">
+    <button class="pf-btn" type="button" onclick="pfTheme()">
+      <span class="pf-ico" id="pfThemeIco">🌙</span><span>Modo oscuro</span><span class="pf-state off" id="pfThemeState">OFF</span>
+    </button>
+    <button class="pf-btn" type="button" onclick="pfContrast()">
+      <span class="pf-ico">🔆</span><span>Alto contraste</span><span class="pf-state off" id="pfContrastState">OFF</span>
+    </button>
+    <button class="pf-btn" type="button" onclick="pfNotifs()">
+      <span class="pf-ico">📢</span><span>Novedades</span>
+    </button>
+    <button class="pf-btn" type="button" onclick="pfTasa()">
+      <span class="pf-ico">💵</span><span>Tasa USD</span>
+    </button>
+    <button class="pf-btn wide" type="button" onclick="pfChangeGestor()">
+      <span class="pf-ico">🔄</span><span>Cambiar de gestor</span>
+    </button>
+  </div>
+  <div class="pf-ver" id="pfVer">AXONTECH</div>
+</div>
+
+<script src="./app.min.js?v=224" defer></script>
+<script>
+// Close modals by clicking backdrop
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>

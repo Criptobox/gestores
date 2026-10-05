@@ -1,0 +1,93 @@
+name: Tasa del dólar
+
+# Baja la tasa informal del USD y la deja en tasa.json, que la app lee de su
+# propia dirección. El rodeo por aquí no es capricho: el navegador del teléfono
+# no puede leer el contenido de otra web salvo que esa web lo autorice (CORS), y
+# las webs de tasas no lo autorizan. Este trabajo corre en un servidor de
+# GitHub, donde esa restricción no existe.
+on:
+  # Reactivado el 17/08/2026 con band-clamping. El scraping no aceptará valores
+  # fuera de una banda relativa a la última tasa conocida (665 ± 25-60%).
+  # Esto rechaza saltos como 665→116 o cambios mayores al 25% en pocas horas.
+  schedule:
+    - cron: '17 */3 * * *'  # Cada 3 horas a las :17
+  workflow_dispatch:        # botón manual en la pestaña Actions
+    inputs:
+      diagnostico:
+        description: 'Probar todas las fuentes sin publicar nada'
+        type: boolean
+        default: false
+      forzar:
+        description: 'Saltar el ancla (usar tras un movimiento real del mercado)'
+        type: boolean
+        default: false
+      urls_prueba:
+        description: 'Direcciones extra a probar, separadas por comas (solo con diagnóstico)'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+# Que dos ejecuciones no se pisen escribiendo el mismo archivo.
+concurrency:
+  group: tasa-usd
+  cancel-in-progress: false
+
+jobs:
+  tasa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Buscar la tasa
+        env:
+          # Opcional: si algún día se pide clave a elToque, se guarda en
+          # Settings → Secrets → Actions con este nombre. Sin ella el script se
+          # salta la API oficial y prueba los espejos públicos.
+          ELTOQUE_API_KEY: ${{ secrets.ELTOQUE_API_KEY }}
+          TASA_URL_EXTRA: ${{ vars.TASA_URL_EXTRA }}
+          TASA_DIAG: ${{ inputs.diagnostico && '1' || '' }}
+          TASA_URLS_PRUEBA: ${{ inputs.urls_prueba }}
+          TASA_FORZAR: ${{ inputs.forzar && '1' || '' }}
+        run: python3 tasa_usd.py
+
+      - name: Publicar si cambió
+        run: |
+          if [ -z "$(git status --porcelain tasa.json)" ]; then
+            echo "La tasa no cambió (o no se pudo leer) — no se sube nada."
+            exit 0
+          fi
+          VALOR=$(python3 -c "import json;print(json.load(open('tasa.json'))['valor'])")
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # El push se rechazaba cuando alguien había subido algo mientras este
+          # trabajo corría ("! [rejected] main -> main (fetch first)"): se
+          # perdía la tasa y había que esperar tres horas a la siguiente vuelta.
+          #
+          # No se hace rebase: este trabajo solo produce UN archivo, así que se
+          # coge lo último del servidor, se le pone encima la tasa recién leída
+          # y se sube. Si vuelve a colarse alguien, se reintenta. La tasa más
+          # nueva es la que vale, que es justo lo que se quiere.
+          TASA_NUEVA=$(cat tasa.json)
+          for INTENTO in 1 2 3 4 5; do
+            git fetch origin main --depth=1
+            git reset --hard origin/main --quiet
+            printf '%s' "$TASA_NUEVA" > tasa.json
+            if [ -z "$(git status --porcelain tasa.json)" ]; then
+              echo "Otro push ya dejó esta misma tasa — no hay nada que subir."
+              exit 0
+            fi
+            git add tasa.json
+            git commit -m "tasa: ${VALOR} CUP por USD" --quiet
+            if git push; then
+              echo "Publicada la tasa ${VALOR} (intento ${INTENTO})."
+              exit 0
+            fi
+            echo "· Push rechazado (alguien subió antes). Reintento ${INTENTO}/5…"
+            sleep $((INTENTO * 5))
+          done
+          echo "::error::No se pudo publicar la tasa ${VALOR} tras 5 intentos."
+          exit 1

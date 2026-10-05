@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AXONTECH · Admin</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006d8a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AXONTECH Admin">
+  <link rel="apple-touch-icon" href="./iconos/icon-192.png">
+  <!-- v78: Sora ahora TAMBIÉN autohospedada (app.css la define); el preload
+       local garantiza que se use la misma fuente aunque Google no responda. -->
+  <link rel="preload" href="./fuentes/sora-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- v118: Sora + JetBrains Mono, solo para el rediseño nuevo (🧑‍💼 Dueños,
+       💰 Ganancia). El resto del admin sigue con la tipografía de siempre
+       hasta que se le pase el mismo estilo. Con crossorigin+anonymous el
+       navegador cachea el archivo de la fuente aparte de la petición CSS, así
+       que una vez descargada sirve sin red — y si el primer arranque es sin
+       conexión, cae sola al 'var(--font)' del stack de reserva. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- v211 RENDIMIENTO: Google Fonts ya no bloquea el primer pintado (media=print
+       + onload es el patrón asíncrono seguro). Sora sale del archivo local;
+       JetBrains Mono (solo paneles ax2) llega después sin frenar la app. -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="./app.css?v=224">
+  <!-- v211 RENDIMIENTO: pre carga del JS principal desde el head + defer al
+       ejecutar (mismo tratamiento que index.html). -->
+  <link rel="preload" href="./app.min.js?v=224" as="script" fetchpriority="high">
+  <style>
+    /* Splash screen inline — se quita desde app.js init() o tras 8s. */
+    #axon-splash{position:fixed;inset:0;background:linear-gradient(135deg,#003a4d 0%,#006d8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .4s ease;}
+    #axon-splash.hide{opacity:0;pointer-events:none;}
+    #axon-splash .axon-splash-logo{font-size:42px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.4);margin-bottom:6px;}
+    #axon-splash .axon-splash-sub{font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.65);text-transform:uppercase;margin-bottom:28px;font-weight:600;}
+    #axon-splash .axon-splash-spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:axon-spin .9s linear infinite;}
+    @keyframes axon-spin{to{transform:rotate(360deg);}}
+    @media (prefers-reduced-motion:reduce){#axon-splash .axon-splash-spin{animation-duration:2s;}}
+  </style>
+</head>
+<body data-page="admin">
+
+<!-- ══ SPLASH ══ -->
+<div id="axon-splash" role="status" aria-live="polite" aria-label="Cargando AXONTECH Admin">
+  <div class="axon-splash-logo">AXONTECH</div>
+  <div class="axon-splash-sub">Panel Admin</div>
+  <div class="axon-splash-spin"></div>
+</div>
+<script>
+  window.__axonHideSplash = function(){
+    var s = document.getElementById('axon-splash');
+    if(s){s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},450);}
+  };
+  setTimeout(window.__axonHideSplash, 8000);
+</script>
+
+<a href="#main-content" class="skip-link" style="position:absolute;top:-100px;left:0;background:var(--blue);color:white;padding:8px 16px;z-index:9999;font-size:14px;font-weight:700;text-decoration:none;" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">Saltar al contenido</a>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="brand" onclick="window.location.href='./index.html'" title="Volver a la página de gestores">
+    <div class="brand-icon">AX</div>
+    <div>
+      <div class="brand-name">AXONTECH</div>
+      <div class="brand-sub">PANEL ADMIN</div>
+    </div>
+    <!-- Banner pequeño de versión: chip discreto que muestra la versión actual. -->
+    <span id="versionBadge"
+          onclick="checkVersion(true)"
+          title="Versión actual · Toca para buscar actualizaciones"
+          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">v17.0</span>
+  </div>
+  <span id="adminBadge"></span>
+  <span id="inboxCountBadge" style="display:none;background:var(--red);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;"></span>
+  <div class="header-right">
+    <!-- v213: chip de estado offline — la app sigue funcionando sin red -->
+    <span id="offlineChip" style="display:none;align-items:center;gap:4px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.45);color:#fcd34d;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;white-space:nowrap;">📴 Sin conexión</span>
+    <span id="roLabel" style="display:none;background:var(--orange);color:white;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800;letter-spacing:.4px;align-items:center;gap:3px;">👤 SOLO LECTURA</span>
+    <span id="adminLabel">ADMIN</span>
+    <!-- v89: tasa informal del USD (elToque). El valor y su fecha los pinta
+         renderTasaBadge(); al tocarlo se abre el detalle y se puede refrescar
+         o escribir a mano. -->
+    <button id="tasaUSDBadge" onclick="openTasaModal()" title="Tasa del dólar" aria-label="Tasa del dólar" style="display:none;align-items:center;gap:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;">💵 <span id="tasaUSDValor">—</span></button>
+    <div class="header-date" id="headerDate"></div>
+    <button id="btnLogout" onclick="logoutAdmin()" title="Cerrar sesión">🚪 Salir</button>
+    <button id="btnPWAInstallHeader" title="Instalar AXONTECH en tu teléfono" aria-label="Instalar app" style="display:none;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;">📲 Instalar</button>
+    <button id="btnTheme" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro/oscuro">🌙</button>
+  </div>
+</header>
+
+<!-- Banner flotante de actualización disponible -->
+<div id="updateBanner"
+     style="display:none;position:fixed;top:0;left:0;right:0;z-index:9000;background:linear-gradient(90deg,#10B981,#059669);color:white;padding:10px 14px;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);">
+  <span id="updateBannerText">🔄 Nueva versión disponible</span>
+  <button onclick="applyUpdate()" style="background:white;color:#059669;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:800;cursor:pointer;">Recargar ahora</button>
+  <button onclick="dismissUpdate()" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;">Más tarde</button>
+</div>
+
+<!-- ══ ADMIN LAYOUT ══ -->
+<div class="layout" id="layoutAdmin" role="main">
+
+  <!-- Admin nav -->
+  <div class="admin-nav">
+    <button class="anav-btn" id="anav-vales" onclick="adminTab('vales')">📥 Vales</button>
+    <button class="anav-btn" id="anav-stock" onclick="adminTab('stock')">📦 Stock</button>
+    <button class="anav-btn" id="anav-catalog" onclick="adminTab('catalog')">🛍️ Catálogo</button>
+    <button class="anav-btn" id="anav-gestores" onclick="adminTab('gestores')">👥 Gestores</button>
+    <button class="anav-btn" id="anav-mensajeros" onclick="adminTab('mensajeros')">🛵 Mensajeros<span id="mensajeroBadge" style="display:none;background:var(--red);color:white;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:4px;"></span></button>
+    <button class="anav-btn" id="anav-directas" onclick="adminTab('directas')">🏪 Ventas directas</button>
+    <button class="anav-btn" id="anav-duenos" onclick="adminTab('duenos')">🧑‍💼 Dueños</button>
+    <button class="anav-btn" id="anav-stats" onclick="adminTab('stats')">📊 Estadísticas</button>
+    <button class="anav-btn" id="anav-historial" onclick="adminTab('historial')">📋 Historial</button>
+    <button class="anav-btn" id="anav-estafa" onclick="adminTab('estafa')">🚫 Estafa</button>
+    <button class="anav-btn" id="anav-diseno" onclick="adminTab('diseno')">🎨 Diseño</button>
+    <button class="anav-btn" id="anav-config" onclick="adminTab('config')">⚙️ Config</button>
+    <button class="anav-btn" id="anav-ayuda" onclick="adminTab('ayuda')">❓ Ayuda</button>
+  </div>
+
+  <!-- ════════ VALES PANEL ════════ -->
+  <div id="adminValesPanel" class="admin-panel" style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;align-items:start;">
+    <!-- Left: inbox -->
+    <div>
+      <!-- v208: cabecera del apartado (título + cuántos piden atención),
+           estadísticas de dinero, filtros de estado y chips de gestor.
+           Todo lo pinta app.js (renderAdminGestores). -->
+      <div id="valesHead"></div>
+      <div id="valesStats" style="margin:12px 0 2px;"></div>
+      <div id="valesPills" style="margin:12px 0 4px;"></div>
+      <div id="valesChips" style="margin-bottom:12px;"></div>
+
+      <!-- v108: entregas con hora acordada, la más próxima arriba. Un aviso que
+           salta una vez es fácil de perder; esto se ve siempre. Se esconde solo
+           cuando ningún vale pendiente lleva hora. -->
+      <div id="proximasEntregasSection" style="display:none;margin-bottom:14px;">
+        <div class="lbl" id="proximasEntregasCab" style="margin-top:0;cursor:pointer;user-select:none;" onclick="toggleProximasEntregas()">⏰ Próximas entregas</div>
+        <div id="proximasEntregas"></div>
+      </div>
+
+      <div id="bandejaSection">
+        <div class="sec-title" id="bandejaLbl" style="margin-top:0;">📥 Bandeja de <em>entrada</em></div>
+        <div id="adminGestoresList"></div>
+      </div>
+
+      <div id="confirmadosSection">
+        <div class="lbl" style="margin-top:18px;">✅ Confirmados hoy</div>
+        <div id="confirmadosList"></div>
+      </div>
+
+      <div id="pendienteSection">
+        <div class="lbl" style="margin-top:18px;">⏳ Pendientes de cobro</div>
+        <div id="pendienteList"></div>
+      </div>
+
+      <div id="pendingCobroSection" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Right: vale detail -->
+    <div>
+      <div id="valeDetail"></div>
+    </div>
+  </div>
+
+  <!-- ════════ STOCK PANEL ════════ -->
+  <div id="adminStockPanel" class="admin-panel">
+    <!-- v134: ventas de productos que ya no están en el catálogo, para volver a vincularlas -->
+    <div id="ventasBorradasBox" style="display:none;margin-bottom:12px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+      <div>
+        <div class="sec-title" style="margin-top:0;" id="stockPanelTitle">Todos los productos</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <input type="text" id="newCatInput" placeholder="Nueva categoría…" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:7px 10px;font-size:12px;width:160px;">
+        <button class="btn btn-blue btn-sm" onclick="addCategoria()">＋ Categoría</button>
+        <button class="btn btn-ghost btn-sm" id="catManagerToggle" onclick="toggleCatManager()">🗂️ Gestionar</button>
+        <!-- v119: lo que se dio de baja por daño o pérdida. El botón 📉 de cada
+             producto es el que registra; aquí se ve todo junto y se deshace. -->
+        <button class="btn btn-ghost btn-sm" onclick="openMermasModal()" title="Mercancía dada de baja por daño, pérdida o vencimiento">📉 Mermas</button>
+        <button class="btn btn-orange btn-sm" onclick="optimizeProductPhotos()" title="Convertir todas las fotos JPEG/PNG a WebP y borrar las originales">🖼️ Optimizar imágenes</button>
+        <!-- v106: saca a GitHub las fotos que quedaron guardadas dentro del
+             producto. Son las que hacen que el catálogo entero pese de más en
+             cada bajada. Ver _subirFotoAGitHub() en app.js. -->
+        <button class="btn btn-ghost btn-sm" onclick="migrarFotosAGitHub()" title="Mover a GitHub las fotos guardadas dentro de la base de datos (libera espacio en la base de datos)">☁️ Aligerar catálogo</button>
+        <button class="btn btn-green btn-sm" onclick="openAddProductModal()">＋ Nuevo producto</button>
+      </div>
+    </div>
+
+    <!-- v84: buscador de productos. Con casi cien productos, encontrar uno para
+         reponerlo obligaba a recorrer la lista entera o a acertar la categoría.
+         v213: botón de escáner — busca por código de barras (cámara o lector). -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div style="position:relative;flex:1;min-width:0;">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5;pointer-events:none;">🔎</span>
+        <input type="text" id="stockBuscador" placeholder="Buscar producto por nombre o código…" oninput="onBuscarStock()"
+               style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 34px;font-size:13px;color:var(--text);">
+        <button type="button" id="stockBuscadorLimpiar" onclick="limpiarBuscadorStock()" title="Limpiar"
+                style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);font-size:16px;cursor:pointer;padding:4px 8px;">×</button>
+      </div>
+      <button type="button" onclick="abrirScanner('stock')" title="Escanear código de barras" aria-label="Escanear código de barras"
+              style="flex-shrink:0;background:var(--blue);color:white;border:none;border-radius:10px;padding:0 14px;font-size:17px;cursor:pointer;transition:all .15s;">📷</button>
+    </div>
+    <div id="stockBuscadorInfo" style="display:none;font-size:11px;color:var(--text-muted);margin:-4px 0 8px;"></div>
+
+    <div id="categoriasList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+
+    <div id="catManagerPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px;">
+      <div class="lbl" style="margin-top:0;">🗂️ Categorías existentes</div>
+      <div id="catManagerList"></div>
+    </div>
+
+    <div id="productGrid"></div>
+  </div>
+
+  <!-- ════════ CATALOG PANEL ════════ -->
+  <div id="adminCatalogPanel" class="admin-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+      <div class="sec-title" style="margin-top:0;">🛍️ Catálogo <em>público</em></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <!-- v84: compartir sin tener que publicar de nuevo. El enlace es fijo. -->
+        <button class="btn btn-green btn-sm" onclick="compartirCatalogoWhatsApp()">📲 Enviar por WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="copiarLinkCatalogo()" title="Copiar el enlace del catálogo">🔗 Copiar enlace</button>
+        <button class="btn btn-blue btn-sm" onclick="shareCatalogWeb()">🔗 Generar / Publicar</button>
+        <button class="btn btn-ghost btn-sm" onclick="publishCatalogNow()">☁️ Publicar ya</button>
+        <button class="btn btn-ghost btn-sm" onclick="testGitHubPages()">🧪 Probar GitHub</button>
+        <button class="btn btn-green btn-sm" onclick="generateCatalogPDF()">📄 PDF Catálogo</button>
+      </div>
+    </div>
+    <input type="search" id="catalogAdminSearch" placeholder="Buscar producto..." oninput="renderAdminCatalog()" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px 11px;font-size:12px;width:100%;max-width:300px;margin-bottom:8px;">
+    <div id="catalogAdminCatTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+    <div id="catalogAdminGrid"></div>
+    <div id="ghSyncStatus" style="margin-top:14px;font-size:11px;"></div>
+  </div>
+
+  <!-- ════════ GESTORES PANEL ════════ -->
+  <div id="adminGestoresPanel" class="admin-panel">
+    <div class="lbl" style="margin-top:0;">➕ Agregar gestor</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px;">
+      <input type="text" id="newGestorInput" placeholder="Nombre del gestor" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 10px;font-size:13px;">
+      <input type="text" id="newGestorPhoneInput" placeholder="Teléfono (opcional)" style="width:160px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 10px;font-size:13px;">
+      <button class="btn btn-blue" onclick="addGestor()">＋ Agregar</button>
+    </div>
+
+    <!-- Gestores activos — plegable. Una tarjeta por gestor con TODO junto:
+         identidad, contraseña/editar/foto/eliminar, y comisiones (plegables
+         dentro de la misma tarjeta) — antes "Comisiones por gestor" era una
+         lista aparte que repetía cada nombre otra vez. -->
+    <div onclick="toggleGestorManager()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <span class="lbl" style="margin:0;">👥 Gestores <span id="gestoresCountBadge" style="background:var(--blue);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">0</span></span>
+      <span id="gestorManagerArrow" style="color:var(--gray-400);font-size:13px;transition:transform .2s;">▼</span>
+    </div>
+    <div id="gestorManagerSection" style="display:block;">
+      <!-- v121: buscador de gestores. Con una lista larga, dar con uno para
+           pagarle o mirarle los puntos obligaba a recorrerla entera, y encima
+           el orden no es alfabético: va por lo que se le debe. -->
+      <div style="position:relative;margin-bottom:10px;">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5;pointer-events:none;">🔎</span>
+        <input type="text" id="gestorBuscador" placeholder="Buscar gestor por nombre o teléfono…" oninput="onBuscarGestor()"
+               style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 34px;font-size:13px;color:var(--text);">
+        <button type="button" id="gestorBuscadorLimpiar" onclick="limpiarBuscadorGestor()" title="Limpiar"
+                style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);font-size:16px;cursor:pointer;padding:4px 8px;">×</button>
+      </div>
+      <div id="gestorBuscadorInfo" style="display:none;font-size:11px;color:var(--text-muted);margin:-4px 0 8px;"></div>
+      <div id="adminGestoresPanel-list"></div>
+    </div>
+  </div>
+
+  <!-- ════════ MENSAJEROS PANEL ════════ -->
+  <div id="adminMensajerosPanel" class="admin-panel">
+    <div class="lbl" style="margin-top:0;">➕ Agregar mensajero</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px;">
+      <input type="text" id="newMensajeroInput" placeholder="Nombre del mensajero" style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 10px;font-size:13px;">
+      <input type="tel" id="newMensajeroPhoneInput" placeholder="📱 Teléfono (WhatsApp)" style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px 10px;font-size:13px;">
+      <button class="btn btn-blue" onclick="addMensajero()">＋ Agregar</button>
+    </div>
+
+    <!-- Mensajeros registrados — plegable. Una sola lista, ordenada alfabéticamente,
+         con todas las opciones de cada mensajero juntas (ver entregas, WhatsApp,
+         editar, eliminar) — antes eran 3 listas separadas y repetidas. -->
+    <div onclick="toggleMensajeroManager()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <span class="lbl" style="margin:0;">🛵 Mensajeros <span id="mensajerosCountBadge" style="background:var(--blue);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">0</span></span>
+      <span id="mensajeroManagerArrow" style="color:var(--gray-400);font-size:13px;transition:transform .2s;">▼</span>
+    </div>
+    <div id="mensajeroManagerSection" style="display:block;">
+      <div class="lbl" style="margin-top:0;font-size:11px;font-weight:400;color:var(--gray-400);">Toca un mensajero para ver sus entregas</div>
+      <div id="mensajerosList"></div>
+    </div>
+    <!-- v87: las entregas ya no se pintan aquí abajo — se abren en
+         #mensajeroEntregasModal al tocar el mensajero. -->
+  </div>
+
+  <!-- ════════ STATS PANEL ════════ -->
+  <div id="adminStatsPanel" class="admin-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <div class="sec-title" style="margin-top:0;">📊 Estadísticas</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:11px;color:var(--gray-500);">Desde:</label>
+        <input type="date" id="statsDateFrom" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;">
+        <label style="font-size:11px;color:var(--gray-500);">Hasta:</label>
+        <input type="date" id="statsDateTo" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;">
+        <button class="btn btn-blue btn-sm" onclick="renderStats()">Actualizar</button>
+      </div>
+    </div>
+
+    <div class="lbl">Resumen</div>
+    <div id="statsSummaryRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
+
+    <!-- v213: gráfico de tendencia de ventas (SVG por semana) -->
+    <div id="statsTendencia" style="margin-bottom:18px;"></div>
+
+    <!-- v209: exportar el período actual (usa las fechas de arriba) -->
+    <div class="exp-bar">
+      <span class="exp-lbl">📤 Exportar:</span>
+      <button class="btn btn-sm exp-btn" onclick="exportarCSV('ventas')">Ventas CSV</button>
+      <button class="btn btn-sm exp-btn" onclick="exportarCSV('comisiones')">Comisiones CSV</button>
+      <button class="btn btn-sm exp-btn" onclick="exportarCSV('stock')">Stock CSV</button>
+      <button class="btn btn-sm exp-btn exp-pdf" onclick="exportarPDF()">Reporte PDF</button>
+    </div>
+
+    <!-- v130: la caja. Cuánto entró en el período por cada forma de pago: lo
+         que hay que tener en la mano (USD, EUR, MN) y lo que está en cuentas (Zelle). -->
+    <div class="lbl">💳 Caja por forma de pago <span style="font-weight:400;font-size:10px;color:var(--text-muted);">(ventas confirmadas del período)</span></div>
+    <div id="statsCaja" style="margin-bottom:18px;"></div>
+
+    <!-- v114: control de ganancias. Lo que hay arriba cuenta vales; esto cuenta
+         dinero: cuánto hay metido en mercancía, cuánto vale esa mercancía si se
+         vende toda, y cuánto se ganó de verdad en el período. -->
+    <div class="ax2-panel">
+      <div class="ax2-card ax2-hero">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:15px;font-weight:700;color:var(--ax2-text-hi);">💰 Ganancia e inversión</div>
+          <button class="ax2-btn" onclick="toggleGananciaCols()">⚙️ Columnas</button>
+        </div>
+        <div class="ax2-search-box" style="margin-bottom:10px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="gananciaBuscar" type="text" placeholder="Buscar producto..." oninput="onGananciaBuscar(this.value)">
+        </div>
+        <div class="ax2-chip-row" id="gananciaChips">
+          <div class="ax2-chip active" data-f="todos" onclick="setGananciaFiltro('todos')">Todos <span class="n" id="gcnt-todos">0</span></div>
+          <div class="ax2-chip danger" data-f="agotado" onclick="setGananciaFiltro('agotado')">Agotados <span class="n" id="gcnt-agotado">0</span></div>
+          <div class="ax2-chip warn" data-f="bajo" onclick="setGananciaFiltro('bajo')">Bajo stock <span class="n" id="gcnt-bajo">0</span></div>
+          <div class="ax2-chip" data-f="sincosto" onclick="setGananciaFiltro('sincosto')">Sin costo <span class="n" id="gcnt-sincosto">0</span></div>
+        </div>
+      </div>
+      <div id="statsGananciaAviso"></div>
+      <div id="statsGananciaRow" class="ax2-kpi-grid" style="margin-bottom:10px;"></div>
+      <div id="statsGananciaCols" style="display:none;margin-bottom:10px;"></div>
+      <div id="statsGananciaTabla" style="margin-bottom:18px;"></div>
+    </div>
+
+    <div class="lbl">Por gestor (click para expandir)</div>
+    <div id="statsGestorList" style="margin-bottom:18px;"></div>
+
+    <div class="lbl">Por producto</div>
+    <div id="statsProductList" style="margin-bottom:18px;"></div>
+
+    <div class="lbl">Inventario</div>
+    <div id="statsInventarioRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;"></div>
+
+    <div class="lbl">Por categoría</div>
+    <div id="statsCatList" style="margin-bottom:18px;"></div>
+
+    <div class="lbl">🏆 Top productos vendidos (histórico)</div>
+    <div id="statsTopVendidos"></div>
+  </div>
+
+  <!-- ════════ HISTORIAL PANEL ════════ -->
+  <!-- ════════ DUEÑOS PANEL ════════
+       v117: el corte del día. La tienda vende mercancía de varias personas;
+       aquí sale, por cada una, qué se vendió de lo suyo, qué comisión le toca
+       pagar a cada gestor y cuánto queda después de pagarlas. -->
+  <div id="adminDuenosPanel" class="admin-panel ax2-panel">
+    <div class="ax2-card ax2-hero">
+      <div style="font-size:15px;font-weight:700;color:var(--ax2-text-hi);margin-bottom:12px;">🧑‍💼 Dueños · corte de ventas</div>
+      <div class="ax2-chip-row" id="duenosRangoChips">
+        <div class="ax2-chip" data-rango="hoy" onclick="setDuenosRango('hoy')">Hoy</div>
+        <div class="ax2-chip" data-rango="ayer" onclick="setDuenosRango('ayer')">Ayer</div>
+        <div class="ax2-chip" data-rango="mes" onclick="setDuenosRango('mes')">Este mes</div>
+        <label style="font-size:10.5px;color:var(--ax2-text-low);align-self:center;">Desde</label>
+        <input type="date" id="duenosDateFrom" class="ax2-input" onchange="renderDuenos()">
+        <label style="font-size:10.5px;color:var(--ax2-text-low);align-self:center;">Hasta</label>
+        <input type="date" id="duenosDateTo" class="ax2-input" onchange="renderDuenos()">
+      </div>
+    </div>
+
+    <div class="ax2-card" style="padding:12px 14px;margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="newDuenoInput" placeholder="Nombre del nuevo dueño" onkeydown="if(event.key==='Enter')addDuenoDesdeUI()"
+             class="ax2-input" style="flex:1;min-width:160px;">
+      <button class="ax2-btn primary" onclick="addDuenoDesdeUI()">＋ Agregar dueño</button>
+    </div>
+
+    <div id="duenosAviso"></div>
+    <div id="duenosResumen" class="ax2-kpi-grid" style="margin-bottom:14px;"></div>
+
+    <div class="ax2-section-head">
+      <div class="ax2-section-title">Debe pagar a</div>
+      <div class="ax2-section-count" id="duenosPagarCount"></div>
+    </div>
+    <div id="duenosPagarCard"></div>
+
+    <div class="ax2-section-head">
+      <div class="ax2-section-title">Por dueño</div>
+      <div class="ax2-section-count" id="duenosListaCount"></div>
+    </div>
+    <div id="duenosLista"></div>
+  </div>
+
+  <div id="adminHistorialPanel" class="admin-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <div class="sec-title" style="margin-top:0;">📋 Historial <em>(vales procesados)</em></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <input type="date" id="histDateFrom" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;">
+        <input type="date" id="histDateTo" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;">
+        <select id="histGestorFilter" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;">
+          <option value="">Todos los gestores</option>
+        </select>
+        <input type="text" id="histSearchPhone" placeholder="Buscar teléfono/cliente..." style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;width:180px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportHistorialCSV()">📥 CSV</button>
+      </div>
+    </div>
+    <div id="historialList"></div>
+  </div>
+
+  <!-- ════════ VENTAS DIRECTAS PANEL ════════ -->
+  <div id="adminDirectasPanel" class="admin-panel">
+    <div class="sec-title" style="margin-top:0;">🏪 Ventas directas <span style="font-size:11px;font-weight:600;color:var(--text-muted);">(solo tú las ves)</span></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6;">
+      Mercancía que entra y se vende en el momento, sin pasar por el almacén: no descuenta stock de nada.
+      Entra en las cuentas, pero <b>no manda ninguna notificación</b>: ni al gestor, ni al mensajero, ni de stock.
+    </p>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;">Registrar una venta</div>
+
+      <div style="margin-bottom:9px;">
+        <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;">Producto del catálogo (solo de referencia — no se toca su stock)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <select id="vdProducto" onchange="vdRefresca()" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);">
+            <option value="">— Elige el producto —</option>
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="vdNuevoProducto()" title="Guardar un producto nuevo y venderlo">＋ Producto nuevo</button>
+        </div>
+        <div id="vdStockInfo" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;margin-bottom:9px;">
+        <div>
+          <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;">Cantidad</label>
+          <input type="number" id="vdCantidad" min="1" step="1" value="1" inputmode="numeric" oninput="vdRefresca()"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;">Lo que se cobró</label>
+          <input type="text" id="vdCobrado" placeholder="$120 USD  ·  12000 MN"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);">
+        </div>
+      </div>
+
+      <div style="margin-bottom:9px;">
+        <label style="display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;">Nota (opcional — para acordarte de quién fue)</label>
+        <input type="text" id="vdNota" maxlength="120" placeholder="Ej: el vecino del 3ro, pagó en efectivo"
+               style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;color:var(--text);">
+      </div>
+
+      <div id="vdAviso" style="display:none;font-size:11px;font-weight:700;margin-bottom:8px;"></div>
+      <button class="btn btn-green btn-full" onclick="registrarVentaDirecta()">🏪 Registrar venta — sin avisar a nadie</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <div class="lbl" style="margin-top:0;">Lo vendido</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <select id="vdPeriodo" onchange="renderVentasDirectas()" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 9px;font-size:12px;color:var(--text);">
+          <option value="hoy">Hoy</option>
+          <option value="7">Últimos 7 días</option>
+          <option value="mes" selected>Este mes</option>
+          <option value="todo">Todo</option>
+        </select>
+      </div>
+    </div>
+    <div id="vdResumen" style="margin-bottom:10px;"></div>
+    <div id="vdLista"></div>
+  </div>
+
+  <!-- ════════ ESTAFA PANEL ════════ -->
+  <div id="adminEstafaPanel" class="admin-panel">
+    <div class="sec-title" style="margin-top:0;">🚫 Lista negra de <em>estafadores</em></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Registra personas que han estafado o intentado estafar. Cuando llegue un vale con datos coincidentes, se mostrará una alerta automática.</p>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div class="estafa-form-row">
+        <input type="text" id="estafaNombre" placeholder="Nombre completo del estafador">
+      </div>
+      <div class="estafa-form-row">
+        <input type="text" id="estafaTelefono" placeholder="Teléfono" inputmode="numeric">
+      </div>
+      <div class="estafa-form-row">
+        <input type="text" id="estafaCarnet" placeholder="Carnet de identidad (opcional)">
+      </div>
+      <div class="estafa-form-row">
+        <input type="text" id="estafaDireccion" placeholder="Dirección (opcional)">
+      </div>
+      <div class="estafa-form-row">
+        <textarea id="estafaNota" placeholder="Nota / detalle del incidente" rows="2"></textarea>
+      </div>
+      <button class="btn btn-red btn-full" onclick="addEstafa()">＋ Agregar a lista negra</button>
+    </div>
+
+    <div class="lbl">
+      <span id="estafaCount">0</span> entradas registradas
+    </div>
+    <input type="search" id="estafaSearch" placeholder="Buscar en la lista negra..." oninput="renderEstafaList()" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px 11px;font-size:12px;width:100%;max-width:300px;margin-bottom:8px;">
+    <div id="estafaList"></div>
+  </div>
+
+  <!-- ════════ CONFIG PANEL ════════ -->
+  <!-- ══ v80: APARTADO DISEÑO — nombre, logo y paleta de la tienda ══ -->
+  <div id="adminDisenoPanel" class="admin-panel">
+    <div class="sec-title" style="margin-top:0;">🎨 Identidad de tu <em>negocio</em></div>
+
+    <!-- Vista previa en vivo -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;">
+      <div id="dn-prev-card" style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 14px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);">
+        <div id="dn-prev-icon" style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;overflow:hidden;">AX</div>
+        <div style="min-width:0;">
+          <div id="dn-prev-nombre" style="font-size:15px;font-weight:800;letter-spacing:1.5px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">AXONTECH</div>
+          <div id="dn-prev-sub" style="font-size:9px;letter-spacing:1.2px;color:rgba(255,255,255,.75);font-weight:600;margin-top:4px;">GESTIÓN DE VENTAS</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+        <button id="dn-prev-btn" type="button" style="border:none;color:#fff;font-weight:700;font-size:12px;padding:9px 16px;border-radius:12px;cursor:default;box-shadow:0 2px 8px rgba(0,0,0,.15);">+ Nuevo vale</button>
+        <span style="font-size:11px;color:var(--text-muted);line-height:1.45;">Así ve la app tu negocio. Los cambios se aplican al guardar.</span>
+      </div>
+    </div>
+
+    <div class="lbl">🏷️ Nombre de la tienda</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <input type="text" id="dn-nombre" maxlength="22" placeholder="AXONTECH" oninput="_dnNombre(this)" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text);">
+      <p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">Hasta 22 caracteres. Aparece en la cabecera, el splash, el título de la pestaña y al instalar la app. Vacío = AXONTECH.</p>
+    </div>
+
+    <div class="lbl">💬 Lema (subtítulo)</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <input type="text" id="dn-sub" maxlength="36" placeholder="GESTIÓN DE VENTAS" oninput="_dnSub(this)" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;letter-spacing:1px;color:var(--text);">
+      <p style="font-size:11px;color:var(--text-muted);margin:8px 0 0;line-height:1.5;">La línea pequeña debajo del nombre. Vacío = “GESTIÓN DE VENTAS” (en el admin, “PANEL ADMIN”).</p>
+    </div>
+
+    <div class="lbl">🖼️ Logo</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div id="dn-logo-prev" style="width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <input type="file" id="dn-logo-file" accept="image/*" style="display:none" onchange="_dnLogoElegir(this)">
+          <button class="btn btn-blue btn-sm" type="button" onclick="document.getElementById('dn-logo-file').click()">🖼 Subir imagen</button>
+          <input type="text" id="dn-emoji" maxlength="4" placeholder="😀" oninput="_dnEmoji(this)" title="O escribe un emoji" style="width:56px;text-align:center;font-size:18px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 6px;">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="_dnLogoQuitar()">Quitar</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin:10px 0 0;line-height:1.5;">La imagen se recorta centrada, se redondea y se optimiza sola (queda en unos KB, va dentro de la hoja de Google). También vale un emoji, o nada: se usan las iniciales del nombre.</p>
+    </div>
+
+    <div class="lbl">🎨 Paleta de colores</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+      <div id="dn-paletas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+        <input type="color" id="dn-color" value="#006d8a" onchange="_dnColor(this.value)" style="width:46px;height:38px;border:1px solid var(--border);border-radius:10px;padding:2px;background:var(--surface);cursor:pointer;">
+        <span style="font-size:11px;color:var(--text-muted);line-height:1.45;flex:1;min-width:180px;">Color personalizado: elige el tuyo y se ajustan solos los tonos claros, oscuros y del modo noche.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-blue" onclick="_dnGuardar()">💾 Guardar diseño</button>
+      <button class="btn btn-ghost" onclick="_dnRestaurar()">↩ Restaurar original</button>
+      <span id="dn-status" style="font-size:11px;color:var(--text-muted);"></span>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin:12px 0 0;line-height:1.6;">
+      Los cambios llegan al resto de teléfonos en unos minutos (o al reabrir la app). El catálogo público toma el nombre, el logo y los colores la próxima vez que se publique desde ⚙️ Config.
+    </p>
+  </div>
+
+  <div id="adminConfigPanel" class="admin-panel">
+    <div class="sec-title" style="margin-top:0;">📞 Teléfonos de <em>contacto</em></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+        <label style="font-size:12px;font-weight:600;width:130px;">Admin (WhatsApp):</label>
+        <input type="text" id="adminPhoneInput" placeholder="Ej: 5355551234" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <button class="btn btn-blue btn-sm" onclick="saveAdminPhone()">Guardar</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:600;width:130px;">Catálogo público:</label>
+        <input type="text" id="catalogPhoneInput" placeholder="Ej: 5355551234" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <button class="btn btn-blue btn-sm" onclick="saveCatalogPhone()">Guardar</button>
+      </div>
+    </div>
+
+    <div class="lbl">🎯 Meta de puntos (ranking)</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <!-- v119: tres modos. El número de la meta se conserva al cambiar de
+           modo, para poder volver al fijo sin tener que reconfigurarlo. -->
+      <div id="metaModoChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-sm" data-modo="off"     onclick="setMetaModo('off')">Sin meta</button>
+        <button class="btn btn-sm" data-modo="fija"    onclick="setMetaModo('fija')">🎯 Meta fija</button>
+        <button class="btn btn-sm" data-modo="mensual" onclick="setMetaModo('mensual')">📅 Ranking mensual</button>
+      </div>
+      <div id="metaModoAyuda" style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5;"></div>
+      <!-- v119: el ciclo puede empezar el día que se elija, no solo el 1. -->
+      <div id="cicloFila" style="display:none;border:1px solid var(--border);border-radius:8px;padding:9px 10px;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">El ciclo empieza el día:</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" id="cfg-ciclo-inicio" style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--text);">
+          <button class="btn btn-blue btn-sm" onclick="guardarCicloInicio()">Aplicar</button>
+          <button class="btn btn-ghost btn-sm" id="btnCicloMesNatural" style="font-size:11px;" onclick="guardarCicloInicio('')">Mes natural</button>
+        </div>
+        <div id="cicloStatus" style="margin-top:7px;font-size:11px;"></div>
+      </div>
+      <div id="metaFijaFila" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="number" id="cfg-meta-puntos" placeholder="Ej: 100" min="1" style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <button class="btn btn-blue btn-sm" onclick="saveMetaPuntos()">Fijar meta</button>
+      </div>
+      <div id="metaPuntosStatus" style="margin-top:6px;font-size:11px;"></div>
+      <!-- v135: los ganadores de cada ciclo, desplegable -->
+      <div id="historialGanadoresAdmin"></div>
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-sm" style="border:1px solid var(--orange);color:var(--orange);background:none;" onclick="reiniciarPuntos()">♻️ Reiniciar puntos</button>
+          <button class="btn btn-ghost btn-sm" id="btnDeshacerReinicio" style="display:none;font-size:11px;color:var(--blue);" onclick="deshacerReinicioPuntos()">↩ Deshacer</button>
+        </div>
+        <div id="puntosDesdeStatus" style="margin-top:6px;font-size:11px;"></div>
+      </div>
+    </div>
+
+    <!-- v89: fuente de la tasa del dólar. La app ya prueba sola unos espejos
+         públicos de elToque; esto es la salida de emergencia para el día en que
+         dejen de funcionar, sin tener que tocar el código. -->
+    <div class="lbl">💵 Tasa del dólar (elToque)</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:600;">Sumar a la tasa:</label>
+          <input type="number" id="cfg-tasa-margen" placeholder="Ej: 10" style="width:110px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+          <button class="btn btn-blue btn-sm" onclick="saveTasaMargenCfg()">Aplicar</button>
+          <span id="tasaMargenStatus" style="font-size:11px;"></span>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin:0;">Si elToque marca 665 y pones 10, todos los gestores ven 675. Puede ser negativo.</p>
+        <!-- v120: aquí había dos campos más (la clave de la API de elToque y otra
+             dirección) con su propio botón "💾 Guardar fuente". Se quitaron por
+             dos motivos, y el segundo es el que molestaba de verdad:
+              · La clave no sirve desde el navegador: la API de elToque no
+                autoriza peticiones de otras webs (CORS), y por eso existe el
+                trabajo de GitHub que la baja por su cuenta cada 3 horas. Pedirla
+                aquí era invitar a pegar un secreto que no iba a usarse.
+              · Ese botón azul quedaba justo debajo del campo del margen y NO lo
+                guardaba —el del margen es el "Aplicar" de arriba—, así que el
+                +10 parecía no guardarse cuando en realidad ni se había pulsado
+                su botón. -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="openTasaModal()">💵 Ver / poner la tasa</button>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin:0;line-height:1.5;">
+          La tasa la baja sola un trabajo de GitHub cada 3 horas y la app la lee de ahí.
+          Si algún día no la consigue, escríbela a mano en “Ver / poner la tasa” y los gestores la verán igual.
+        </p>
+      </div>
+    </div>
+
+    <div class="lbl">🔑 Cambiar contraseña admin</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="password" id="newPassInputCfg" placeholder="Nueva contraseña (mín 4 caracteres)" style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <button class="btn btn-blue btn-sm" onclick="changePassCfg()">Cambiar</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">La contraseña se guarda como hash SHA-256. Cierre sesión y vuelva a entrar con la nueva clave.</p>
+    </div>
+
+    <div class="lbl">☁️ Sincronización con GitHub (backup + catálogo)</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="position:relative;">
+          <input type="password" id="gh-token" placeholder="Personal Access Token (permiso repo)" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 36px 7px 10px;font-size:12px;width:100%;box-sizing:border-box;" autocomplete="off">
+          <button type="button" onclick="toggleTokenVisibility()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;padding:4px 6px;color:var(--gray-400);" title="Mostrar/ocultar token">👁️</button>
+        </div>
+        <input type="text" id="gh-repo" placeholder="usuario/repositorio" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <input type="text" id="gh-path" placeholder="Ruta del backup (default: data.json)" style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);">
+          <input type="checkbox" id="gh-autosync"> Auto-sincronizar tras cada cambio
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);">
+          <input type="checkbox" id="gh-auto-publish-catalog"> Auto-publicar catálogo en GitHub Pages
+        </label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+          <button class="btn btn-blue btn-sm" onclick="saveAndSyncGitHub()">💾 Guardar y subir</button>
+          <button class="btn btn-ghost btn-sm" onclick="saveGhConfig()">Guardar config</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadFromGitHub()">📥 Cargar desde GitHub</button>
+          <button class="btn btn-ghost btn-sm" onclick="testGitHubPages()">🧪 Probar conexión</button>
+        </div>
+      </div>
+      <div id="ghSyncStatus2" style="margin-top:8px;font-size:11px;"></div>
+    </div>
+
+    <div class="lbl">💾 Backup / Reset</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-blue btn-sm" onclick="exportData()">📥 Exportar datos (JSON)</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+          📤 Importar JSON
+          <input type="file" accept=".json" style="display:none;" onchange="importData(this)">
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="loadDemo()">🎮 Cargar datos demo</button>
+      </div>
+      <hr style="border:none;border-top:1px dashed var(--border);margin:12px 0;">
+      <p style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:8px;">⚠️ Zona peligrosa — estas acciones no se pueden deshacer:</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" style="color:var(--orange);" onclick="clearGestoresData()">🧹 Limpiar vales y notifs</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="factoryResetVales()">🗑️ Borrar todos los vales</button>
+        <button class="btn btn-red btn-sm" onclick="nukeAndRebuild()">💥 Nuke & Rebuild (reset total)</button>
+      </div>
+      <div id="clearGestoresStatus" style="margin-top:6px;font-size:11px;"></div>
+    </div>
+
+    <div class="lbl">📜 Auditoría (últimos eventos)</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
+      <div id="auditLogList"><div class="es"><div class="es-text">Sin eventos registrados</div></div></div>
+    </div>
+
+    <!-- ════════ v209: AVISOS · SOLO LECTURA · RESPALDO ════════ -->
+    <div class="lbl">🔔 Avisos de vales nuevos</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="notifValesBtn" class="btn btn-sm" onclick="toggleNotifVales(this)">🔔 Activados</button>
+        <span style="font-size:11px;color:var(--gray-500);">Suena y avisa cuando un gestor envía un vale.</span>
+      </div>
+      <div id="notifValesPermiso" style="display:none;margin-top:6px;font-size:11px;color:var(--orange);">El navegador pidió permiso al entrar como admin — acéptalo para recibir avisos aunque la app esté en segundo plano.</div>
+    </div>
+
+    <!-- v213: firma del cliente al entregar -->
+    <div class="lbl">🖊️ Firma del cliente al entregar</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="firmaPedirBtn" class="btn btn-sm" onclick="toggleFirmaPedir(this)">🖊️ Activada</button>
+        <span style="font-size:11px;color:var(--gray-500);">Al marcar un vale como entregado se abre un canvas para que el cliente firme. La firma viaja con el vale.</span>
+      </div>
+    </div>
+
+    <div class="lbl">👤 Acceso solo lectura</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div id="roCfgEstado" style="font-size:11px;color:var(--gray-500);margin-bottom:8px;">Sin contraseña</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="password" id="roPassCfg" placeholder="Contraseña solo lectura (mín 4)" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;" onkeydown="if(event.key==='Enter')guardarRoPassCfg()">
+        <button class="btn btn-blue btn-sm" onclick="guardarRoPassCfg()">Guardar</button>
+        <button id="roCfgQuitar" class="btn btn-ghost btn-sm" style="display:none;" onclick="quitarRoPassCfg()">Quitar</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">Para los dueños: en la pantalla de contraseña aparece "👤 Entrar solo lectura" — ven todo pero no pueden guardar ni borrar nada.</div>
+    </div>
+
+    <div class="lbl">☁️ Respaldo de seguridad</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div id="backupEstado" style="font-size:11px;color:var(--gray-500);margin-bottom:8px;">Pulsa "Comprobar" para ver el estado del respaldo.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="backupRefrescarUI()">Comprobar</button>
+        <button class="btn btn-blue btn-sm" onclick="backupAhoraUI()">Respaldar ahora</button>
+        <button class="btn btn-sm" onclick="backupTriggerUI(true)">Activar semanal</button>
+        <button class="btn btn-ghost btn-sm" onclick="backupTriggerUI(false)">Desactivar</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">El respaldo copia toda la hoja a un archivo aparte en tu Drive ("AXONTECH respaldo …"). El semanal corre solo cada lunes (se activa una vez y queda instalado en tu cuenta de Google).</div>
+    </div>
+
+    <div class="lbl">ℹ️ Información del sistema</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:11px;color:var(--text-muted);line-height:1.7;">
+      <div><b>Versión:</b> v46</div>
+      <div><b>Almacenamiento:</b> localStorage + Google Sheets</div>
+      <div><b>Sync:</b> cola con reintentos exponenciales, persistencia offline</div>
+      <div><b>Seguridad:</b> hash SHA-256 + salt por usuario, sin texto plano</div>
+    </div>
+  </div>
+
+  <!-- ════════ AYUDA PANEL (v120) ════════
+       El manual de la app, dentro de la app. Se pinta desde AYUDA_SECCIONES en
+       app.js: cuando se añada algo nuevo, se añade ahí y sale aquí solo. -->
+  <div id="adminAyudaPanel" class="admin-panel">
+    <div class="sec-title" style="margin-top:0;">❓ Ayuda · qué hace <em>cada cosa</em></div>
+    <div style="position:relative;margin-bottom:10px;">
+      <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5;pointer-events:none;">🔎</span>
+      <input type="text" id="ayudaBuscador" placeholder="Buscar… (ej: merma, puntos, rebaja)" oninput="renderAyuda()"
+             style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 34px;font-size:13px;color:var(--text);">
+      <button type="button" id="ayudaBuscadorLimpiar" onclick="limpiarBuscadorAyuda()" title="Limpiar"
+              style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);font-size:16px;cursor:pointer;padding:4px 8px;">×</button>
+    </div>
+    <div id="ayudaChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+    <div id="ayudaContenido"></div>
+  </div>
+
+
+</div><!-- /layoutAdmin -->
+
+<!-- ── MODAL: Contraseña Admin ── -->
+<div class="modal-bg" id="passModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Acceso Administrador</div>
+    <div class="modal-sub">Ingresa la contraseña de admin (default: axon2024)</div>
+    <input type="password" id="passInput" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitPass()">
+    <div class="pass-error" id="passError">Contraseña incorrecta</div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-full" onclick="closePassModal()">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="submitPass()">Entrar</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px;font-size:12px;" onclick="submitPassRO()" title="Acceso sin permiso para guardar cambios">👤 Entrar solo lectura</button>
+  </div>
+</div>
+
+<!-- ── MODAL: Cambiar contraseña (en admin) ── -->
+<div class="modal-bg" id="passModalAdmin">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Cambiar contraseña</div>
+    <div class="modal-sub">Ingresa la nueva contraseña</div>
+    <input type="password" id="newPassInput" placeholder="Nueva contraseña (mín 4)" onkeydown="if(event.key==='Enter')changePass()">
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-full" onclick="document.getElementById('passModalAdmin').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="changePass()">Guardar</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MODAL: la clave recién generada de un gestor (v119) ──
+     Las claves se guardan encriptadas a propósito: ni el admin puede leerlas
+     después. Por eso este es el ÚNICO momento en que se puede ver la clave, y
+     antes salía en un aviso que se iba solo a los tres segundos — si te lo
+     perdías, no había forma de recuperarla y había que generar otra. -->
+<div class="modal-bg" id="claveGestorModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔑 Clave nueva</div>
+    <div class="modal-sub" id="claveGestorNombre">Gestor</div>
+
+    <div id="claveGestorValor"
+         style="margin:16px 0 10px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+                font-size:30px;font-weight:800;letter-spacing:4px;color:var(--text);
+                background:var(--surface2);border:2px dashed var(--blue);border-radius:12px;
+                padding:16px 8px;word-break:break-all;user-select:all;">--------</div>
+
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.5;background:rgba(245,158,11,.10);
+                border-left:3px solid var(--orange);border-radius:6px;padding:9px 11px;">
+      ⚠️ Cópiala o mándasela ahora. Se guarda encriptada, así que después
+      <b>no se podrá volver a ver</b>: si se pierde hay que generar otra.
+    </div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="copiarClaveGestor()">📋 Copiar</button>
+      <button type="button" class="btn btn-green btn-full" onclick="enviarClaveGestorWA()">💬 Enviar</button>
+    </div>
+    <button type="button" class="btn btn-ghost btn-full" style="margin-top:7px;" onclick="cerrarClaveGestor()">Ya la tengo</button>
+  </div>
+</div>
+
+<!-- ── MODAL: unir vales de distintos gestores (v120) ── -->
+<div class="modal-bg" id="unirValesModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title">🔗 Unir vales</div>
+    <div class="modal-sub">Cuando dos gestores apuntan la misma venta</div>
+    <div style="background:var(--surface2);border-radius:9px;padding:9px 11px;margin:12px 0 4px;font-size:12px;">
+      <div style="font-size:9px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Vale principal</div>
+      <div id="unirPrincipal">—</div>
+    </div>
+    <div class="lbl" style="margin:12px 0 6px;">¿Con cuál se une?</div>
+    <div id="unirLista" style="max-height:44vh;overflow-y:auto;"></div>
+    <div id="unirResumen" style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;min-height:16px;line-height:1.45;"></div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeUnirValesModal()">Cancelar</button>
+      <button type="button" class="btn btn-full" style="background:#7C3AED;color:#fff;" onclick="confirmarUnirVales()">🔗 Unir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: puntos de un gestor a mano (v120) ── -->
+<div class="modal-bg" id="puntosGestorModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">⭐ Puntos</div>
+    <div class="modal-sub" id="pgNombre">Gestor</div>
+
+    <div id="pgDesglose" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0 4px;"></div>
+    <div id="pgAviso" style="display:none;font-size:11px;line-height:1.45;background:rgba(245,158,11,.10);
+         border-left:3px solid var(--orange);border-radius:6px;padding:9px 11px;margin-top:10px;"></div>
+
+    <div class="lbl" style="margin:14px 0 6px;">¿Cuántos puntos debe tener?</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="pgSuma(-1)">−</button>
+      <input type="number" inputmode="numeric" id="pgTotal" value="0" min="0" oninput="pgRefresca()"
+             style="flex:1;text-align:center;font-size:22px;font-weight:800;background:var(--surface);border:2px solid var(--blue);border-radius:10px;padding:9px 6px;color:var(--text);">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="pgSuma(1)">+</button>
+    </div>
+
+    <div class="lbl" style="margin:12px 0 6px;">Motivo <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></div>
+    <input type="text" id="pgMotivo" maxlength="120" placeholder="Ej: el cable estaba sin puntos"
+           style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:13px;color:var(--text);">
+
+    <div id="pgResumen" style="font-size:11px;color:var(--text-muted);margin-top:11px;text-align:center;min-height:16px;"></div>
+
+    <div class="modal-btns" style="margin-top:12px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closePuntosGestorModal()">Cancelar</button>
+      <button type="button" class="btn btn-green btn-full" onclick="guardarPuntosGestor()">Guardar</button>
+    </div>
+    <button type="button" class="btn btn-ghost btn-full" id="pgQuitar" style="margin-top:7px;font-size:11px;color:var(--red);display:none;" onclick="quitarAjustePuntos()">Quitar el ajuste a mano</button>
+  </div>
+</div>
+
+<!-- ── MODAL: Confirmar Acción ── -->
+<div class="modal-bg" id="confirmActionModal">
+  <div class="modal" style="max-width:320px;">
+    <div class="modal-title" id="confirmActionTitle">¿Confirmar acción?</div>
+    <div class="modal-sub" id="confirmActionSub"></div>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeConfirmAction()">Cancelar</button>
+      <button type="button" class="btn btn-blue btn-full" id="confirmActionOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Stock (v70) ──
+     Sustituye al prompt() del navegador, que además pedía el valor ABSOLUTO:
+     con 5 en almacén y una entrada de 10 había que escribir 15, calculándolo de
+     cabeza. Aquí se ve el número, se ajusta con botones y se confirma. -->
+<div class="modal-bg" id="stockModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">📦 Ajustar stock</div>
+    <div class="modal-sub" id="stockModalName">Producto</div>
+
+    <!-- Físico / reservado / disponible: sin esto no se entiende por qué a veces
+         no se puede vender aunque el número de stock sea mayor que cero. -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px;">
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--text);" id="stockModalFisico">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">En almacén</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--orange);" id="stockModalReservado">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Reservado</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--green);" id="stockModalDisponible">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Se puede vender</div>
+      </div>
+    </div>
+
+    <div class="lbl" style="margin:14px 0 6px;">Nueva cantidad en almacén</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="stockModalSuma(-1)">−</button>
+      <input type="number" inputmode="numeric" id="stockModalInput" value="0" min="0"
+             oninput="stockModalRefresca()"
+             style="flex:1;text-align:center;font-size:22px;font-weight:800;background:var(--surface);border:2px solid var(--blue);border-radius:10px;padding:9px 6px;color:var(--text);">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="stockModalSuma(1)">+</button>
+    </div>
+
+    <!-- Atajos para entradas de mercancía, que es el caso más frecuente -->
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="stockModalSuma(5)">+5</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="stockModalSuma(10)">+10</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="stockModalSuma(25)">+25</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;color:var(--red);" onclick="stockModalPonACero()">Agotado</button>
+    </div>
+
+    <div id="stockModalResumen" style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;min-height:16px;"></div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeStockModal()">Cancelar</button>
+      <button type="button" class="btn btn-green btn-full" onclick="guardarStockModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Merma (v119) ──
+     Dar de baja mercancía que se perdió, con su motivo. Ajustar el stock a mano
+     también la quita, pero no deja constancia de por qué faltaba. -->
+<div class="modal-bg" id="mermaModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">📉 Registrar merma</div>
+    <div class="modal-sub" id="mermaModalName">Producto</div>
+
+    <div class="lbl" style="margin:14px 0 6px;">¿Cuántas unidades se perdieron?</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="mermaSuma(-1)">−</button>
+      <input type="number" inputmode="numeric" id="mermaModalInput" value="1" min="1"
+             oninput="mermaRefresca()"
+             style="flex:1;text-align:center;font-size:22px;font-weight:800;background:var(--surface);border:2px solid var(--red);border-radius:10px;padding:9px 6px;color:var(--text);">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="mermaSuma(1)">+</button>
+    </div>
+
+    <div class="lbl" style="margin:14px 0 6px;">Motivo</div>
+    <div id="mermaMotivos" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+
+    <div class="lbl" style="margin:14px 0 6px;">Nota <span style="font-weight:400;color:var(--text-muted);">(opcional)</span></div>
+    <input type="text" id="mermaModalNota" maxlength="200" placeholder="Ej: llegó con la pantalla partida"
+           style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:13px;color:var(--text);">
+
+    <div id="mermaModalResumen" style="font-size:11px;color:var(--text-muted);margin-top:12px;text-align:center;min-height:16px;"></div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeMermaModal()">Cancelar</button>
+      <button type="button" class="btn btn-red btn-full" id="mermaModalGuardar" onclick="guardarMerma()">Dar de baja</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: historial de mermas (v119) ── -->
+<div class="modal-bg" id="mermasModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">📉 Mermas</div>
+    <div class="modal-sub">Mercancía dada de baja por daño, pérdida o vencimiento</div>
+    <div id="mermasResumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px;"></div>
+    <div id="mermasLista" style="max-height:52vh;overflow-y:auto;margin-top:10px;"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeMermasModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Reservas (v71) ──
+     Mismo trato que el de stock: antes era un prompt() del navegador con cinco
+     líneas de texto explicando los números, que en el móvil se leía fatal. -->
+<div class="modal-bg" id="reservaModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🔐 Reservar unidades</div>
+    <div class="modal-sub" id="reservaModalName">Producto</div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 4px;">
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--text);" id="reservaModalFisico">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">En almacén</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--orange);" id="reservaModalReservado">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Reservado</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:9px;padding:8px 4px;">
+        <div style="font-size:18px;font-weight:800;color:var(--green);" id="reservaModalDisponible">0</div>
+        <div style="font-size:9px;color:var(--text-muted);font-weight:600;text-transform:uppercase;">Se puede vender</div>
+      </div>
+    </div>
+
+    <!-- v92: lo que apartan los vales marcados como reservados. No se toca desde
+         aquí — se suelta solo cuando el vale se vende, se cancela o se borra. -->
+    <div id="reservaModalPorVales" style="display:none;font-size:11px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);border-radius:9px;padding:9px 11px;margin-top:8px;"></div>
+
+    <div class="lbl" style="margin:14px 0 6px;">Reservadas a mano <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(las que no vienen de un vale)</span></div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="reservaModalSuma(-1)">−</button>
+      <input type="number" inputmode="numeric" id="reservaModalInput" value="0" min="0"
+             oninput="reservaModalRefresca()"
+             style="flex:1;text-align:center;font-size:22px;font-weight:800;background:var(--surface);border:2px solid #b45309;border-radius:10px;padding:9px 6px;color:var(--text);">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 44px;font-size:18px;font-weight:800;padding:10px 0;" onclick="reservaModalSuma(1)">+</button>
+    </div>
+
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="reservaModalSuma(5)">+5</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="reservaModalTodo()">Reservar todo</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;color:var(--green);" onclick="reservaModalLiberar()">Liberar todas</button>
+    </div>
+
+    <div id="reservaModalResumen" style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;min-height:16px;"></div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeReservaModal()">Cancelar</button>
+      <button type="button" class="btn btn-blue btn-full" onclick="guardarReservaModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Rebaja del admin (v82) ──
+     La rebaja del gestor sale de su comisión; esta sale del margen del negocio
+     y no toca lo que cobra el gestor. Las dos bajan lo que paga el cliente. -->
+<div class="modal-bg" id="rebajaAdminModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">🏷️ Rebajar este vale</div>
+    <div class="modal-sub" id="rebajaAdminSub">Vale</div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;margin:12px 0;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--text-muted);">Precio del vale</span>
+        <span id="rebajaAdminPrecio" style="font-weight:700;">—</span>
+      </div>
+      <div id="rebajaAdminGestorRow" style="display:none;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--text-muted);">Ya rebajó el gestor</span>
+        <span id="rebajaAdminGestor" style="color:var(--orange);font-weight:700;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;border-top:1px solid var(--border);padding-top:6px;margin-top:6px;">
+        <span style="font-weight:800;">Quedaría en</span>
+        <span id="rebajaAdminResultado" style="font-weight:800;color:var(--green);">—</span>
+      </div>
+    </div>
+
+    <!-- v123: rebajar producto a producto. Con un vale de varias líneas, un solo
+         número no dice de qué mercancía se descontó — y el corte de dueños
+         necesita saberlo para pagarle a cada cual lo suyo. -->
+    <div class="lbl" style="margin:0 0 6px;">Rebajar un producto en concreto</div>
+    <div id="rebajaAdminLineas" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+
+    <div class="lbl" style="margin:0 0 6px;">O rebajar el vale entero</div>
+    <div style="display:flex;gap:6px;">
+      <input type="number" inputmode="decimal" id="rebajaAdminInput" min="0" step="0.5" placeholder="0"
+             oninput="rebajaAdminRefresca()"
+             style="flex:1;text-align:center;font-size:20px;font-weight:800;background:var(--surface);border:2px solid var(--blue);border-radius:10px;padding:9px 6px;color:var(--text);">
+      <select id="rebajaAdminMoneda" onchange="rebajaAdminRefrescaConMoneda()" style="width:88px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 8px;font-size:13px;color:var(--text);">
+        <option value="USD">USD</option>
+        <option value="MN">MN</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button type="button" class="btn btn-ghost btn-sm" data-rebaja-suma="5" style="flex:1;font-size:11px;" onclick="rebajaAdminSuma(5)">−5</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-rebaja-suma="10" style="flex:1;font-size:11px;" onclick="rebajaAdminSuma(10)">−10</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;color:var(--red);" onclick="rebajaAdminQuitar()">Quitar</button>
+    </div>
+
+    <div class="lbl" style="margin:14px 0 6px;">Motivo</div>
+    <input type="text" id="rebajaAdminMotivo" placeholder="Ej: producto con defecto, venta al por mayor" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px 10px;font-size:13px;color:var(--text);">
+    <div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.35;">Esta rebaja sale del margen del negocio. La comisión del gestor no cambia.</div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeRebajaAdminModal()">Cancelar</button>
+      <button type="button" class="btn btn-blue btn-full" onclick="guardarRebajaAdmin()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Vale desde el historial (v84) ──
+     Antes, tocar un vale en el historial saltaba a la pestaña Vales y había que
+     volver atrás para seguir mirando el historial. Ahora se abre aquí mismo.
+     El contenido lo pinta renderValeDetail(), el mismo que la pestaña Vales, así
+     que los botones de acción funcionan igual y no hay una segunda versión del
+     detalle que mantener. -->
+<div class="modal-bg" id="valeHistorialModal" data-cerrar="closeValeHistorialModal">
+  <div class="modal" style="max-width:460px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="flex:1;overflow-y:auto;padding:18px 18px 4px;">
+      <div id="valeHistorialDetalle"></div>
+    </div>
+    <div style="flex-shrink:0;padding:12px 18px 18px;border-top:1px solid var(--border);">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeValeHistorialModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Entregas del mensajero (v87) ──
+     Antes las entregas se pintaban al final del panel: había que tocar el
+     mensajero, bajar hasta el fondo de la página y volver a subir para pasar a
+     otro. El contenido lo pinta renderMensajeroVales(), el mismo de siempre, así
+     que las acciones (Entregado, Pagado, WhatsApp) funcionan igual y no hay una
+     segunda copia de las tarjetas que mantener. -->
+<div class="modal-bg" id="mensajeroEntregasModal" data-cerrar="closeMensajeroEntregasModal">
+  <div class="modal" style="max-width:460px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="flex-shrink:0;padding:16px 18px 12px;border-bottom:1px solid var(--border);">
+      <div class="modal-title" id="mensajeroEntregasTitulo" style="margin-bottom:3px;">🛵 Entregas</div>
+      <div class="modal-sub" id="mensajeroEntregasSub" style="margin-bottom:0;"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 18px 4px;">
+      <div id="mensajeroEntregasBody"></div>
+    </div>
+    <div style="flex-shrink:0;padding:12px 18px 18px;border-top:1px solid var(--border);">
+      <button type="button" class="btn btn-ghost btn-full" onclick="closeMensajeroEntregasModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Asignar Mensajero / Compartir ── -->
+<div class="modal-bg" id="shareModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">🛵 Asignar a mensajero</div>
+    <div class="modal-sub" id="shareModalSub">Vale</div>
+    <select id="mensajeroSelect" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;margin-bottom:10px;"></select>
+    <div class="lbl" style="margin:6px 0;">Vista previa del mensaje:</div>
+    <pre id="shareValePreview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap;font-family:'Courier New',monospace;max-height:240px;overflow-y:auto;margin-bottom:10px;"></pre>
+    <!-- v85: "Asignar" a secas. Los otros dos botones asignan y además copian el
+         texto o abren WhatsApp, que estorba cuando al mensajero ya se le avisó
+         por otra vía y solo falta dejarlo registrado. -->
+    <button class="btn btn-green btn-full" style="margin-top:10px;font-size:14px;padding:12px;" onclick="asignarMensajeroSinMas()">✅ Asignar y listo</button>
+    <div class="modal-btns" style="margin-top:8px;">
+      <button class="btn btn-ghost btn-full" onclick="closeShareModal()">Cancelar</button>
+      <button class="btn btn-wa btn-full" onclick="shareViaWA()">💬 WhatsApp</button>
+      <button class="btn btn-blue btn-full" onclick="copyAndAssign()">📋 Copiar y asignar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Editar Vale ── -->
+<div class="modal-bg" id="editValeModal">
+  <div class="modal" style="max-width:520px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:22px 22px 10px;flex-shrink:0;">
+      <div class="modal-title">✏️ Editar Vale</div>
+      <div class="modal-sub">Modifica los campos y guarda</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 22px;">
+      <!-- v114: la fecha del vale se puede corregir. Un vale apuntado tarde
+           (o al día siguiente) salía con la fecha equivocada en el historial
+           y en las estadísticas, y no había manera de arreglarlo. -->
+      <div class="vf-row">
+        <span class="vf-emoji">📅</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Fecha del vale</span></div>
+          <input type="datetime-local" id="ev-fecha">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Cliente</span></div>
+          <input type="text" id="ev-cliente" placeholder="Nombre del cliente">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Teléfono</span></div>
+          <input type="text" id="ev-telefono" placeholder="Teléfono">
+        </div>
+      </div>
+      <!-- v120: se puede cambiar de recogida en tienda a mensajería y al revés.
+           Pasa a menudo: el cliente dice que pasa por la tienda y luego pide
+           que se lo lleven (o al revés), y hasta ahora eso obligaba a borrar el
+           vale y hacerlo de nuevo. -->
+      <div class="vf-row">
+        <span class="vf-emoji">🏬</span>
+        <div class="vf-inner">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;">
+            <input type="checkbox" id="ev-recogidaTienda" onchange="onEvRecogidaTiendaChange()"
+                   style="width:18px;height:18px;flex-shrink:0;cursor:pointer;">
+            <span>Recogida en tienda <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(sin mensajero)</span></span>
+          </label>
+          <div id="ev-recogidaNota" style="display:none;font-size:11px;color:var(--orange);margin-top:6px;line-height:1.4;"></div>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Dirección</span></div>
+          <input type="text" id="ev-direccion" placeholder="Dirección">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Mensajería / costo</span></div>
+          <input type="text" id="ev-mensajeria" oninput="calcEditValeTotal()" placeholder="Ej: $2 USD">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label">
+            <span>Artículos y cantidades</span>
+            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px;" onclick="openEditValeProductPicker()">📦 Catálogo</button>
+          </div>
+          <div id="ev-selectedProductsList" style="display:none;margin-bottom:6px;"></div>
+          <textarea id="ev-articulo" rows="2" placeholder="Artículo"></textarea>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio USD</span></div>
+          <input type="text" id="ev-precioUSD" oninput="calcEditValeTotal()" placeholder="Ej: $45 USD">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio MN</span></div>
+          <input type="text" id="ev-precioMN" oninput="calcEditValeTotal()" placeholder="Ej: 4500 MN">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Total</span></div>
+          <input type="text" id="ev-total" placeholder="Total">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Garantía</span></div>
+          <input type="text" id="ev-garantia" placeholder="Ej: 6 meses">
+        </div>
+      </div>
+
+      <!-- v108: poder poner o corregir la hora despues. Si el gestor se olvidó
+           de ponerla, hasta ahora no había forma de añadirla. -->
+      <div class="vf-row">
+        <span class="vf-emoji">⏰</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Día y hora de entrega</span></div>
+          <div style="display:flex;gap:6px;">
+            <input type="date" id="ev-fechaEntrega" style="flex:1.3;min-width:0;">
+            <input type="time" id="ev-horaEntrega" style="flex:1;min-width:0;">
+          </div>
+        </div>
+      </div>
+      <!-- v131: las notas que el gestor le dejó al admin. Editables por si hay
+           que corregirlas o borrarlas cuando ya no hacen falta. -->
+      <div class="vf-row">
+        <span class="vf-emoji">📝</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Notas del gestor</span></div>
+          <textarea id="ev-notasGestor" rows="2" maxlength="400" placeholder="Sin notas" style="width:100%;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Comisión gestor</span></div>
+          <input type="text" id="ev-comisionGestor" placeholder="Comisión">
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding:0 22px 22px;border-top:1px solid var(--border);margin-top:8px;">
+      <div class="modal-btns" style="margin-top:10px;">
+        <button class="btn btn-ghost btn-full" onclick="closeEditValeModal()">Cancelar</button>
+        <button class="btn btn-blue btn-full" onclick="saveEditVale()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Editar Gestor ── -->
+<!-- ── MODAL: Comisiones de un gestor ──────────────────────────────────────
+     v116: antes esto se desplegaba dentro de la tarjeta del gestor. La lista
+     está ordenada por lo que se le debe a cada uno, así que al marcar una
+     comisión como cobrada la lista se reordenaba y el gestor que estabas
+     mirando saltaba a otro sitio de la pantalla. En un modal se queda quieto:
+     lo de detrás puede moverse todo lo que quiera. -->
+<!-- ── MODAL: ventas de un dueño ───────────────────────────────────────────
+     v117: mismo patrón que el de comisiones por gestor. La lista de dueños se
+     reordena por lo que se vendió de cada uno; con el detalle desplegado dentro
+     de la tarjeta, cualquier cambio te movía de sitio lo que estabas mirando. -->
+<div class="modal-bg" id="duenoModal">
+  <div class="modal" style="max-width:640px;width:96%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:20px 22px 12px;flex-shrink:0;">
+      <div class="modal-title" id="duenoModalTitle">🧑‍💼 Dueño</div>
+      <div class="modal-sub" id="duenoModalSub"></div>
+    </div>
+    <div id="duenoModalBody" style="flex:1;overflow-y:auto;padding:0 18px;"></div>
+    <div style="flex-shrink:0;padding:14px 22px 20px;border-top:1px solid var(--border);">
+      <button class="btn btn-ghost btn-full" onclick="closeDuenoModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="comisionesGestorModal">
+  <div class="modal" style="max-width:520px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:20px 22px 12px;flex-shrink:0;">
+      <div class="modal-title" id="comisionesModalTitle">💰 Comisiones</div>
+      <div class="modal-sub" id="comisionesModalSub"></div>
+    </div>
+    <div id="comisionesModalBody" style="flex:1;overflow-y:auto;"></div>
+    <div style="flex-shrink:0;padding:14px 22px 20px;border-top:1px solid var(--border);">
+      <button class="btn btn-ghost btn-full" onclick="closeComisionesModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="editGestorModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">✏️ Editar gestor</div>
+    <!-- Foto de perfil: preview + botón cambiar/quitar -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div id="editGestorAvatar" class="g-avatar" style="width:56px;height:56px;font-size:18px;background:var(--gray-300);flex-shrink:0;position:relative;">?</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Foto de perfil</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:5px 10px;" onclick="pickEditGestorPhoto()">📷 Cambiar</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:5px 10px;color:var(--red);display:none;" id="editGestorRemovePhotoBtn" onclick="clearEditGestorPhoto()">✕ Quitar</button>
+        </div>
+        <div style="font-size:10px;color:var(--gray-500);margin-top:4px;">Se guarda al pulsar "Guardar"</div>
+        <input type="file" id="editGestorPhotoFile" accept="image/*" style="display:none;" onchange="handleEditGestorPhoto(event)">
+      </div>
+    </div>
+    <input type="text" id="editGestorInput" placeholder="Nombre">
+    <input type="text" id="editGestorPhoneInput" placeholder="Teléfono (opcional)">
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-full" onclick="closeEditGestorModal()">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="saveEditGestor()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Editar Mensajero ── -->
+<div class="modal-bg" id="editMensajeroModal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-title">✏️ Editar mensajero</div>
+    <input type="text" id="editMensajeroInput" placeholder="Nombre">
+    <input type="tel" id="editMensajeroPhoneInput" placeholder="📱 Teléfono (WhatsApp) — ej: 5351234567">
+    <div style="font-size:10px;color:var(--text-muted);margin:-4px 2px 8px;line-height:1.3;">
+      Con este teléfono, al asignarle una mensajería se abrirá su WhatsApp directo con los datos del vale.
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-full" onclick="closeEditMensajeroModal()">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="saveEditMensajero()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Producto ── -->
+<div class="modal-bg" id="productModal">
+  <div class="modal" style="max-width:480px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:22px 22px 10px;flex-shrink:0;">
+      <div class="modal-title" id="productModalTitle">📦 Nuevo Producto</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 22px;">
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Nombre *</span></div>
+          <input type="text" id="pm-name" placeholder="Nombre del producto">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Descripción</span></div>
+          <textarea id="pm-desc" rows="2" placeholder="Descripción opcional"></textarea>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Categoría</span></div>
+          <select id="pm-cat"></select>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio</span></div>
+          <input type="text" id="pm-precio" placeholder="Ej: $45 USD o 4500 MN">
+        </div>
+      </div>
+      <!-- v114: sin este dato no hay forma de saber lo que se gana. Se escribe
+           igual que el precio ("$30 USD" o "3000 MN") y solo lo ve el admin:
+           nunca sale en el catálogo ni en el vale del cliente. -->
+      <div class="vf-row">
+        <span class="vf-emoji">🏷️</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Costo — lo que te costó a ti</span></div>
+          <input type="text" id="pm-costo" placeholder="Ej: $30 USD o 3000 MN">
+          <div style="font-size:10px;color:var(--gray-400);margin-top:3px;">Solo tuyo: se guarda aparte del producto y no se descarga al teléfono de los gestores. Se usa para la ganancia en 📊 Estadísticas.</div>
+        </div>
+      </div>
+      <!-- v117: de quién es la mercancía. Como el costo, solo lo ve el admin.
+           El datalist ofrece los dueños ya escritos para que no acaben tres
+           variantes del mismo nombre por una mayúscula. -->
+      <div class="vf-row">
+        <span class="vf-emoji">🧑‍💼</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Dueño de la mercancía</span></div>
+          <select id="pm-dueno"></select>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:3px;">Privado. Los dueños se dan de alta en la pestaña 🧑‍💼 Dueños; los gestores no los ven.</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <div class="vf-label"><span>Stock</span></div>
+          <input type="number" id="pm-stock" inputmode="numeric" placeholder="0" min="0" oninput="_notaStockProducto()">
+          <!-- v72: aviso de unidades reservadas. Desde aquí se puede escribir un
+               stock por debajo de lo ya comprometido en vales y dejar el
+               disponible descuadrado sin enterarse: este campo, a diferencia de
+               la ventana de stock, no enseña las reservas. -->
+          <div id="pm-stockNota" style="font-size:10px;margin-top:4px;line-height:1.3;"></div>
+        </div>
+        <div>
+          <div class="vf-label"><span>Puntos (⭐)</span></div>
+          <input type="number" id="pm-puntos" placeholder="0" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="vf-row" style="margin-top:8px;">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Garantía</span></div>
+          <input type="text" id="pm-garantia" placeholder="Ej: 6 meses">
+        </div>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Código de barras <span style="font-weight:400;font-size:10px;color:var(--text-muted);">(📷 escáner)</span></span></div>
+          <input type="text" id="pm-barcode" placeholder="Ej: 7501234567890" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:end;">
+        <div>
+          <div class="vf-label"><span>Comisión</span></div>
+          <input type="number" id="pm-comision-amount" placeholder="Monto" min="0" step="0.1">
+        </div>
+        <div>
+          <div class="vf-label" style="opacity:0;">.</div>
+          <select id="pm-comision-currency" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 9px;font-size:12px;">
+            <option value="USD">USD</option>
+            <option value="MN">MN</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="pm-comision">
+      <div class="vf-row" style="margin-top:8px;">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Foto del producto</span></div>
+          <!-- v72: el selector de archivos nativo ("Seleccionar archivo · Ningún
+               archivo seleccionado") se oculta y se dispara desde un botón propio.
+               El nativo cambia de texto e idioma según el navegador y desentona
+               con el resto. La vista previa pasa de una banda de 100% x 80 px
+               —que deformaba la foto— a una miniatura cuadrada, y se añade el
+               botón de quitar, que antes no existía: una vez puesta una foto no
+               había forma de dejar el producto sin ella. -->
+          <input type="file" id="pm-foto-file" accept="image/*" onchange="handleProductPhoto(this)" style="display:none;">
+          <input type="hidden" id="pm-foto">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div id="pm-fotoPreview" style="flex-shrink:0;"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0;">
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:12px;padding:9px 10px;" onclick="document.getElementById('pm-foto-file').click()">📷 <span id="pm-fotoBtnTexto">Elegir foto</span></button>
+              <button type="button" class="btn btn-ghost btn-sm" id="pm-fotoQuitar" style="font-size:11px;padding:7px 10px;color:var(--red);display:none;" onclick="quitarFotoProducto()">🗑️ Quitar foto</button>
+              <div style="font-size:10px;color:var(--text-muted);line-height:1.35;">Se reduce sola antes de guardarse, para no ocupar datos de más.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding:0 22px 22px;border-top:1px solid var(--border);margin-top:8px;">
+      <div class="modal-btns" style="margin-top:10px;">
+        <button class="btn btn-ghost btn-full" onclick="closeProductModal()">Cancelar</button>
+        <button class="btn btn-blue btn-full" onclick="saveProduct()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Progreso Optimización WebP ── -->
+<div class="modal-bg" id="optimizePhotosModal">
+  <div class="modal" style="max-width:420px;width:92%;padding:24px 22px;text-align:center;">
+    <div class="modal-title" style="margin-bottom:6px;">🖼️ Optimizando imágenes</div>
+    <div class="modal-sub" style="margin-bottom:18px;">Convirtiendo fotos a WebP para ahorrar espacio…</div>
+    <div id="optimizeProgressName" style="font-size:11px;color:var(--text-muted);margin-bottom:10px;min-height:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+    <div style="background:var(--surface2);border-radius:20px;height:22px;overflow:hidden;border:1px solid var(--border);">
+      <div id="optimizeProgressBar" style="background:linear-gradient(90deg,var(--orange),#fb923c);height:100%;width:0%;border-radius:20px;transition:width .25s ease;"></div>
+    </div>
+    <div id="optimizeProgressText" style="font-size:12px;font-weight:700;color:var(--text);margin-top:8px;">0 / 0 (0%)</div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:14px;">No cierres esta ventana hasta que termine.</div>
+  </div>
+</div>
+
+<!-- ── MODAL: Admin Vale Generator ── -->
+<div class="modal-bg" id="adminValeModal">
+  <div class="modal" style="max-width:520px;width:94%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:22px 22px 10px;flex-shrink:0;">
+      <div class="modal-title">📤 Generar Vale (Admin)</div>
+      <div class="modal-sub">Crea un vale asignándolo a un gestor</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 22px;">
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Promotor *</span></div>
+          <!-- v107: sin este onchange, elegir el gestor no revisaba el
+               formulario: si era lo último que se seleccionaba, el botón
+               "Generar Vale" se quedaba apagado y no había forma de mandarlo. -->
+          <select id="av-gestor" onchange="onAdminValeInput()"></select>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Cliente *</span></div>
+          <input type="text" id="av-cliente" placeholder="Nombre" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Teléfono *</span></div>
+          <input type="tel" id="av-telefono" placeholder="Teléfono" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'');onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Dirección *</span></div>
+          <input type="text" id="av-direccion" placeholder="Dirección" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Mensajería / costo</span></div>
+          <input type="text" id="av-mensajeria" placeholder="Ej: $2 USD" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label">
+            <span>Artículos y cantidades *</span>
+            <button id="av-btnPickProducts" class="btn btn-blue btn-sm" style="font-size:10px;padding:2px 8px;" onclick="openAdminProductPicker()">📦 Escoger del catálogo *</button>
+          </div>
+          <div id="av-selectedProductsList" style="display:none;margin-bottom:6px;"></div>
+          <textarea id="av-articulo" rows="2" placeholder="Artículo" oninput="onAdminValeInput()"></textarea>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio USD</span></div>
+          <input type="text" id="av-precioUSD" placeholder="Ej: $45 USD" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Precio MN</span></div>
+          <input type="text" id="av-precioMN" placeholder="Ej: 4500 MN" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Vuelto</span></div>
+          <input type="text" id="av-vuelto" placeholder="Ej: 500 MN" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Total a pagar *</span></div>
+          <input type="text" id="av-total" placeholder="Total" oninput="onAdminValeInput()">
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Garantía</span></div>
+          <input type="text" id="av-garantia" placeholder="Ej: 6 meses" oninput="onAdminValeInput()">
+        </div>
+      </div>
+
+      <!-- v108: sin este campo, un vale hecho desde el admin no podía llevar
+           hora de entrega, así que nunca avisaba. Estaba solo en el formulario
+           del gestor. -->
+      <div class="vf-row">
+        <span class="vf-emoji">⏰</span>
+        <div class="vf-inner">
+          <div class="vf-label"><span>Día y hora de entrega <span style="font-weight:400;color:var(--text-muted);font-size:10px;">· opcional, avisa 1 h antes</span></span></div>
+          <div style="display:flex;gap:6px;">
+            <input type="date" id="av-fechaEntrega" oninput="onAdminValeInput()" style="flex:1.3;min-width:0;">
+            <input type="time" id="av-horaEntrega" oninput="onAdminValeInput()" style="flex:1;min-width:0;">
+          </div>
+        </div>
+      </div>
+      <div class="vf-row">
+        <div class="vf-inner">
+          <div class="vf-label"><span>Comisión gestor</span></div>
+          <input type="text" id="av-comisionGestor" placeholder="Auto desde catálogo" oninput="onAdminValeInput()">
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding:0 22px 22px;border-top:1px solid var(--border);margin-top:8px;">
+      <div id="av-previewCard" class="card" style="display:none;margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:4px;">Vista previa</div>
+        <div class="vale-preview" id="av-previewText" style="font-size:11px;max-height:140px;overflow-y:auto;"></div>
+      </div>
+      <div class="modal-btns" style="margin-top:10px;">
+        <button class="btn btn-ghost btn-full" onclick="closeAdminValeModal()">Cancelar</button>
+        <!-- v111: este botón NUNCA tuvo onclick. La función sendAdminVale()
+             existía, estaba bien escrita y funcionaba — pero nadie la llamaba,
+             así que era código muerto y pulsar aquí no hacía absolutamente
+             nada. Ni un error en la consola: simplemente no pasaba nada, que es
+             lo peor que puede hacer un botón. -->
+        <button class="btn btn-blue btn-full" id="av-sendBtn" onclick="sendAdminVale()" disabled>📤 Generar Vale</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Admin Product Picker (compartido con editVale y adminVale) ── -->
+<div class="modal-bg" id="adminProductPickerModal">
+  <div class="modal" style="max-width:580px;width:92%;padding:0;display:flex;flex-direction:column;max-height:92vh;">
+    <div style="padding:22px 22px 10px;flex-shrink:0;">
+      <div class="modal-title">📦 Catálogo de Productos</div>
+      <input type="search" id="av-pickerSearch" placeholder="Buscar producto..." oninput="handlePickerSearch()" style="margin-bottom:10px;">
+      <div id="av-pickerCatTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;min-height:0;padding:0 22px;">
+      <div id="av-pickerProductGrid" style="display:flex;flex-direction:column;gap:6px;padding:2px;"></div>
+    </div>
+    <div style="flex-shrink:0;padding:0 22px 22px;border-top:1px solid var(--gray-200);margin-top:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray-600);margin:8px 0 6px;">Seleccionados:</div>
+      <div id="av-pickerSelectedList" style="min-height:28px;max-height:80px;overflow-y:auto;"></div>
+      <div class="modal-btns" style="margin-top:8px;">
+        <button class="btn btn-ghost btn-full" onclick="closeAdminProductPicker()">Cancelar</button>
+        <button class="btn btn-blue btn-full" onclick="handlePickerConfirm()">Agregar ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating admin action: New vale + sync indicator -->
+<div style="position:fixed;bottom:18px;right:18px;z-index:200;display:flex;flex-direction:column;gap:8px;">
+  <button id="btnFabVale" class="btn btn-blue" style="border-radius:50%;width:54px;height:54px;font-size:24px;box-shadow:var(--shadow-lg);" onclick="openAdminValeModal()" title="Generar vale">＋</button>
+</div>
+
+<!-- Sync indicator (online/offline/pending writes) -->
+<div id="syncIndicator" class="online">
+  <span class="sync-dot"></span>
+  <span id="syncLabel">En línea</span>
+</div>
+
+<!-- Session timeout warning -->
+<div id="sessionWarning">⚠️ Tu sesión expirará pronto por inactividad. Haz clic para mantenerla activa.</div>
+
+<!-- Notification banner -->
+<div id="notifBanner"><span id="notifBannerText"></span></div>
+
+<!-- ══ PWA INSTALL BANNER (Android + iPhone + Xiaomi) ══ -->
+<div id="pwaInstallBanner" class="install-banner" role="dialog" aria-label="Instalar aplicación">
+  <div class="install-banner-inner">
+    <div class="install-banner-icon">📲</div>
+    <div class="install-banner-text">
+      <div class="install-banner-title">Instala AXONTECH Admin</div>
+      <div class="install-banner-sub" id="pwaInstallSub">Acceso rápido desde tu pantalla de inicio</div>
+      <div id="pwaInstallIOSHint" class="install-banner-ios" style="display:none;">
+        <span class="ios-step"><span class="ios-share">􀈂</span> Compartir</span>
+        <span class="ios-arrow">→</span>
+        <span class="ios-step">Añadir a pantalla de inicio</span>
+      </div>
+      <!-- Instrucciones manuales para Xiaomi Mi Browser / Huawei / UC (oculto por defecto) -->
+      <div id="pwaInstallManualHint" class="install-banner-manual" style="display:none;">
+        <div class="manual-step1">1. Toca el menú ⋮ (arriba a la derecha)</div>
+        <div class="manual-step2">2. Elige "Añadir a pantalla de inicio"</div>
+        <div class="manual-tip">💡 Instala <b>Chrome</b> desde la Play Store para tener aviso automático de instalación.</div>
+      </div>
+    </div>
+    <div class="install-banner-actions">
+      <button id="pwaInstallBtn" type="button" class="install-banner-btn-primary">Instalar</button>
+      <button type="button" class="install-banner-btn-secondary" onclick="openPWAInstallHelp()">¿Cómo?</button>
+      <button type="button" class="install-banner-btn-secondary" onclick="_dismissPWAInstall()">Ahora no</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Ayuda de Instalación PWA ── -->
+<div class="modal-bg" id="pwaInstallHelpModal">
+  <div class="modal" style="max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">📲 Instalar AXONTECH</div>
+    <div class="modal-sub" style="margin-bottom:14px;">
+      Navegador detectado: <b id="pwaHelpBrowser">—</b>
+    </div>
+
+    <!-- BLOQUE: Chrome / Edge / Samsung con beforeinstallprompt -->
+    <div id="pwaHelpChrome" class="pwa-help-block">
+      <div class="pwa-help-title">✅ Tu navegador soporta instalación directa</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa el botón <b>"Instalar ahora"</b> abajo.</li>
+        <li>Confirma el aviso que aparece en pantalla.</li>
+        <li>Aparecerá un icono de AXONTECH en tu pantalla de inicio. ¡Listo!</li>
+      </ol>
+      <p class="pwa-help-note">También puedes usar el menú ⋮ del navegador → <b>Instalar app</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Chrome / Edge SIN beforeinstallprompt (caso del teléfono problemático) -->
+    <div id="pwaHelpChromeNoPrompt" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Tu Chrome no mostró el aviso automático</div>
+      <p class="pwa-help-note">A veces Chrome no ofrece instalar la app aunque el sitio sea una PWA válida (puede pasar por Chrome muy antiguo, modo escritorio activado, o almacenamiento lleno). Usa cualquiera de estos métodos alternativos:</p>
+
+      <div class="pwa-help-subtitle">Método 1 — Compartir para agregar a inicio (más rápido):</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"📤 Compartir / Agregar a inicio"</b> abajo.</li>
+        <li>En la hoja de compartir que se abre, busca y elige <b>"Añadir a pantalla de inicio"</b> (en Samsung, Xiaomi y Pixel suele aparecer como destino de compartir).</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+
+      <div class="pwa-help-subtitle">Método 2 — Escanear QR desde otro móvil:</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"🖼️ Ver código QR"</b> abajo.</li>
+        <li>Abre la <b>cámara</b> de otro teléfono que sí tenga Chrome actualizado.</li>
+        <li>Apunta la cámara al código QR que aparece en pantalla.</li>
+        <li>En ese móvil sí saldrá el aviso automático de instalación.</li>
+      </ol>
+
+      <div class="pwa-help-subtitle">Método 3 — Copiar URL y enviarla:</div>
+      <ol class="pwa-help-steps">
+        <li>Pulsa <b>"📋 Copiar URL"</b> abajo.</li>
+        <li>Pégala en un chat de WhatsApp o Telegram.</li>
+        <li>Ábrela desde otro teléfono con Chrome actualizado.</li>
+      </ol>
+
+      <p class="pwa-help-note">💡 Si nada de esto funciona, actualiza Chrome desde la Play Store o instala <b>Chrome Beta</b>. En Chrome moderno (90+) la opción "Instalar app" debería aparecer en el menú ⋮.</p>
+    </div>
+
+    <!-- BLOQUE: Samsung Internet -->
+    <div id="pwaHelpSamsung" class="pwa-help-block">
+      <div class="pwa-help-title">📱 Samsung Internet</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>☰</b> (arriba a la derecha o abajo).</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Samsung Internet soporta instalación de apps web en versiones recientes. Si no ves la opción, actualiza el navegador desde Galaxy Store o Play Store.</p>
+    </div>
+
+    <!-- BLOQUE: Opera / Brave / Vivaldi -->
+    <div id="pwaHelpOpera" class="pwa-help-block">
+      <div class="pwa-help-title">🌐 Opera / Brave / Vivaldi</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú del navegador (⋮ o el icono del navegador abajo).</li>
+        <li>Busca <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Estos navegadores están basados en Chromium, así que la opción debería estar disponible en versiones recientes.</p>
+    </div>
+
+    <!-- BLOQUE: Kiwi Browser -->
+    <div id="pwaHelpKiwi" class="pwa-help-block">
+      <div class="pwa-help-title">🥝 Kiwi Browser</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Kiwi está basado en Chromium y soporta instalación de apps web en versiones recientes.</p>
+    </div>
+
+    <!-- BLOQUE: Xiaomi Mi Browser -->
+    <div id="pwaHelpXiaomi" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Navegador Mi de Xiaomi</div>
+      <p class="pwa-help-note">El navegador que viene preinstalado en tu Xiaomi <b>no permite</b> instalar apps web con un solo botón. Tienes dos opciones:</p>
+      <div class="pwa-help-subtitle">Opción A — Instalar manualmente en Mi Browser:</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el icono de menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b> (o "Añadir a inicio").</li>
+        <li>Confirma. Aparecerá un icono en tu pantalla de inicio.</li>
+      </ol>
+      <div class="pwa-help-subtitle">Opción B — Usar Chrome (recomendado):</div>
+      <ol class="pwa-help-steps">
+        <li>Abre la <b>Play Store</b> e instala <b>Chrome</b> (gratis).</li>
+        <li>Abre Chrome y entra a AXONTECH.</li>
+        <li>Te saldrá un aviso automático para instalar con un toque.</li>
+      </ol>
+      <p class="pwa-help-note">La opción B da mejor experiencia: aviso automático, notificaciones push y actualizaciones sin tener que re-abrir el navegador.</p>
+    </div>
+
+    <!-- BLOQUE: Huawei Browser -->
+    <div id="pwaHelpHuawei" class="pwa-help-block">
+      <div class="pwa-help-title">⚠️ Navegador Huawei</div>
+      <p class="pwa-help-note">El navegador Huawei no soporta instalación directa con un botón.</p>
+      <div class="pwa-help-subtitle">Opción A — Manual:</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <div class="pwa-help-subtitle">Opción B — AppGallery + Chrome:</div>
+      <ol class="pwa-help-steps">
+        <li>En <b>AppGallery</b> busca e instala <b>Chrome</b>.</li>
+        <li>Abre Chrome y entra a AXONTECH — te saldrá aviso automático.</li>
+      </ol>
+    </div>
+
+    <!-- BLOQUE: iPhone / iPad -->
+    <div id="pwaHelpIphone" class="pwa-help-block">
+      <div class="pwa-help-title">📱 iPhone / iPad (Safari)</div>
+      <ol class="pwa-help-steps">
+        <li>Toca el icono <b>Compartir</b> <span style="font-size:18px;">􀈂</span> (cuadro con flecha hacia arriba, abajo en Safari).</li>
+        <li>Desplázate y elige <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Pulsa <b>"Añadir"</b>. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">Si usas Chrome en iPhone, el proceso es el mismo: menú ⋮ → <b>"Añadir a pantalla de inicio"</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Firefox móvil -->
+    <div id="pwaHelpFirefox" class="pwa-help-block">
+      <div class="pwa-help-title">🦊 Firefox</div>
+      <ol class="pwa-help-steps">
+        <li>Abre el menú del navegador (icono ☰ abajo o arriba).</li>
+        <li>Busca la opción <b>"Instalar app"</b> o <b>"Añadir a pantalla de inicio"</b>.</li>
+        <li>Confirma. Aparecerá el icono en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Firefox aún no soporta el aviso automático de instalación. Para mejor experiencia te recomendamos <b>Chrome</b>, <b>Edge</b> o <b>Samsung Internet</b>.</p>
+    </div>
+
+    <!-- BLOQUE: Android genérico (navegadores menores) -->
+    <div id="pwaHelpGeneric" class="pwa-help-block">
+      <div class="pwa-help-title">🌐 Tu navegador en Android</div>
+      <ol class="pwa-help-steps">
+        <li>Abre el menú del navegador (suele ser un icono <b>⋮</b> o <b>☰</b>).</li>
+        <li>Busca la opción <b>"Añadir a pantalla de inicio"</b> o <b>"Instalar app"</b>.</li>
+        <li>Confirma. Aparecerá el icono de AXONTECH en tu pantalla de inicio.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Para mejor experiencia te recomendamos <b>Chrome</b>, <b>Edge</b> o <b>Samsung Internet</b>, que soportan instalación con un solo toque.</p>
+    </div>
+
+    <!-- BLOQUE: Desktop -->
+    <div id="pwaHelpDesktop" class="pwa-help-block">
+      <div class="pwa-help-title">💻 Navegador de escritorio</div>
+      <p class="pwa-help-note">Para instalar AXONTECH en tu computadora:</p>
+      <ol class="pwa-help-steps">
+        <li><b>Chrome / Edge:</b> menú ⋮ → <b>"Instalar AXONTECH…"</b> o busca el icono <b>⊕</b> en la barra de direcciones.</li>
+        <li><b>Brave:</b> menú ⋮ → <b>"Instalar AXONTECH…"</b>.</li>
+        <li><b>Firefox:</b> todavía no soporta instalación de PWAs en desktop.</li>
+      </ol>
+      <p class="pwa-help-note">💡 Para usar AXONTECH cómodamente en el móvil, abre este enlace desde tu teléfono.</p>
+    </div>
+
+    <!-- BLOQUE: WebView (FB/IG/WA) -->
+    <div id="pwaHelpWebView" class="pwa-help-block">
+      <div class="pwa-help-title">🔒 Estás dentro de otra app</div>
+      <p class="pwa-help-note">Estás viendo AXONTECH dentro del navegador de Facebook, Instagram o WhatsApp. Para instalarlo necesitas abrirlo en un navegador real:</p>
+      <ol class="pwa-help-steps">
+        <li>Toca el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elige <b>"Abrir en Chrome"</b> o <b>"Abrir en navegador"</b>.</li>
+        <li>Una vez en Chrome, verás el aviso automático <b>"Instalar app"</b>.</li>
+      </ol>
+      <p class="pwa-help-note">💡 También puedes copiar la URL y pegarla directamente en Chrome.</p>
+    </div>
+
+    <div class="modal-btns" style="margin-top:14px;">
+      <button id="pwaHelpInstallNowBtn" type="button" class="btn btn-blue btn-full" style="display:none;">Instalar ahora</button>
+      <button id="pwaHelpShareBtn" type="button" class="btn btn-green btn-full" style="display:none;">📤 Compartir / Agregar a inicio</button>
+      <button id="pwaHelpQRBtn" type="button" class="btn btn-full" style="background:#7c3aed;color:#fff;">🖼️ Ver código QR</button>
+      <button id="pwaHelpCopyBtn" type="button" class="btn btn-ghost btn-full">📋 Copiar URL</button>
+      <button type="button" class="btn btn-ghost btn-full" onclick="closePWAInstallHelp()">Cerrar</button>
+    </div>
+    <p style="font-size:10px;color:var(--muted,#94a3b8);text-align:center;margin-top:10px;line-height:1.4;">
+      💡 Mantén pulsado el botón 📲 del header para ver el diagnóstico técnico.
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- v209: hoja de impresión del reporte PDF (Estadísticas → Reporte PDF).
+     Directa bajo <body> para que @media print la muestre sola. -->
+<div id="printReport" aria-hidden="true"></div>
+
+<script src="./app.min.js?v=224" defer></script>
+<script>
+// Close modals by clicking backdrop
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
