@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 230;
+const APP_VERSION = 231;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 230;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = '0.00001';
+let _PUBLIC_VERSION_STR = '0.00002';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -82,7 +82,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = 'ed9eda12fb336874';
+let _LOCAL_BUILD_HASH = 'dca9bfc74337607a';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -9478,41 +9478,31 @@ function renderAdminGestores() {
     const pendingVales = ordenarRecientesPrimero(vales.filter(v => _mio(v) && v.status !== 'confirmed' && v.status !== 'cancelled'));
     const isOpen = adminGestorFilter != null ? true : adminGestorFilter === g.id;
 
+    // v231: la ficha del gestor deja el relleno SÓLIDO (.pf-fill) y lleva la
+    // PIEL 3D — degradado pastel→pleno, esquina de vidrio y círculos — igual
+    // que las tarjetas de sus vales. El diseño se ve ANTES de tocar; la Tienda
+    // se queda en vidrio neutro porque no tiene color propio.
+    const _esHero = !g._tienda && typeof gestorHeroVars === 'function';
+    const _hv = _esHero ? gestorHeroVars(g) : '';
+    // v93/v114/v85: los contadores de siempre, ahora como píldoras de vidrio.
+    const _resN = pendingVales.filter(_valeReservaActiva).length;
+    const _motoN = pendingVales.filter(v => v.status === 'assigned').length;
+    const _sinVerN = pendingVales.filter(x => x.status === 'pending' && !x.seenByAdmin).length;
     html += `<div style="margin-bottom:8px;">
-      <div class="pf-fill" style="${_pfVars(g)}display:flex;align-items:center;justify-content:space-between;border:1px solid ${isOpen?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px 14px;cursor:pointer;font-weight:700;font-size:14px;transition:0.2s;" onclick="setGestorFilter(${adminGestorFilter != null ? 'null' : (isOpen ? 'null' : g.id)})">
-         <!-- v220 · IDEA 4: sin raíl izquierdo; el color llega por el relleno sólido del .pf-fill -->
-         <div style="display:flex;align-items:center;gap:12px;">
-           <div class="ag-avatar" style="background:${g.color};width:32px;height:32px;font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:50%;">${escapeHTML(g.initials)}</div>
-           <span>${escapeHTML(g.name)}</span>
-         </div>
-         <div style="display:flex;align-items:center;gap:12px;">
-           ${(() => {
-             // v93: cuántos de sus vales tienen stock apartado. Va aparte del
-             // contador de nuevos porque son dos cosas distintas: uno es "míralo",
-             // el otro es "esto tiene mercancía comprometida".
-             const _res = pendingVales.filter(_valeReservaActiva).length;
-             return _res ? `<span style="background:rgba(180,83,9,.15);color:#b45309;border:1px solid rgba(180,83,9,.35);border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap;" title="${_res} vale${_res>1?'s':''} con stock apartado">🔐 ${_res}</span>` : '';
-           })()}
-           ${(() => {
-             // v114: cuántos de sus vales van ya con un mensajero. Al lado del
-             // candado y por el mismo motivo: saberlo sin tener que desplegar el
-             // grupo y abrir los vales uno a uno.
-             const _conMoto = pendingVales.filter(v => v.status === 'assigned').length;
-             return _conMoto ? `<span style="background:rgba(217,119,6,.15);color:var(--orange);border:1px solid rgba(217,119,6,.35);border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap;" title="${_conMoto} vale${_conMoto>1?'s':''} con mensajero">🛵 ${_conMoto}</span>` : '';
-           })()}
-           ${(() => {
-             // v85: el número rojo contaba TODOS los vales activos del gestor,
-             // vistos o no, así que no bajaba nunca y no servía para saber si
-             // había entrado algo nuevo. Ahora el rojo son los que faltan por
-             // mirar; si no queda ninguno, se enseña el total en gris — sigue
-             // haciendo falta ver cuántos hay en curso, pero sin alarma.
-             const _sinVer = pendingVales.filter(x => x.status === 'pending' && !x.seenByAdmin).length;
-             if (_sinVer > 0) return `<span style="background:var(--red);color:white;border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;">${_sinVer} nuevo${_sinVer > 1 ? 's' : ''}</span>`;
-             if (pendingVales.length > 0) return `<span style="background:var(--surface3);color:var(--text-muted);border-radius:12px;padding:3px 9px;font-size:11px;font-weight:600;">${pendingVales.length} en curso</span>`;
-             return '';
-           })()}
-           <span style="color:var(--gray-400);font-size:12px;">${isOpen ? '▲' : '▼'}</span>
-         </div>
+      <div class="vxg-card${_esHero ? ' vxg-hero' : ''}${isOpen ? ' vxg-open' : ''}"${_esHero ? ` style="${_hv}"` : ''} onclick="setGestorFilter(${adminGestorFilter != null ? 'null' : (isOpen ? 'null' : g.id)})">
+        ${_esHero ? '<span class="vxg-c c1" aria-hidden="true"></span><span class="vxg-c c2" aria-hidden="true"></span>' : ''}
+        <span class="vxg-left">
+          <span class="vxg-ava" style="background:${g.color};">${escapeHTML(g.initials)}</span>
+          <span class="vxg-nombre">${escapeHTML(g.name)}</span>
+        </span>
+        <span class="vxg-right">
+          ${_resN ? `<span class="vxg-chip vxg-chip-amber" title="${_resN} vale${_resN>1?'s':''} con stock apartado">🔐 ${_resN}</span>` : ''}
+          ${_motoN ? `<span class="vxg-chip vxg-chip-moto" title="${_motoN} vale${_motoN>1?'s':''} con mensajero">🛵 ${_motoN}</span>` : ''}
+          ${_sinVerN > 0
+            ? `<span class="vxg-chip vxg-chip-new">${_sinVerN} nuevo${_sinVerN > 1 ? 's' : ''}</span>`
+            : (pendingVales.length > 0 ? `<span class="vxg-chip vxg-chip-idle">${pendingVales.length} en curso</span>` : '')}
+          <span class="vxg-chev">${isOpen ? '▲' : '▼'}</span>
+        </span>
       </div>`;
 
     if (isOpen) {
@@ -10321,10 +10311,10 @@ function renderValeDetail(destinoId) {
       <div style="font-size:11px;color:var(--blue);font-weight:700;margin-bottom:6px;">⚠️ No hay producto del catálogo vinculado</div>
       <button class="btn btn-blue btn-full btn-sm" onclick="openEditValeModal(${v.id})">📦 Seleccionar producto del catálogo</button>
       <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">Vincular un producto para descontar stock y calcular comisión</div>
-    </div>`):(hasProducts?`
-    <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;">
-      <div style="font-size:10px;color:var(--green);font-weight:700;">✅ Productos vinculados: ${(v.valeProductos||[]).map(p=>`${escapeHTML(p.name)}${p.qty>1?' ×'+p.qty:''}`).join(', ')}</div>
-    </div>`:'');
+    </div>`):'';
+  // v231: el recuadro verde «Productos vinculados» se jubila — ahora los
+  // productos se leen como fichas dentro de la descripción del vale, que es
+  // donde de verdad se buscan. Menos ruido repetido arriba y abajo.
   // v92: apartar el stock de este vale. Solo tiene sentido mientras el vale siga
   // vivo y tenga productos del catálogo: en cuanto se cobra, el stock se
   // descuenta de verdad y no hay nada que reservar.
@@ -10343,55 +10333,84 @@ function renderValeDetail(destinoId) {
     // v88: si el cliente recoge en la tienda no hay nada que repartir, así que
     // el botón de mensajero estorba y se presta a asignar por error. En su
     // lugar se recuerda de qué tipo de venta se trata.
+    // v231: opciones con TÍTULO + SUBTÍTULO — se lee qué hace cada botón sin
+    // tener que adivinarlo por el color.
     const _cabecera = v.recogidaTienda
-      ? `<div style="background:rgba(0,109,138,.08);border:1px solid rgba(0,109,138,.25);border-radius:8px;padding:10px;text-align:center;margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:700;color:var(--blue);">🏬 Recogida en tienda</div>
-        <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">No lleva mensajero — se entrega en el mostrador</div>
+      ? `<div class="vx-estado vx-estado-info">
+        <span class="vx-estado-ic">🏬</span>
+        <span class="vx-estado-tx"><b>Recogida en tienda</b><i>No lleva mensajero — se entrega en el mostrador</i></span>
       </div>`
-      : `<button class="btn btn-blue btn-full" onclick="openShareModal(${v.id})" style="margin-bottom:8px;">🛵 Asignar a Mensajero</button>
-    <div style="font-size:10px;color:var(--gray-400);text-align:center;margin-bottom:6px;">— o confirmar directo —</div>`;
+      : `<button type="button" class="vx-opt vx-opt-full vx-opt-blue" onclick="openShareModal(${v.id})">
+          <span class="vx-opt-ic">🛵</span>
+          <span class="vx-opt-tx"><b>Asignar a mensajero</b><i>sale a la calle y él confirma la entrega</i></span>
+        </button>
+        <div class="vx-o">— o confirma tú mismo —</div>`;
     actHTML=`${productPickerHTML}${reservaHTML}${_cabecera}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <button class="btn btn-green btn-sm btn-full" onclick="confirmSale(${v.id},'confirmed')">✅ Cobrado directo</button>
-      <button class="btn btn-sm btn-full" style="background:var(--orange);color:white;" onclick="confirmSale(${v.id},'pending_payment')">⏳ Entregado (Por cobrar)</button>
+    <div class="vx-opts">
+      <button type="button" class="vx-opt vx-opt-green" onclick="confirmSale(${v.id},'confirmed')">
+        <span class="vx-opt-ic">✅</span>
+        <span class="vx-opt-tx"><b>Cobrado directo</b><i>el cliente ya pagó todo</i></span>
+      </button>
+      <button type="button" class="vx-opt vx-opt-orange" onclick="confirmSale(${v.id},'pending_payment')">
+        <span class="vx-opt-ic">⏳</span>
+        <span class="vx-opt-tx"><b>Entregado, por cobrar</b><i>el pago llega después</i></span>
+      </button>
     </div>`;
   } else if(v.status==='assigned'){
     actHTML=`${productPickerHTML}${reservaHTML}<div class="mensajero-row">🛵 <b>Mensajero:</b> ${m?escapeHTML(m.name):'—'}</div>
       <div style="font-size:12px;color:var(--gray-400);margin:6px 0 10px;">Esperando que el mensajero confirme la entrega</div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="mensajeroEntrega(${v.id})" style="margin-bottom:6px;">📦 Marcar entregado (admin)</button>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="openShareModal(${v.id})">🔄 Reenviar vale</button>`;
+      <div class="vx-opts">
+        <button type="button" class="vx-opt" onclick="mensajeroEntrega(${v.id})">
+          <span class="vx-opt-ic">📦</span>
+          <span class="vx-opt-tx"><b>Marcar entregado</b><i>confirmarlo tú como admin</i></span>
+        </button>
+        <button type="button" class="vx-opt" onclick="openShareModal(${v.id})">
+          <span class="vx-opt-ic">🔄</span>
+          <span class="vx-opt-tx"><b>Reenviar vale</b><i>cambiar de mensajero</i></span>
+        </button>
+      </div>`;
   } else if(v.status==='delivered'){
-    actHTML=`${productPickerHTML}<div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.3);border-radius:8px;padding:12px;text-align:center;margin-bottom:10px;">
-      <div style="font-size:24px;margin-bottom:4px;">🛵</div>
-      <div style="font-weight:700;color:#7C3AED;">Entregado por mensajero</div>
-      ${m?`<div style="font-size:12px;color:var(--gray-400);">Mensajero: ${escapeHTML(m.name)}</div>`:``}
+    actHTML=`${productPickerHTML}
+    <div class="vx-estado vx-estado-morado">
+      <span class="vx-estado-ic">🛵</span>
+      <span class="vx-estado-tx"><b>Entregado por mensajero</b><i>${m?escapeHTML(m.name)+' lo dejó en la calle':'a la espera de tu confirmación'}</i></span>
     </div>
-    <button class="btn btn-green btn-full" onclick="confirmSale(${v.id},'confirmed')" style="margin-bottom:8px;">✅ Confirmar venta + Entregado</button>
-    <button class="btn btn-orange btn-full" onclick="confirmSale(${v.id},'pending_payment')">⏳ Confirmar venta + Pendiente de cobro</button>`;
+    <div class="vx-opts">
+      <button type="button" class="vx-opt vx-opt-green" onclick="confirmSale(${v.id},'confirmed')">
+        <span class="vx-opt-ic">✅</span>
+        <span class="vx-opt-tx"><b>Confirmar venta</b><i>ya quedó cobrada</i></span>
+      </button>
+      <button type="button" class="vx-opt vx-opt-orange" onclick="confirmSale(${v.id},'pending_payment')">
+        <span class="vx-opt-ic">⏳</span>
+        <span class="vx-opt-tx"><b>Confirmar, por cobrar</b><i>el pago viene después</i></span>
+      </button>
+    </div>`;
   } else if(v.status==='confirmed'){
     // v121: el aviso del producto que falta va también aquí. Es la venta cerrada
     // sin producto la que no da puntos, y era justo la que no lo decía.
-    actHTML=`${productPickerHTML}<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:14px;text-align:center;">
-      <div style="font-size:26px;margin-bottom:4px;">✅</div>
-      <div style="font-weight:700;color:var(--green);">Venta Confirmada y Cobrada</div>
-      ${m?`<div style="font-size:12px;color:var(--gray-400);">Entregada por: ${escapeHTML(m.name)}</div>`:``}
+    actHTML=`${productPickerHTML}
+    <div class="vx-estado vx-estado-verde" style="margin-bottom:0;">
+      <span class="vx-estado-ic">✅</span>
+      <span class="vx-estado-tx"><b>Venta confirmada y cobrada</b><i>${m?'Entregada por: '+escapeHTML(m.name):'cobrada en mostrador'}</i></span>
     </div>
-    <button type="button" class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta (restaurar stock)</button>`;
+    <button type="button" class="btn btn-ghost btn-full btn-sm" style="margin-top:8px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta (restaurar stock)</button>`;
   } else if(v.status==='pending_payment'){
-    actHTML=`${productPickerHTML}<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:14px;text-align:center;margin-bottom:8px;">
-      <div style="font-size:26px;margin-bottom:4px;">⏳</div>
-      <div style="font-weight:700;color:var(--yellow);">Pendiente de cobro</div>
-      ${m?`<div style="font-size:12px;color:var(--gray-400);">Mensajero: ${escapeHTML(m.name)}</div>`:``}
+    actHTML=`${productPickerHTML}
+    <div class="vx-estado vx-estado-ambar">
+      <span class="vx-estado-ic">⏳</span>
+      <span class="vx-estado-tx"><b>Pendiente de cobro</b><i>${m?'Mensajero: '+escapeHTML(m.name):'falta registrar el pago'}</i></span>
     </div>
-    <button class="btn btn-green btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado — Registrar pago</button>
+    <button type="button" class="vx-opt vx-opt-full vx-opt-green" onclick="markAsPaid(${v.id})">
+      <span class="vx-opt-ic">✅</span>
+      <span class="vx-opt-tx"><b>Cobrado — registrar pago</b><i>cierra el vale como pagado</i></span>
+    </button>
     <button type="button" class="btn btn-ghost btn-full btn-sm" style="margin-top:6px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button>`;
   } else if(v.status==='cancelled'){
     // Antes este estado no tenía rama propia: el badge mostraba el texto crudo
     // "cancelled" (sin traducir) y no se mostraba ningún bloque de acciones.
-    actHTML=`<div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:14px;text-align:center;">
-      <div style="font-size:26px;margin-bottom:4px;">🚫</div>
-      <div style="font-weight:700;color:var(--red);">Vale Cancelado</div>
-      ${v.cancelledTs?`<div style="font-size:11px;color:var(--gray-400);margin-top:2px;">${new Date(v.cancelledTs).toLocaleString('es-ES')}</div>`:''}
+    actHTML=`<div class="vx-estado vx-estado-rojo" style="margin-bottom:0;">
+      <span class="vx-estado-ic">🚫</span>
+      <span class="vx-estado-tx"><b>Vale cancelado</b><i>${v.cancelledTs?new Date(v.cancelledTs).toLocaleString('es-ES'):'sin acciones pendientes'}</i></span>
     </div>`;
   }
   const numBadge=valeNumStr(v)?`<span style="font-size:15px;font-weight:900;color:var(--blue);margin-bottom:4px;display:block;">${valeNumStr(v)}</span>`:'';
@@ -10408,7 +10427,7 @@ function renderValeDetail(destinoId) {
     <div style="font-size:12px;color:var(--text);line-height:1.6;">${estafaMatches.map(m=>'⚠️ Coincidencia por '+escapeHTML(m.reasons.join(', '))+(m.entry.nota?' — <i>'+escapeHTML(m.entry.nota)+'</i>':'')).join('<br>')}</div>
   </div>`:'';
   c.innerHTML=`
-    <div class="lbl" style="margin-top:0;">Detalle del Vale</div>
+    <div class="lbl" style="margin-top:0;">Descripción del vale</div>
     ${estafaDetailHTML}
     <div class="card">
       ${numBadge}
@@ -10423,14 +10442,15 @@ function renderValeDetail(destinoId) {
           ${pts>0?`<div style="font-size:10px;color:var(--blue);font-weight:700;margin-top:3px;">⭐ ${pts} pts</div>`:``}
         </div>
       </div>
-      <table class="vale-datos">
-        ${[['Cliente',v.cliente],['Teléfono',v.telefono],['Dirección',v.direccion],['Artículo',v.articulo],
-           ['Precio USD',v.precioUSD],['Precio MN',v.precioMN],['Vuelto',v.vuelto],['Total',_rebajaVale(v)?'':v.total],['Garantía',v.garantia],['⏰ Entrega',_textoEntrega(v)],['💰 Comisión gestor',v.comisionGestor]]
+      ${(hasProducts?`<div class="vd-prods">${(v.valeProductos||[]).map(p=>`<span class="vd-prod">📦 ${escapeHTML(p.name)}${p.qty>1?`<i>×${p.qty}</i>`:''}</span>`).join('')}</div>`:'')}
+      <div class="vd-datos">
+        ${([['👤 Cliente',v.cliente],['📞 Teléfono',v.telefono],['📍 Dirección',v.direccion],['📦 Artículo',v.articulo],
+            ['💵 Precio USD',v.precioUSD],['🪙 Precio MN',v.precioMN],['🔁 Vuelto',v.vuelto],
+            ['🧾 Total',_rebajaVale(v)?'':v.total,'vd-strong'],['🛡️ Garantía',v.garantia],
+            ['⏰ Entrega',_textoEntrega(v)],['💰 Comisión gestor',v.comisionGestor,'vd-accent']])
           .filter(([,val])=>val)
-          .map(([k,val])=>`<tr style="border-bottom:1px solid var(--gray-100);">
-            <td class="vale-datos-k" style="padding:6px 0;">${k}</td>
-            <td style="padding:6px 0;font-weight:600;">${escapeHTML(val)}</td></tr>`).join('')}
-      </table>
+          .map(([k,val,cls])=>`<div class="vd-row${cls?' '+cls:''}"><span class="vd-k">${k}</span><span class="vd-v">${escapeHTML(val)}</span></div>`).join('')}
+      </div>
       ${notasGestorHTML}
       ${(()=>{const _r=_rebajaVale(v);if(!_r)return '';return `
         <div style="margin-top:10px;padding:12px 13px;background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.35);border-radius:11px;">

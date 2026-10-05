@@ -1,10 +1,10 @@
 {
-  "version": 230,
-  "versionStr": "0.00001",
-  "build": 230,
-  "hash": "ed9eda12fb336874",
-  "hashFull": "ed9eda12fb336874",
-  "releasedAt": "2026-10-05 17:27",
+  "version": 231,
+  "versionStr": "0.00002",
+  "build": 231,
+  "hash": "dca9bfc74337607a",
+  "hashFull": "dca9bfc74337607a",
+  "releasedAt": "2026-10-05 17:58",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Historial y ventas directas con la piel 3D del nuevo estilo",
-    "Etiqueta de versión reiniciada: programa nuevo empieza en 0.00001",
-    "Cada build subirá un paso: 0.00002, 0.00003…"
+    "La bandeja muestra cada gestor con su tarjeta 3D antes de tocarla",
+    "Descripcion del vale en limpio: fichas de producto, datos con iconos y total destacado",
+    "Opciones con titulo y subtitulo: se entiende lo que hace cada boton"
   ]
 }
