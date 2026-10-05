@@ -2811,3 +2811,304 @@ body.dark:not(.contrast) .g-item{border-color:rgba(255,255,255,.07);}
 /* 8 · Kickers (➕ Agregar gestor, 📋 Historial…): alineados al lenguaje
      editorial — más peso y aire, siguen siendo kickers pequeños */
 .lbl{letter-spacing:.8px;font-weight:800;}
+
+/* ═══════════════════════════════════════════════════════════════
+   v225 · v17.1 — Renglones del vale con profundidad
+   El formulario era lo último que se veía «plano»: bordes casi
+   invisibles sobre el fondo y sin peso frente a las cards del
+   Resumen. Cada renglón pasa a mini-card del mismo lenguaje premium
+   (superficie flotante + borde marcado + sombra), el campo se hunde
+   con sombra interior y el emoji se convierte en chip tintado.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1 · El renglón, como mini-card flotante (misma familia que el Resumen) */
+.vf-row{
+  background:var(--surface);
+  border:1.5px solid rgba(100,116,139,.32);
+  border-radius:16px;
+  padding:10px 12px 12px;
+  box-shadow:0 1px 2px rgba(15,23,42,.05),0 5px 14px -6px rgba(15,23,42,.16);
+}
+body.dark .vf-row{
+  border-color:rgba(148,163,184,.22);
+  box-shadow:0 1px 2px rgba(0,0,0,.35),0 8px 18px -8px rgba(0,0,0,.5);
+}
+.vale-form-body{gap:9px;}
+
+/* 2 · Emoji → chip tintado, el mismo gesto fx-chip del Resumen */
+.vf-emoji{
+  width:32px;height:32px;margin-top:3px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;font-size:15px;
+  background:var(--blue-lt);
+  box-shadow:inset 0 0 0 1px rgba(0,77,96,.10);
+}
+body.dark .vf-emoji{
+  background:rgba(14,165,233,.13);
+  box-shadow:inset 0 0 0 1px rgba(14,165,233,.22);
+}
+
+/* 3 · El campo: hundido (well) y con línea marcada de verdad */
+.vf-row input:not([type="checkbox"]),.vf-row textarea{
+  border-radius:11px;
+  border:1.5px solid #94a3b8;
+  background:var(--surface2);
+  box-shadow:inset 0 2px 4px rgba(15,23,42,.08);
+}
+.vf-row input:not([type="checkbox"]):focus,.vf-row textarea:focus{
+  background:var(--surface);
+  border-color:var(--blue);
+  box-shadow:0 0 0 3.5px rgba(0,109,138,.15);
+}
+body.dark .vf-row input:not([type="checkbox"]),body.dark .vf-row textarea{
+  border-color:rgba(148,163,184,.38);
+  background:rgba(0,0,0,.26);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.45);
+}
+body.dark .vf-row input:not([type="checkbox"]):focus,body.dark .vf-row textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3.5px rgba(56,189,248,.18);
+}
+
+/* 4 · Campos Auto (readonly): tintados en azul — se lee «ya lo llené por ti» */
+.vf-row input[readonly]{
+  background:var(--blue-lt);
+  border:1.5px dashed rgba(0,109,138,.40);
+  color:var(--blue-dk);font-weight:700;
+  box-shadow:none;
+}
+body.dark .vf-row input[readonly]{
+  background:rgba(14,165,233,.12) !important;
+  border-color:rgba(14,165,233,.35) !important;
+  color:#7dd3fc !important;
+}
+
+/* 5 · Select de moneda y separadores, alineados al mismo relieve */
+.vf-row select{
+  border-radius:11px !important;border:1.5px solid #94a3b8 !important;
+  background:var(--surface2) !important;font-weight:600;
+  box-shadow:inset 0 2px 4px rgba(15,23,42,.08);
+}
+body.dark .vf-row select{
+  border-color:rgba(148,163,184,.38) !important;background:rgba(0,0,0,.26) !important;
+}
+.vf-sep{border-top:2px dashed rgba(100,116,139,.30);margin:9px 0;}
+body.dark .vf-sep{border-top-color:rgba(148,163,184,.25);}
+.vf-label{font-size:10.5px;letter-spacing:.5px;}
+.vale-form-header p{font-size:12px;font-weight:600;color:var(--text-muted);}
+
+/* 6 · Caja de ATENCIÓN y toggle «Más detalles», mismo relieve */
+.vf-fixed{
+  border-radius:16px;
+  border:1.5px solid rgba(217,119,6,.30);
+  background:rgba(251,191,36,.10);
+}
+body.dark .vf-fixed{background:rgba(251,191,36,.07);}
+#vfExtrasToggle{
+  border-radius:12px !important;border:1.5px solid var(--border) !important;
+  background:var(--surface) !important;
+  box-shadow:0 1px 2px rgba(15,23,42,.05),0 4px 12px -6px rgba(15,23,42,.12);
+}
+
+/* 7 · Modo contraste: relieve sí, sombras no (degradación limpia) */
+body.contrast .vf-row{border:2px solid var(--border);box-shadow:none;}
+body.contrast .vf-emoji{box-shadow:inset 0 0 0 1px var(--border);}
+body.contrast .vf-row input:not([type="checkbox"]),
+body.contrast .vf-row textarea,
+body.contrast .vf-row select{box-shadow:none;}
+
+/* ══════════════════════════════════════════════════════════════════
+   v226 · SELECTOR «¿Quién eres?» — TARJETAS 3D (mockup aprobado)
+   Receta Uiverse adaptada: degradado 135° por gestor + esquina de
+   vidrio (border-top-right-radius:100%) + círculos concéntricos con
+   translateZ que se expanden al hover + tilt rotate3d suave.
+   JS inyecta --g1 (pastel), --g2 (color pleno), --gink (tinta),
+   --gacc (círculos), --gacc2 (acento) y --gsh (rgb de sombra).
+   Móvil ≤700: 3 por fila compactas · PC: 2 columnas a la izquierda
+   con el ranking en la columna derecha (columna que ya existía).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Rejilla base: 3 por fila, la misma cuenta que ya veía el usuario */
+#gestoresList{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+#gestoresList .es{grid-column:1/-1;}
+#gestoresList .skel-tile{min-height:128px;}
+
+/* Tarjeta 3D — sustituye al tile plano de v220. Sin overflow ni filter en
+   la tarjeta: overflow≠visible o filter aplastarían el espacio 3D y los
+   círculos dejarían de flotar sobre el vidrio. */
+.g-item.g-hero{
+  position:relative;display:block;
+  height:170px;padding:0;margin-bottom:0;
+  border:none;border-radius:20px;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  box-shadow:rgba(var(--gsh,15,42,60),0) 40px 50px 25px -40px,rgba(var(--gsh,15,42,60),.28) 0 18px 28px -12px;
+  transform-style:preserve-3d;
+  transition:transform .45s ease-in-out,box-shadow .45s ease-in-out,background .45s ease-in-out;
+  cursor:pointer;
+}
+.g-item.g-hero:hover{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  transform:perspective(900px) rotate3d(1,1,0,22deg);
+  box-shadow:rgba(var(--gsh,15,42,60),.30) 30px 50px 25px -40px,rgba(var(--gsh,15,42,60),.14) 0 22px 30px 0;
+}
+.g-item.g-hero:active{transform:perspective(900px) scale(.97);}
+.g-item.g-hero:focus-visible{outline:3px solid var(--blue,#0891b2);outline-offset:2px;}
+
+/* Esquina de vidrio — el gesto firma del mockup */
+.g3d-glass{
+  position:absolute;inset:6px;
+  border-radius:26px;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.36) 0%,rgba(255,255,255,.82) 100%);
+  border-left:1px solid rgba(255,255,255,.9);border-bottom:1px solid rgba(255,255,255,.9);
+  transform:translateZ(24px);
+  pointer-events:none;
+}
+
+/* Círculos concéntricos 3D; el interior (c5) lleva iniciales o foto */
+.g3d-circles{position:absolute;top:0;right:0;transform-style:preserve-3d;pointer-events:none;}
+.g3d-circles i{
+  position:absolute;display:block;aspect-ratio:1/1;border-radius:50%;
+  top:0;right:0;
+  box-shadow:rgba(100,100,111,.2) -8px 8px 16px 0;
+  -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  background:var(--gacc,rgba(255,255,255,.25));
+  transition:transform .5s ease-in-out;
+}
+.g3d-circles .c1{width:78px;transform:translateZ(20px);top:6px;right:6px;}
+.g3d-circles .c2{width:64px;transform:translateZ(40px);top:8px;right:8px;-webkit-backdrop-filter:blur(1px);backdrop-filter:blur(1px);}
+.g3d-circles .c3{width:50px;transform:translateZ(60px);top:13px;right:13px;}
+.g3d-circles .c4{width:36px;transform:translateZ(80px);top:17px;right:17px;}
+.g3d-circles .c5{
+  width:27px;transform:translateZ(100px);top:22px;right:22px;
+  display:grid;place-content:center;overflow:hidden;
+  background:rgba(255,255,255,.30);
+  font-weight:900;font-size:9.5px;letter-spacing:.2px;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.g-item.g-hero:hover .c2{transform:translateZ(60px);}
+.g-item.g-hero:hover .c3{transform:translateZ(80px);}
+.g-item.g-hero:hover .c4{transform:translateZ(100px);}
+.g-item.g-hero:hover .c5{transform:translateZ(120px);}
+.g3d-circles .c5 .g-avatar-img-wrap{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;}
+.g3d-circles .c5 img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* Nombre + subtítulo centrados abajo (mockup v3) */
+.g3d-body{
+  position:absolute;left:10px;right:10px;bottom:36px;
+  display:block;text-align:center;transform:translateZ(26px);
+  pointer-events:none;
+}
+.g3d-name{
+  display:block;font-size:14px;font-weight:900;line-height:1.18;
+  letter-spacing:-.1px;color:var(--gink,#0f172a);
+}
+.g3d-sub{
+  display:block;font-size:10px;font-weight:700;
+  color:var(--gink,#0f172a);opacity:.62;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.g3d-enter{
+  position:absolute;bottom:12px;left:0;right:0;
+  display:flex;align-items:center;justify-content:center;gap:1px;
+  font-size:11.5px;font-weight:800;letter-spacing:.2px;
+  color:var(--gacc2,#006d8a);transform:translateZ(26px);
+  pointer-events:none;
+}
+.g3d-enter svg{width:10px;height:10px;}
+
+/* Chips funcionales flotando sobre el plano 3D */
+#gestoresList .g-pin-btn{
+  top:5px;right:5px;width:22px;height:22px;font-size:10px;
+  transform:translateZ(60px);
+  box-shadow:0 2px 6px rgba(15,23,42,.25);
+}
+#gestoresList .g-pin-btn:hover{transform:translateZ(60px) scale(1.15);}
+#gestoresList .g-item .g-badge{
+  position:absolute;top:6px;left:6px;width:22px;height:22px;
+  display:grid;place-content:center;border-radius:50%;
+  background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;
+  font-size:11px;font-weight:900;
+  box-shadow:0 3px 8px -2px rgba(2,132,199,.5);
+  transform:translateZ(60px);
+}
+/* «Fijado» lo cuenta el 📌 ámbar — el rótulo sobra dentro de la 3D */
+#gestoresList .g-pin-label{display:none;}
+/* Fijado: mismo 3D de su color + anillo ámbar (antes relleno ámbar plano) */
+.g-item.g-hero.g-item-pinned{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  box-shadow:0 0 0 2px rgba(245,158,11,.75),rgba(var(--gsh,15,42,60),.28) 0 18px 28px -12px;
+}
+#gestoresList .g-item.g-item-pinned{grid-column:auto;}
+/* Activo: anillo azul de sesión abierta, degradado intacto */
+.g-item.g-hero.active{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  border-color:transparent;
+  box-shadow:0 0 0 2.5px var(--blue,#0891b2),rgba(var(--gsh,15,42,60),.3) 0 20px 30px -12px;
+}
+
+/* Oscuro: las tarjetas destellan igual (mockup aprobado en oscuro).
+   Misma especificidad que las reglas dark genéricas pero después: ganan. */
+body.dark .g-item.g-hero,
+body.dark .g-item.g-hero.active,
+body.dark .g-item.g-hero.g-item-pinned{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  border:none;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 40px 50px 25px -40px,rgba(var(--gsh,15,42,60),.34) 0 20px 30px -12px;
+}
+body.dark .g-item.g-hero:hover{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  box-shadow:rgba(var(--gsh,15,42,60),.32) 30px 50px 25px -40px,rgba(var(--gsh,15,42,60),.18) 0 24px 34px 0;
+}
+body.dark .g-item.g-hero.g-item-pinned{
+  box-shadow:0 0 0 2px rgba(245,158,11,.75),rgba(var(--gsh,15,42,60),.34) 0 20px 30px -12px;
+}
+body.dark .g-item.g-hero.active{
+  box-shadow:0 0 0 2.5px var(--blue,#0891b2),rgba(var(--gsh,15,42,60),.34) 0 20px 30px -12px;
+}
+
+/* Móvil ≤700: compacta de 128px — 3 círculos visibles, c5 promovido a
+   avatar legible (recorte del mockup v3) */
+@media (max-width:700px){
+  .g-item.g-hero{height:128px;}
+  .g3d-glass{inset:4px;border-radius:22px;}
+  .g3d-circles .c1{width:52px;top:4px;right:4px;}
+  .g3d-circles .c2{width:42px;top:5px;right:5px;}
+  .g3d-circles .c3,.g3d-circles .c4{display:none;}
+  .g3d-circles .c5{width:33px;top:8px;right:8px;transform:translateZ(60px);font-size:9px;}
+  .g-item.g-hero:hover .c5{transform:translateZ(80px);}
+  .g3d-body{left:6px;right:6px;bottom:27px;}
+  .g3d-name{font-size:11px;}
+  .g3d-sub{font-size:8.5px;margin-top:2px;}
+  .g3d-enter{bottom:8px;font-size:9.5px;}
+  .g3d-enter svg{width:8px;height:8px;}
+}
+
+/* PC ≥901: columna izquierda más ancha, 2 columnas de tarjetas grandes;
+   el ranking sigue en la columna derecha (layout «mockup» aprobado) */
+@media (min-width:901px){
+  #layoutGestor{grid-template-columns:minmax(340px,400px) 1fr;}
+  #gestoresList{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .g-item.g-hero{height:180px;}
+}
+
+/* Accesibilidad: sin motion */
+@media (prefers-reduced-motion:reduce){
+  .g-item.g-hero,.g-item.g-hero:hover,.g-item.g-hero:active{transform:none;transition:none;}
+  .g3d-circles i{transition:none;}
+}
+/* Modo alto contraste: tarjeta plana, sin vidrio ni círculos */
+body.contrast .g3d-glass,body.contrast .g3d-circles{display:none;}
+body.contrast .g-item.g-hero{height:auto;min-height:96px;padding:12px 10px;}
+body.contrast .g3d-body{position:static;transform:none;}
+body.contrast .g3d-name{color:var(--text);}
+body.contrast .g3d-sub{color:var(--text-muted);opacity:1;}
+body.contrast .g3d-enter{position:static;transform:none;margin-top:6px;}
+body.contrast #gestoresList .g-pin-btn,
+body.contrast #gestoresList .g-item .g-badge{transform:none;}
+
+/* Ranking con acentos del mismo lenguaje: anillo blanco en los avatares
+   y filas más redondeadas (el relleno pastel por gestor ya existía) */
+#rankingList .rank-row{border-radius:16px;}
+.rank-row .g-avatar{box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),0 3px 8px -3px rgba(15,23,42,.4);}
+body.dark .rank-row .g-avatar{box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 3px 8px -3px rgba(0,0,0,.5);}
+.rank-pts{font-weight:900;letter-spacing:-.2px;}

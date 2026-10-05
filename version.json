@@ -1,10 +1,10 @@
 {
-  "version": 224,
-  "versionStr": "v17.0",
-  "build": 224,
-  "hash": "0f95f16177438828",
-  "hashFull": "0f95f16177438828",
-  "releasedAt": "2026-10-04 21:36",
+  "version": 226,
+  "versionStr": "v17.2",
+  "build": 226,
+  "hash": "7345c8bd5a921fbd",
+  "hashFull": "7345c8bd5a921fbd",
+  "releasedAt": "2026-10-05 16:26",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Diseño «fitness premium» en TODA la app (fase 2):",
-    "«¿Quién eres?», formularios, inputs del panel, cards, bandeja y ranking",
-    "Esquinas redondas, cards flotantes, anillos de foco y títulos editoriales"
+    "Selector «¿Quién eres?» con tarjetas 3D por gestor:",
+    "degradado propio, esquina de vidrio y círculos con iniciales o foto",
+    "móvil 3 por fila compactas · PC 2 columnas con el ranking al lado"
   ]
 }

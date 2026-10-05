@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 224;
+const APP_VERSION = 226;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 224;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = 'v17.0';
+let _PUBLIC_VERSION_STR = 'v17.2';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -82,7 +82,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = '0f95f16177438828';
+let _LOCAL_BUILD_HASH = '7345c8bd5a921fbd';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -7640,20 +7640,42 @@ function renderGestores() {
     return;
   }
   const pinnedId = _getPinnedGestorId();
+  // v226: subtítulo de la tarjeta con los puntos del ciclo — la MISMA fuente
+  // que el ranking (axon_ranking_summary, calculado por el admin y bajado por
+  // todos los teléfonos). Si aún no llegó, mensaje neutro. Aquí no se usan
+  // vales propios: el selector se pinta ANTES de entrar y solo hay datos
+  // compartidos en este punto.
+  let _rkSum=null;
+  try{ _rkSum=JSON.parse(localStorage.getItem('axon_ranking_summary')||'null'); }catch(e){ _rkSum=null; }
+  if(!Array.isArray(_rkSum)) _rkSum=null;
+  const _subDe=g=>{
+    if(g._tienda) return 'Ventas de mostrador';
+    const s=_rkSum?_rkSum.find(x=>x.id===g.id):null;
+    const pts=s?_ptsDelResumen(s).pts:0;
+    return pts>0 ? pts+' pts este ciclo' : 'Toca para entrar';
+  };
   c.innerHTML=gestores.map(g=>{
     const act=g.id===activeGestorId;
     const pinned=g.id===pinnedId;
     const pinBtn = pinned
       ? `<button class="g-pin-btn g-pinned" type="button" title="Quitar del inicio" aria-label="Quitar del inicio" onclick="event.stopPropagation();unpinGestor()">📌</button>`
       : `<button class="g-pin-btn" type="button" title="Fijar al inicio" aria-label="Fijar al inicio" onclick="event.stopPropagation();togglePinGestor(${g.id})">📍</button>`;
-    return `<div class="g-item g-hero ${act?'active':''} ${pinned?'g-item-pinned':''}" style="${gestorHeroVars(g)}" onclick="selectGestor(${g.id})">
-      <div class="g-pin-wrap">
-        <div class="g-avatar" style="background:${g.color}">${gestorAvatarInner(g)}</div>
-        ${pinBtn}
-      </div>
-      <div class="g-name">${escapeHTML(g.name)}</div>
+    // v226: tarjeta 3D del mockup — círculos concéntricos con las iniciales
+    // (o la foto) en el interior, esquina de vidrio, nombre centrado abajo y
+    // «Entrar ›». El pin sigue funcional (arriba-dcha) y el ✓ marca sesión.
+    return `<div class="g-item g-hero g3d ${act?'active':''} ${pinned?'g-item-pinned':''}" style="${gestorHeroVars(g)}" onclick="selectGestor(${g.id})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectGestor(${g.id})}">
+      <span class="g3d-circles" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="c4"></i><i class="c5">${gestorAvatarInner(g)}</i></span>
+      <span class="g3d-glass" aria-hidden="true"></span>
+      <span class="g3d-body">
+        <span class="g3d-name">${escapeHTML(g.name)}</span>
+        <span class="g3d-sub">${escapeHTML(_subDe(g))}</span>
+      </span>
+      <span class="g3d-enter" aria-hidden="true">Entrar
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+      </span>
+      ${pinBtn}
       ${pinned?'<span class="g-pin-label">Fijado</span>':''}
-      ${act?'<span class="g-badge">✓</span>':''}
+      ${act?'<span class="g-badge" title="Sesión activa">✓</span>':''}
     </div>`;
   }).join('');
 }
@@ -22662,10 +22684,19 @@ function _pfVars(g){
   return '--pfL:'+_pastelClaro(b)+';--pfD:'+_pastelOscuro(b)+';';
 }
 function gestorHeroVars(g){
+  // v226 · Receta «tarjeta 3D» del mockup aprobado: degradado 135° del pastel
+  // claro (--g1) al COLOR PLENO del gestor (--g2), tinta oscura derivada
+  // (--gink) para el nombre sobre el vidrio, acento medio (--gacc2) para
+  // «Entrar», tinte translúcido (--gacc) para los círculos y rgb de sombra
+  // (--gsh) del mismo tono. --gbd se conserva por compatibilidad.
   const base=(g&&g.color)||'#006d8a';
   return '--g1:'+_pastelClaro(base)
     +';--gbd:'+_mixHex(base,[255,255,255],.42)
-    +';--g2:'+_pastelOscuro(base);
+    +';--g2:'+base
+    +';--gink:'+_mixHex(base,[0,0,0],.55)
+    +';--gacc:'+_rgbaHex(base,.24)
+    +';--gacc2:'+_mixHex(base,[0,0,0],.28)
+    +';--gsh:'+_hexToRgb(_mixHex(base,[0,0,0],.72)).join(',');
 }
 
 // ── Tab bar inferior ──
