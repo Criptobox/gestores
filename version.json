@@ -1,10 +1,10 @@
 {
-  "version": 233,
-  "versionStr": "0.00004",
-  "build": 233,
-  "hash": "8a1c8248f4812ab5",
-  "hashFull": "8a1c8248f4812ab5",
-  "releasedAt": "2026-10-05 19:26",
+  "version": 235,
+  "versionStr": "0.00006",
+  "build": 235,
+  "hash": "e220845cfc6c895d",
+  "hashFull": "e220845cfc6c895d",
+  "releasedAt": "2026-10-05 23:25",
   "files": [
     "app.js",
     "app.css",
@@ -13,8 +13,8 @@
     "sw.js"
   ],
   "changelog": [
-    "Revision integral de estilos: la piel 3D del gestor llega al ranking, entregas y confirmaciones",
-    "Estadisticas con las tarjetas del resumen del dia: caja, inventario, productos y fichas de gestor",
-    "Adiós a los parches viejos: bordes laterales, cajas inline y stat-cards cuadradas unificadas"
+    "Asignar mensajero con fichas 3D: cada mensajero con su color, telefono y anillo al elegirlo",
+    "Fix de recordatorios: el reloj de dias sin cobrar ya arranca al confirmar la venta",
+    "Comisiones, entregas y los dos catalogos con el mismo lenguaje; franja 3D reforzada en moviles viejos"
   ]
 }

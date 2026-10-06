@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 233;
+const APP_VERSION = 235;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 233;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = '0.00004';
+let _PUBLIC_VERSION_STR = '0.00006';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -53,6 +53,7 @@ function _marcarVersionVieja(remoteStr) {
   badge.style.fontWeight = '700';
   badge.title = `Este teléfono usa ${VERSION_STR} y ya hay ${remoteStr}. Toca para actualizar.`;
   badge.style.cursor = 'pointer';
+  badge.classList.add('vx-vervie');   // v234: pulso naranja — imposible no verlo
   badge.onclick = () => {
     if (typeof showConfirmAction === 'function') {
       showConfirmAction('¿Actualizar ahora?',
@@ -68,6 +69,7 @@ function _desmarcarVersionVieja() {
   badge.style.color = '';
   badge.style.fontWeight = '';
   badge.title = '';
+  badge.classList.remove('vx-vervie');   // v234: al día, sin pulso
   badge.onclick = null;
 }
 
@@ -82,7 +84,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = '8a1c8248f4812ab5';
+let _LOCAL_BUILD_HASH = 'e220845cfc6c895d';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -2546,6 +2548,7 @@ let selectedValeId    = null;
 let inboxFilter       = 'todos';   // v208: 'todos'|'pendientes'|'calle'|'cobrar'
 let adminGestorFilter = null;
 let shareTargetId     = null;
+let shareMensajeroId  = null;   // v235: el picker de mensajeros ya no es un <select>
 let currentAdminTab   = 'vales';
 let stockCatFilter    = null;
 let editingProductId  = null;
@@ -5163,7 +5166,7 @@ function renderEstafaList() {
   let html = '';
   lista.forEach(e => {
     const fecha = e.fecha ? new Date(e.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-    html += `<div class="card" style="padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:12px;">
+    html += `<div class="vx-row-card" style="align-items:center;gap:12px;">
       <div style="font-size:20px;flex-shrink:0;">🚫</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;">${e.nombre ? escapeHTML(e.nombre) : '<span style="color:var(--gray-400);">Sin nombre</span>'}</div>
@@ -5849,29 +5852,30 @@ function renderProximasEntregas() {
   const visibles = _proximasTodas ? pendientes
     : pendientes.filter((x, i) => _finEntrega(x.v) < ahora || i < tardes + LIMITE);
   const ocultas = pendientes.length - visibles.length;
+  // v235: las filas dejan los estilos inline y llevan clases (.vpe-*) — mismo
+  // lenguaje que el resto de la app, tema oscuro y contraste incluidos.
   cont.innerHTML = visibles.map(({ v, t }) => {
     const min = Math.round((t - ahora) / 60000);
     const sinHora = _entregaSinHora(v);
     const tarde = _finEntrega(v) < ahora;
-    let cuando, color, fondo;
-    if (tarde)          { cuando = sinHora ? 'pasó el día' : `${Math.abs(min)} min tarde`; color = '#dc2626'; fondo = 'rgba(220,38,38,.08)'; }
-    else if (sinHora && min <= 0) { cuando = 'hoy';              color = '#b45309'; fondo = 'rgba(245,158,11,.08)'; }
-    else if (min <= 60) { cuando = `en ${min} min`;              color = '#b45309'; fondo = 'rgba(245,158,11,.08)'; }
-    else if (min < 24 * 60) { cuando = `en ${Math.round(min / 60)} h`; color = 'var(--text-muted)'; fondo = 'transparent'; }
-    else                { cuando = `en ${Math.round(min / 1440)} d`; color = 'var(--text-muted)'; fondo = 'transparent'; }
+    let cuando, tono = '';
+    if (tarde)          { cuando = sinHora ? 'pasó el día' : `${Math.abs(min)} min tarde`; tono = ' rojo'; }
+    else if (sinHora && min <= 0) { cuando = 'hoy';              tono = ' amber'; }
+    else if (min <= 60) { cuando = `en ${min} min`;              tono = ' amber'; }
+    else if (min < 24 * 60) { cuando = `en ${Math.round(min / 60)} h`; }
+    else                { cuando = `en ${Math.round(min / 1440)} d`; }
     const g = gestorOf(v.gestorId);
-    const nota = v.notasGestor ? `<span title="${escapeHTML(v.notasGestor)}" style="flex-shrink:0;font-size:11px;cursor:help;">📝</span>` : '';
-    return `<div onclick="selectVale(${v.id})" title="${escapeHTML((v.cliente || 'Cliente') + ' · ' + (v.articulo || ''))}" style="display:flex;align-items:center;gap:8px;background:${fondo};border-bottom:1px solid var(--border);padding:5px 8px;cursor:pointer;font-size:11px;min-width:0;">
-      <span style="font-weight:800;color:${color};white-space:nowrap;flex-shrink:0;min-width:92px;">${escapeHTML(_textoEntrega(v))}</span>
-      <span style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%;flex-shrink:1;">${escapeHTML(v.cliente || 'Cliente')}</span>
-      <span style="color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">${escapeHTML((g && g.name) || '—')} · ${escapeHTML(v.articulo || '')}</span>
+    const nota = v.notasGestor ? `<span class="vpe-nota" title="${escapeHTML(v.notasGestor)}">📝</span>` : '';
+    return `<div class="vpe-row${tono}" onclick="selectVale(${v.id})" title="${escapeHTML((v.cliente || 'Cliente') + ' · ' + (v.articulo || ''))}">
+      <span class="vpe-hora">${escapeHTML(_textoEntrega(v))}</span>
+      <span class="vpe-cli">${escapeHTML(v.cliente || 'Cliente')}</span>
+      <span class="vpe-det">${escapeHTML((g && g.name) || '—')} · ${escapeHTML(v.articulo || '')}</span>
       ${nota}
-      <span style="font-size:10px;font-weight:700;color:${color};white-space:nowrap;flex-shrink:0;">${cuando}</span>
+      <span class="vpe-cuando">${cuando}</span>
     </div>`;
   }).join('')
-  + (ocultas > 0 ? `<div onclick="_proximasTodas=true;renderProximasEntregas()" style="font-size:11px;font-weight:700;color:var(--blue, #2563eb);padding:6px 8px;cursor:pointer;">Ver ${ocultas} más ▾</div>`
-     : (_proximasTodas && pendientes.length > LIMITE ? `<div onclick="_proximasTodas=false;renderProximasEntregas()" style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px 8px;cursor:pointer;">Ver menos ▴</div>` : ''));
-  cont.style.cssText = 'border:1px solid var(--border);border-radius:9px;overflow:hidden;';
+  + (ocultas > 0 ? `<div class="vpe-mas" onclick="_proximasTodas=true;renderProximasEntregas()">Ver ${ocultas} más ▾</div>`
+     : (_proximasTodas && pendientes.length > LIMITE ? `<div class="vpe-mas vpe-menos" onclick="_proximasTodas=false;renderProximasEntregas()">Ver menos ▴</div>` : ''));
 }
 let _proximasTodas = false;
 function _proximasPlegada() { try { return localStorage.getItem('axon_proximas_plegada') === '1'; } catch(e) { return false; } }
@@ -9201,13 +9205,16 @@ const _vxSubMN = x => (x && x.mn > 0) ? '+ ' + Math.round(x.mn).toLocaleString('
 // Un vale «Entregado, por cobrar» que duerme más de VX_COBRO_ALERTA_DIAS días
 // se delata solo en la tarjeta (ámbar), y a partir de VX_COBRO_ROJO_DIAS avisa
 // en rojo y sube a la cabeza de la lista de cobro. El reloj arranca cuando la
-// venta se cerró (confirmTs) o, en vales viejos que nacieron así, la fecha del
+// venta se cerró (confirmedTs) o, en vales viejos que nacieron así, la fecha del
 // propio vale.
 const VX_COBRO_ALERTA_DIAS = 3;
 const VX_COBRO_ROJO_DIAS = 7;
+// v235 FIX: el campo se llama confirmedTs (así lo graba confirmSale/markAsPaid);
+// «v.confirmTs» no existe en ningún vale, así que el reloj arrancaba SIEMPRE
+// desde v.ts (creación) y un vale por-cobrar de hace semanas salía con días de más.
 function _diasSinCobrar(v) {
   if (!v || (v.status || 'pending') !== 'pending_payment') return 0;
-  const base = v.confirmTs || v.ts;
+  const base = v.confirmedTs || v.ts;
   const ms = Date.now() - new Date(base).getTime();
   return Math.max(0, Math.floor(ms / 86400000));
 }
@@ -9414,10 +9421,15 @@ function openGestorPicker() {
   const _tile = (g) => {
     const n = _cntDe(g);
     const activo = adminGestorFilter != null && String(adminGestorFilter) === String(g.id);
-    return `<button type="button" class="vxp-tile${activo ? ' act' : ''}${(!g._tienda && !activo) ? ' pf-fill' : ''}" onclick="pickGestor(${activo ? 'null' : g.id})"${g._tienda ? '' : ` style="${_pfVars(g)}"`}>
-      <span class="vx-ava" style="background:${g.color}">${escapeHTML(g.initials)}</span>
-      <span class="vxp-nombre" title="${escapeHTML(g.name)}">${escapeHTML(g.name)}</span>
-      <span class="vxp-n">${n ? n + (n === 1 ? ' vale' : ' vales') : '—'}</span>
+    // v234: el tile SIN seleccionar viste la piel 3D del gestor (degradado +
+    // esquina de vidrio), igual que su ficha de la bandeja. El tile ACTIVO
+    // queda blanco con anillo azul (se ve que es el elegido) y la Tienda
+    // sigue en vidrio neutro.
+    const _hero = !g._tienda && !activo;
+    return `<button type="button" class="vxp-tile${activo ? ' act' : ''}${_hero ? ' vxp-hero' : ''}" onclick="pickGestor(${activo ? 'null' : g.id})"${_hero ? ` style="${gestorHeroVars(g)}"` : ''}>
+      <span class="vx-ava"${_hero ? ' style="background:rgba(255,255,255,.72);color:var(--gacc2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65);"' : ` style="background:${g.color}"`}>${escapeHTML(g.initials)}</span>
+      <span class="vxp-nombre"${_hero ? ' style="color:var(--gink);"' : ''} title="${escapeHTML(g.name)}">${escapeHTML(g.name)}</span>
+      <span class="vxp-n"${_hero ? ' style="background:rgba(255,255,255,.66);color:var(--gink);"' : ''}>${n ? n + (n === 1 ? ' vale' : ' vales') : '—'}</span>
     </button>`;
   };
   const wrap = document.createElement('div');
@@ -9690,7 +9702,7 @@ function buildInboxCard(v) {
         ${reserva ? '<span class="vx-mini vx-mini-amber">🔐 Apartado</span>' : ''}
         ${_nota ? `<span class="vx-mini vx-mini-blue" title="Nota del gestor">📝 ${escapeHTML(_nota)}</span>` : ''}
         ${_notaAdmin ? `<span class="vx-mini vx-mini-yellow" title="Nota del admin">📝 ${escapeHTML(_notaAdmin)}</span>` : ''}
-        ${m ? `<span class="vx-mini" title="Mensajero">🛵 ${escapeHTML(m.name)}</span>` : ''}
+        ${m ? `<span class="vx-mini" title="Mensajero">${_mensajeroInner(m)}</span>` : ''}
       </div>` : ''}
       <div class="vx-r2">
         <span class="vx-precio">${escapeHTML(v.total || '')}</span>
@@ -9735,11 +9747,41 @@ function openShareModal(valeId) {
   if(v.recogidaTienda&&v.status==='pending'){showToast('Recogida en tienda — no lleva mensajero 🏬');return;}
   const g=gestorOf(v.gestorId);
   document.getElementById('shareModalSub').textContent=`Vale de ${g?g.name:'—'} · ${v.cliente||'cliente'}`;
-  const sel=document.getElementById('mensajeroSelect');
-  sel.innerHTML=mensajeros.map(m=>`<option value="${m.id}">${escapeHTML(m.name)}</option>`).join('');
-  if(v.mensajeroId)sel.value=v.mensajeroId;
-  updateSharePreview();sel.onchange=updateSharePreview;
+  // v235: el select nativo se jubila. Los mensajeros se eligen en fichas 3D con
+  // SU color (el mismo hash estable de su tarjeta de la bandeja). Empieza
+  // marcado el que ya estaba asignado al vale (si sigue existiendo) o el primero.
+  shareMensajeroId=(v.mensajeroId&&mensajeros.some(m=>String(m.id)===String(v.mensajeroId)))
+    ? v.mensajeroId : mensajeros[0].id;
+  _renderShareTiles();
+  updateSharePreview();
   document.getElementById('shareModal').classList.add('show');
+}
+// v235: rejilla de fichas del modal «Asignar a mensajero». La ficha SIN elegir
+// viste la piel 3D del mensajero (misma receta de la bandeja); la ELEGIDA queda
+// blanca con anillo azul, igual que los tiles del picker de gestores.
+function _renderShareTiles() {
+  const c=document.getElementById('mensajeroTiles');
+  if(!c) return;
+  c.innerHTML=getMensajeros().map(m=>{
+    const sel=String(m.id)===String(shareMensajeroId);
+    const skin=!sel;
+    const ini=(m.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `<button type="button" class="vxt-tile${sel?' act':''}${skin?' vxt-hero':''}" role="option" aria-selected="${sel}" onclick="setShareMensajero(${m.id})"${skin?` style="${mensajeroHeroVars(m)}"`:''}>
+      <span class="vxt-ava"${skin?' style="background:rgba(255,255,255,.72);color:var(--gacc2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65);"' : ` style="background:${_colorMensajero(m)};color:#fff;"`}>${escapeHTML(ini)}</span>
+      <span class="vxt-nombre"${skin?' style="color:var(--gink);"':''}>${escapeHTML(m.name)}</span>
+      <span class="vxt-sub"${skin?' style="color:var(--gink);opacity:.72;"':''}>${m.phone?'📱 '+escapeHTML(m.phone):'sin teléfono'}</span>
+    </button>`;
+  }).join('');
+}
+function setShareMensajero(id) {
+  shareMensajeroId=id;
+  _renderShareTiles();
+  updateSharePreview();
+  if(typeof haptic==='function') haptic(8);
+}
+function _shareMensajeroActual() {
+  if(shareMensajeroId==null) return null;
+  return getMensajeros().find(m=>String(m.id)===String(shareMensajeroId))||null;
 }
 
 // ── v76: la rebaja del gestor baja lo que paga el cliente ───────────────────
@@ -11055,7 +11097,7 @@ function saveEditVale() {
 
 function updateSharePreview() {
   const v=getVales().find(x=>x.id===shareTargetId);if(!v)return;
-  const m=mensajeroOf(parseInt(document.getElementById('mensajeroSelect').value));
+  const m=_shareMensajeroActual();
   document.getElementById('shareValePreview').textContent=buildShareText(v,m);
 }
 function buildShareText(v,m) {
@@ -11094,8 +11136,7 @@ function buildShareText(v,m) {
 }
 function shareViaWA() {
   const text=document.getElementById('shareValePreview').textContent;
-  const mId=parseInt(document.getElementById('mensajeroSelect').value);
-  const m=mensajeroOf(mId);
+  const m=_shareMensajeroActual();
   // Si el mensajero tiene teléfono guardado → abrir chat DIRECTO con él (wa.me/<phone>)
   // y pre-llenar el texto del vale. Si no tiene teléfono → caer al flujo público
   // wa.me/?text=... (el usuario elige el destino manualmente).
@@ -11106,15 +11147,15 @@ function shareViaWA() {
     if(m) showToast('💡 Agrega un teléfono a este mensajero para abrir su WhatsApp directo');
   }
 }
-function closeShareModal(){document.getElementById('shareModal').classList.remove('show');shareTargetId=null;}
+function closeShareModal(){document.getElementById('shareModal').classList.remove('show');shareTargetId=null;shareMensajeroId=null;}
 // v85: asignar y punto. copyAndAssign() copia el texto, asigna y además abre
 // WhatsApp: útil cuando hay que mandarle el vale al mensajero, un estorbo cuando
 // ya se le ha dicho por otra vía y solo falta dejarlo registrado.
 function asignarMensajeroSinMas() {
   if (!shareTargetId) return;
-  const mId = parseInt(document.getElementById('mensajeroSelect').value);
-  if (!mId || isNaN(mId)) { showToast('Elige un mensajero'); return; }
-  const m = mensajeroOf(mId);
+  const m = _shareMensajeroActual();
+  if (!m) { showToast('Elige un mensajero'); return; }
+  const mId = m.id;
   const vAsign = getVales().find(x => x.id === shareTargetId);
   patchVale(shareTargetId, {status:'assigned', mensajeroId:mId});
   if (vAsign) addNotif('vale_assigned', vAsign.cliente||'Tu cliente', null, m?m.name:'', vAsign.gestorId, 'vale_assigned:'+shareTargetId);
@@ -11129,8 +11170,9 @@ function asignarMensajeroSinMas() {
 
 function copyAndAssign() {
   if(!shareTargetId)return;
-  const mId=parseInt(document.getElementById('mensajeroSelect').value);
-  const m=mensajeroOf(mId);
+  const m=_shareMensajeroActual();
+  if(!m){showToast('Elige un mensajero');return;}
+  const mId=m.id;
   const text=document.getElementById('shareValePreview').textContent;
   navigator.clipboard.writeText(text).catch(()=>{});
   const vAsign=getVales().find(x=>x.id===shareTargetId);
@@ -11460,6 +11502,29 @@ function removeMensajero(id) {
   if(getVales().some(v=>v.mensajeroId===id&&['assigned','pending_payment'].includes(v.status))){showToast('Tiene vales activos');return;}
   guardarMensajeros(getMensajeros().filter(m=>m.id!==id),[id]);renderMensajeros();maybeAutoSync();
 }
+// v234 · Color propio y ESTABLE de cada mensajero: hash del nombre → paleta
+// de 20 colores (la misma de los gestores). Determinista: el mismo nombre
+// viste siempre el mismo color en todos los teléfonos, sin guardar nada.
+// El gris de la Tienda queda reservado; si el hash cae ahí, se corre uno.
+function _colorMensajero(m){
+  const nombre=(m&&m.name)||'?';
+  let h=0;
+  for(let i=0;i<nombre.length;i++){ h=((h*31)+nombre.charCodeAt(i))>>>0; }
+  let c=GESTOR_COLORS[h%GESTOR_COLORS.length];
+  if(c===_COLOR_TIENDA) c=GESTOR_COLORS[(h+7)%GESTOR_COLORS.length];
+  return c;
+}
+// La piel 3D del mensajero usa la MISMA receta del gestor (degradado 135° +
+// esquina de vidrio + tinta derivada): gestorHeroVars solo lee .color.
+function mensajeroHeroVars(m){ return gestorHeroVars({color:_colorMensajero(m)}); }
+// v235: el mensajero se distingue por SU color donde sea que aparezca su nombre
+// (bandeja, confirmados, pendientes de cobro) — puntito del mismo hash estable
+// de su tarjeta. La 🛵 se queda para que la fila siga leyéndose de un golpe.
+function _mensajeroInner(m) {
+  const c=(typeof _colorMensajero==='function')?_colorMensajero(m):'#64748b';
+  return '🛵 <i class="vmdot" style="background:'+c+';"></i>'+escapeHTML(m.name);
+}
+
 function renderMensajeros() {
   const c=document.getElementById('mensajerosList');
   const vales=getVales();
@@ -11485,37 +11550,38 @@ function renderMensajeros() {
   const list=sortMensajerosAlpha(getMensajeros())
     .sort((a,b)=>_carga(b.id)-_carga(a.id));
   if(!list.length){c.innerHTML='<div class="es" style="padding:8px;"><div class="es-text">Sin mensajeros</div></div>';return;}
+  // v234: las tarjetas de mensajeros entran al lenguaje 3D de la casa — la
+  // misma receta de las fichas de gestor de la bandeja: degradado 135° con
+  // esquina de vidrio, avatar con anillo, chapas y botones de vidrio. Cada
+  // mensajero viste SU color (hash estable del nombre).
   c.innerHTML=list.map(m=>{
     const ini=m.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     const phone=m.phone||'';
     const assigned=enCurso.get(m.id)||0;
     const cobrar=porCobrar.get(m.id)||0;
     const act=m.id===activeMensajeroId;
-    // v86: el número de entregas pasa a ser un globo visible junto al nombre —
-    // antes era texto diminuto en gris y había que buscarlo.
-    // v88: dos globos, porque son dos cosas distintas y mezclarlas engañaba:
-    // azul lo que lleva encima sin entregar, naranja lo entregado que aún no ha
-    // pagado.
+    // Chapas de vidrio sobre la piel (mismo gesto que los chips del hero):
+    // azul lo que lleva encima sin entregar, ámbar lo entregado sin cobrar.
     let badge='';
-    if(assigned) badge+=`<span style="background:var(--blue);color:#fff;border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap;" title="${assigned} vale${assigned!==1?'s':''} en reparto ahora mismo">🛵 ${assigned}</span>`;
-    if(cobrar) badge+=`<span style="background:var(--orange);color:#fff;border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap;" title="${cobrar} vale${cobrar!==1?'s':''} entregado${cobrar!==1?'s':''} pendiente${cobrar!==1?'s':''} de cobro">⏳ ${cobrar}</span>`;
-    if(!badge) badge=`<span style="background:var(--surface3);color:var(--text-muted);border-radius:12px;padding:3px 9px;font-size:11px;font-weight:600;white-space:nowrap;">Sin entregas</span>`;
+    if(assigned) badge+=`<span class="vg-chip" title="${assigned} vale${assigned!==1?'s':''} en reparto ahora mismo">🛵 ${assigned}</span>`;
+    if(cobrar) badge+=`<span class="vg-chip vg-chip-amber" title="${cobrar} vale${cobrar!==1?'s':''} entregado${cobrar!==1?'s':''} pendiente${cobrar!==1?'s':''} de cobro">⏳ ${cobrar}</span>`;
+    if(!badge) badge=`<span class="vg-chip vg-chip-idle">Sin entregas</span>`;
     const waBtn = phone
-      ? `<button type="button" style="background:none;border:1px solid #25D366;cursor:pointer;font-size:10px;color:#25D366;padding:2px 7px;border-radius:4px;font-weight:600;" onclick="event.stopPropagation();openMensajeroWhatsApp(${m.id})" title="WhatsApp ${escapeHTML(phone)}">💬 WhatsApp</button>`
+      ? `<button type="button" class="vg-btn vg-wa" onclick="event.stopPropagation();openMensajeroWhatsApp(${m.id})" title="WhatsApp ${escapeHTML(phone)}">💬 WhatsApp</button>`
       : '';
-    const phoneHTML = phone ? `<span>📱 ${escapeHTML(phone)}</span>` : '';
-    return `<div class="m-item ${act?'active':''}" style="cursor:pointer;flex-wrap:wrap;" onclick="selectMensajero(${m.id})" title="Toca para ver sus entregas">
-      <div class="m-av">${escapeHTML(ini)}</div>
-      <div style="flex:1;min-width:140px;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <div class="m-name">${escapeHTML(m.name)} ${act?'<span style="color:var(--blue);">✓ Viendo entregas</span>':''}</div>
+    return `<div class="vxm-card vx-skin${act?' vxm-act':''}" style="${mensajeroHeroVars(m)}" onclick="selectMensajero(${m.id})" title="Toca para ver sus entregas">
+      <i class="vxh-c c1"></i><i class="vxh-c c2"></i>
+      <div class="vxm-ava">${escapeHTML(ini)}</div>
+      <div class="vxm-body">
+        <div class="vxm-top">
+          <span class="vxm-nombre ink">${escapeHTML(m.name)}${act?' <span class="vxm-view">✓ Viendo entregas</span>':''}</span>
           ${badge}
         </div>
-        <div style="font-size:10px;color:var(--gray-400);display:flex;gap:8px;flex-wrap:wrap;margin-top:1px;">${phoneHTML}${assigned?`<span>${assigned} en reparto</span>`:''}${cobrar?`<span>${cobrar} sin cobrar</span>`:''}</div>
-        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;">
+        <div class="vxm-sub ink">${phone?`<span>📱 ${escapeHTML(phone)}</span>`:'<span>Sin teléfono</span>'}${assigned?`<span>${assigned} en reparto</span>`:''}${cobrar?`<span>${cobrar} sin cobrar</span>`:''}</div>
+        <div class="vxm-actions">
           ${waBtn}
-          <button type="button" style="background:none;border:1px solid var(--gray-400);cursor:pointer;font-size:10px;color:var(--gray-700);padding:2px 7px;border-radius:4px;font-weight:600;" onclick="event.stopPropagation();openEditMensajeroModal(${m.id})">✏️ Editar</button>
-          <button type="button" style="background:none;border:1px solid var(--red);cursor:pointer;font-size:10px;color:var(--red);padding:2px 7px;border-radius:4px;font-weight:600;" onclick="event.stopPropagation();removeMensajero(${m.id})">🗑️ Eliminar</button>
+          <button type="button" class="vg-btn vg-blue" onclick="event.stopPropagation();openEditMensajeroModal(${m.id})">✏️ Editar</button>
+          <button type="button" class="vg-btn vg-red" onclick="event.stopPropagation();removeMensajero(${m.id})">🗑️ Eliminar</button>
         </div>
       </div>
     </div>`;
@@ -11576,7 +11642,7 @@ function renderConfirmados() {
     const _btnC=_skinC
       ? `<button type="button" class="btn btn-sm vg-btn vg-red" style="margin-top:6px;font-size:10px;" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button>`
       : `<button type="button" class="btn btn-ghost btn-sm" style="margin-top:5px;font-size:10px;color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir venta</button>`;
-    return `<div class="sc sc-ok${_skinC?' vx-skin':''}" style="${_skinC?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinC?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinC?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span></div><div${_skinC?' class="ink"':''}>${escapeHTML(v.cliente||'')}</div><div class="sc-m${_skinC?' ink':''}">${m?'🛵 '+escapeHTML(m.name):''}</div>${_btnC}</div>`;
+    return `<div class="sc sc-ok${_skinC?' vx-skin':''}" style="${_skinC?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinC?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinC?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span></div><div${_skinC?' class="ink"':''}>${escapeHTML(v.cliente||'')}</div><div class="sc-m${_skinC?' ink':''}">${m?_mensajeroInner(m):''}</div>${_btnC}</div>`;
   }).join(''));
 }
 function renderPendienteCobro() {
@@ -11604,7 +11670,7 @@ function renderPendienteCobro() {
     const _btnsP=_skinP
       ? `<button class="btn btn-sm btn-full vg-btn vg-green" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-sm btn-full vg-btn vg-red" onclick="revertConfirmSale(${v.id})">↩ Revertir</button>`
       : `<button class="btn btn-green btn-sm btn-full" onclick="markAsPaid(${v.id})">✅ Cobrado</button><button class="btn btn-ghost btn-sm btn-full" style="color:var(--orange);" onclick="revertConfirmSale(${v.id})">↩ Revertir</button>`;
-    return `<div class="sc sc-pend${_skinP?' vx-skin':''}" style="${_skinP?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinP?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinP?' ink':''}">${timeStr(v.ts)}</span></div><div${_skinP?' class="ink"':''}>${escapeHTML(v.cliente||'')} · ${_totP}${_chipD}</div><div class="sc-m${_skinP?' ink':''}">${m?'🛵 '+escapeHTML(m.name):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;">${_btnsP}</div></div>`;
+    return `<div class="sc sc-pend${_skinP?' vx-skin':''}" style="${_skinP?gestorHeroVars(g):''}"><div class="sc-head"><span class="sc-g${_skinP?' ink':''}">${g?escapeHTML(g.name):'—'}</span><span class="sc-t${_skinP?' ink':''}">${timeStr(v.ts)}</span></div><div${_skinP?' class="ink"':''}>${escapeHTML(v.cliente||'')} · ${_totP}${_chipD}</div><div class="sc-m${_skinP?' ink':''}">${m?_mensajeroInner(m):''}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;">${_btnsP}</div></div>`;
   }).join('') + _pie);
 }
 function togglePendingCobro(){pendingCobroExpanded=!pendingCobroExpanded;renderPendingCobroSection();}
@@ -11631,7 +11697,7 @@ function renderPendingCobroSection() {
       <div class="mv-head"><span class="mv-time${_skinA?' ink':''}">${timeStr(v.confirmedTs||v.ts)}</span>${_chapaA}${_chipD}</div>
       <div class="mv-info${_skinA?' ink':''}"><b>${escapeHTML(v.cliente||'—')}</b> · <span${_skinA?' class="acc"':' style="color:var(--red);font-weight:700;"'}>${escapeHTML(v.total||'—')}</span></div>
       ${g?`<div style="font-size:11px;${_skinA?'color:var(--gink);opacity:.7;':'color:var(--gray-400);'}">Gestor: ${escapeHTML(g.name)}</div>`:''}
-      ${m?`<div style="font-size:11px;${_skinA?'color:var(--gink);opacity:.7;':'color:var(--gray-400);'}">🛵 ${escapeHTML(m.name)}</div>`:''}
+      ${m?`<div style="font-size:11px;${_skinA?'color:var(--gink);opacity:.7;':'color:var(--gray-400);'}">${_mensajeroInner(m)}</div>`:''}
       <button class="btn btn-sm btn-full${_skinA?' vg-btn vg-green':' btn-green'}" style="margin-top:8px;" onclick="markAsPaid(${v.id})">💵 Registrar cobro</button>
     </div>`;
   }).join('')+_pie;})()}</div>`:'' ;
@@ -12083,6 +12149,12 @@ function renderMyVales() {
   const c = document.getElementById('gestorMyVales');
   const hList = document.getElementById('gestorHistorialList');
   if(!c || !hList || !activeGestorId) return;
+  // v234: los vales PROPIOS del gestor visten SU piel 3D — la misma regla de
+  // la casa (v233): tocar un gestor o un vale suyo siempre abre SU color. En
+  // el panel del gestor el color es el suyo, y la Tienda queda en tarjeta neutra.
+  const _gMy = gestorOf(activeGestorId);
+  const _skinMy = !!(_gMy && !_gMy._tienda);
+  const _hvMy = _skinMy ? gestorHeroVars(_gMy) : '';
   // Asegurar que el banner de pendientes refleja el estado actual
   if (typeof _updatePendingSyncBanner === 'function') _updatePendingSyncBanner();
 
@@ -12148,24 +12220,28 @@ function renderMyVales() {
       const _tintMap={pending:['rgba(0,109,138,.14)','var(--blue)'],assigned:['rgba(249,115,22,.16)','var(--orange)'],delivered:['rgba(124,58,237,.14)','var(--purple)'],pending_payment:['rgba(245,158,11,.18)','var(--yellow)'],confirmed:['rgba(16,185,129,.14)','var(--green)']};
       const _tint=_tintMap[_status]||['rgba(148,163,184,.18)','var(--gray-600)'];
       const _precio=(v.total!=null&&String(v.total).trim()!=='')?`<span style="margin-left:auto;font-size:12.5px;font-weight:800;color:var(--text);">$${escapeHTML(String(v.total).replace(/^[\$\s]+/,''))}</span>`:'';
-      return `<div class="mv-card st-${v.status}">
+      return `<div class="mv-card st-${v.status}${_skinMy?' vx-skin':''}" style="${_skinMy?_hvMy:''}">
         <div style="display:flex;gap:10px;align-items:flex-start;">
-        <div class="mv-av" style="background:${_tint[0]};color:${_tint[1]};">${escapeHTML(_iniCli)}</div>
+        <div class="mv-av" style="background:${_skinMy?'rgba(255,255,255,.72)':_tint[0]};color:${_skinMy?'var(--gacc2)':_tint[1]};box-shadow:${_skinMy?'inset 0 0 0 2px rgba(255,255,255,.6);':''}">${escapeHTML(_iniCli)}</div>
         <div style="flex:1;min-width:0;">
         <div class="mv-head">
-          <span class="mv-time">${valeNumStr(v)?`<b style="color:var(--blue);">${valeNumStr(v)}</b> `:``}${timeStr(v.ts)}</span>
+          <span class="mv-time${_skinMy?' ink':''}">${valeNumStr(v)?`<b style="color:${_skinMy?'var(--gacc2)':'var(--blue)'};">${valeNumStr(v)}</b> `:``}${timeStr(v.ts)}</span>
           <div style="display:flex;align-items:center;gap:6px;">
-            ${pts>0?`<span style="font-size:10px;color:var(--blue);font-weight:700;">⭐ ${pts} pts</span>`:``}
-            ${canCancel?`<button type="button" onclick="cancelVale(${v.id})" style="background:rgba(239,68,68,.12);border:none;color:var(--red);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;" title="Eliminar vale">🗑️ Eliminar</button>`:``}
+            ${pts>0?`<span style="font-size:10px;${_skinMy?'color:var(--gacc2);':'color:var(--blue);'}font-weight:700;">⭐ ${pts} pts</span>`:``}
+            ${canCancel?(_skinMy
+              ?`<button type="button" class="vg-btn vg-red" style="font-size:10px;padding:2px 9px;" onclick="cancelVale(${v.id})" title="Eliminar vale">🗑️ Eliminar</button>`
+              :`<button type="button" onclick="cancelVale(${v.id})" style="background:rgba(239,68,68,.12);border:none;color:var(--red);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;" title="Eliminar vale">🗑️ Eliminar</button>`):``}
           </div>
         </div>
-        <div class="mv-info">${escapeHTML(v.cliente||'—')} · ${escapeHTML(v.articulo||'—')}</div>
+        <div class="mv-info${_skinMy?' ink':''}">${escapeHTML(v.cliente||'—')} · ${escapeHTML(v.articulo||'—')}</div>
         ${_nUnidos>1?`<div style="margin-top:6px;font-size:10.5px;color:#7C3AED;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.22);border-radius:7px;padding:6px 9px;line-height:1.45;">
           🔗 <b>Venta compartida</b> — el admin unió este vale con el de otro gestor porque es la misma venta.
           La comisión y los puntos se reparten entre ${_nUnidos}: a ti te toca 1/${_nUnidos}.
         </div>`:''}
         <div class="mv-foot">
-          <span class="mv-status" style="color:${s.color}">${s.icon} ${s.label}</span>
+          ${_skinMy
+            ?`<span class="vg-chip">${s.icon} ${s.label}</span>`
+            :`<span class="mv-status" style="color:${s.color}">${s.icon} ${s.label}</span>`}
           ${_chapaUnido}
           ${v.synced === false ? `<span class="mv-pending-sync-badge" title="Aún no se ha subido a la nube">📡 Pendiente sync</span>` : ``}
           ${_precio}
@@ -12191,13 +12267,11 @@ function renderMyVales() {
       histHTML+=pendingPayVales.map(v=>{
         const _vStatus = v.status || 'pending_payment';
         const s=sMap[_vStatus]||{label:_vStatus,color:'var(--yellow)',icon:'⏳'};
-        return `<div class="mv-card st-pending_payment" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;">
-          <div class="mv-head">
-            <span class="mv-time" style="color:var(--gray-600);"><b style="color:var(--gray-800);">${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>
-          </div>
-          <div class="mv-info" style="color:var(--text);font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
-          <div class="mv-info" style="font-size:11px;color:var(--text-muted);">${escapeHTML(v.articulo||'—')}</div>
-          <div class="mv-foot" style="margin-top:6px;"><span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span></div>
+        return `<div class="mv-card st-pending_payment${_skinMy?' vx-skin':''}" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;${_skinMy?_hvMy:''}">
+          <div class="mv-head"><span class="mv-time${_skinMy?' ink':''}"><b${_skinMy?' class="acc"':''}>${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>${_skinMy?'<span class="vg-chip">⏳ Sin cobrar</span>':''}</div>
+          <div class="mv-info${_skinMy?' ink':''}" style="font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
+          <div class="mv-info${_skinMy?' ink':''}" style="font-size:11px;opacity:.72;">${escapeHTML(v.articulo||'—')}</div>
+          <div class="mv-foot" style="margin-top:6px;">${_skinMy?'':`<span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span>`}${v.total!=null&&String(v.total).trim()!==''?`<span class="mv-precio-hist" style="margin-left:auto;font-size:12px;font-weight:800;${_skinMy?'color:var(--gacc2);':''}">$${escapeHTML(String(v.total).replace(/^[\$\s]+/,''))}</span>`:''}</div>
         </div>`;
       }).join('');
     }
@@ -12207,13 +12281,11 @@ function renderMyVales() {
       histHTML+=historyVales.map(v=>{
         const _vStatus = v.status || 'confirmed';
         const s=sMap[_vStatus]||{label:_vStatus,color:'var(--green)',icon:'✅'};
-        return `<div class="mv-card st-${v.status} mv-old" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;">
-          <div class="mv-head">
-            <span class="mv-time" style="color:var(--gray-600);"><b style="color:var(--gray-800);">${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>
-          </div>
-          <div class="mv-info" style="color:var(--text);font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
-          <div class="mv-info" style="font-size:11px;color:var(--text-muted);">${escapeHTML(v.articulo||'—')}</div>
-          <div class="mv-foot" style="margin-top:6px;"><span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span></div>
+        return `<div class="mv-card st-${v.status} mv-old${_skinMy?' vx-skin':''}" onclick="openGestorValeModal(${v.id})" style="cursor:pointer;${_skinMy?_hvMy:''}">
+          <div class="mv-head"><span class="mv-time${_skinMy?' ink':''}"><b${_skinMy?' class="acc"':''}>${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>${_skinMy?'<span class="vg-chip">✅ Cobrado</span>':''}</div>
+          <div class="mv-info${_skinMy?' ink':''}" style="font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
+          <div class="mv-info${_skinMy?' ink':''}" style="font-size:11px;opacity:.72;">${escapeHTML(v.articulo||'—')}</div>
+          <div class="mv-foot" style="margin-top:6px;">${_skinMy?'':`<span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span>`}${v.total!=null&&String(v.total).trim()!==''?`<span class="mv-precio-hist" style="margin-left:auto;font-size:12px;font-weight:800;${_skinMy?'color:var(--gacc2);':''}">$${escapeHTML(String(v.total).replace(/^[\$\s]+/,''))}</span>`:''}</div>
         </div>`;
       }).join('');
     }
@@ -16573,9 +16645,9 @@ function renderGestorCatalog() {
     c.innerHTML=`<div class="es"><div class="es-icon">📦</div><div class="es-text">${_showAgotados?'Sin productos':'Sin productos disponibles'}${agotadosCount>0&&!_showAgotados?` <span style="color:var(--blue);cursor:pointer;text-decoration:underline;" onclick="_showAgotados=true;renderGestorCatalog()">(${agotadosCount} agotados)</span>`:''}</div></div>`;
     return;
   }
-  c.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:11px;">
-    <span style="color:var(--text-muted);">${prods.length} producto${prods.length!==1?'s':''}</span>
-    ${agotadosCount>0?`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" ${_showAgotados?'checked':''} onchange="_showAgotados=this.checked;renderGestorCatalog()" style="margin:0;"> Agotados (${agotadosCount})</label>`:''}
+  c.innerHTML=`<div class="vcg-head">
+    <span>${prods.length} producto${prods.length!==1?'s':''}</span>
+    ${agotadosCount>0?`<label class="vcg-agotados"><input type="checkbox" ${_showAgotados?'checked':''} onchange="_showAgotados=this.checked;renderGestorCatalog()"> Agotados (${agotadosCount})</label>`:''}
   </div>` + prods.map(p=>{
     const exp=expandedCatalogId===p.id;
     const fav = isFavorite(p.id);
@@ -16593,26 +16665,28 @@ function renderGestorCatalog() {
     const _chapaRes = isAgotado ? ''
       : _todoRes ? '<span class="reserved-badge reserved-full">🔒 RESERVADO</span>'
       : (_res > 0 ? `<span class="reserved-badge partial">🔐 ${_res} reservado${_res===1?'':'s'}</span>` : '');
-    return `<div data-catalog-item="${p.id}" style="border:1px solid var(--${exp?'blue':'gray-200'});border-radius:8px;margin-bottom:6px;overflow:hidden;transition:border-color .15s;${isAgotado?'opacity:0.65;':''}">
-      <div style="display:flex;align-items:center;gap:10px;padding:8px;">
-        ${photoUrl?`<img src="${escapeAttr(photoUrl)}" loading="lazy" decoding="async" style="width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:52px;height:52px;border-radius:6px;background:var(--gray-100);display:none;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">📦</div>`:`<div style="width:52px;height:52px;border-radius:6px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">📦</div>`}
-        <div style="flex:1;min-width:0;cursor:pointer;" onclick="toggleCatalogItem(${p.id})">
-          <div style="font-weight:700;font-size:13px;color:var(--text);">${escapeHTML(p.name)}${_esProductoNuevo(p)?' '+_BADGE_NUEVO:''}${isAgotado?' <span style="font-weight:600;font-size:10px;color:var(--red);background:rgba(239,68,68,.1);padding:1px 5px;border-radius:6px;">AGOTADO</span>':''}${_chapaRes?' '+_chapaRes:''}</div>
-          ${(!isAgotado&&_res>0&&!_todoRes)?`<div style="font-size:10px;color:var(--text-muted);margin-top:1px;">Puedes vender ${_disp} de ${p.stock}</div>`:''}
-          ${p.precio?`<div style="color:var(--blue);font-weight:700;font-size:12px;margin-top:2px;">${escapeHTML(p.precio)}</div>`:''}
+    // v235: la ficha lleva clases (.vcg-*) — mismo lenguaje que el resto,
+    // con borde azul al abrir, tema oscuro y contraste incluidos.
+    return `<div class="vcg-item${exp?' exp':''}${isAgotado?' agotado':''}" data-catalog-item="${p.id}">
+      <div class="vcg-fila">
+        ${photoUrl?`<img class="vcg-foto" src="${escapeAttr(photoUrl)}" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="vcg-thumb" style="display:none;">📦</div>`:`<div class="vcg-thumb">📦</div>`}
+        <div class="vcg-main" onclick="toggleCatalogItem(${p.id})">
+          <div class="vcg-nombre">${escapeHTML(p.name)}${_esProductoNuevo(p)?' '+_BADGE_NUEVO:''}${isAgotado?' <span class="vcg-chapa-agotado">AGOTADO</span>':''}${_chapaRes?' '+_chapaRes:''}</div>
+          ${(!isAgotado&&_res>0&&!_todoRes)?`<div class="vcg-sub">Puedes vender ${_disp} de ${p.stock}</div>`:''}
+          ${p.precio?`<div class="vcg-precio">${escapeHTML(p.precio)}</div>`:''}
         </div>
-        <button style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:${fav?'#F59E0B':'var(--gray-400)'};flex-shrink:0;" onclick="toggleFavorite(${p.id})" title="Favorito">${fav?'⭐':'☆'}</button>
-        ${p.description?`<button style="background:none;border:none;cursor:pointer;font-size:14px;padding:4px;color:var(--gray-400);flex-shrink:0;" onclick="copyProductDesc(${p.id})" title="Copiar descripción">📋</button>`:''}
-        <div style="font-size:13px;color:var(--gray-400);flex-shrink:0;cursor:pointer;margin-left:4px;" onclick="toggleCatalogItem(${p.id})">${exp?'▲':'▼'}</div>
+        <button class="vcg-ico${fav?' favorito':''}" onclick="toggleFavorite(${p.id})" title="Favorito">${fav?'⭐':'☆'}</button>
+        ${p.description?`<button class="vcg-ico" onclick="copyProductDesc(${p.id})" title="Copiar descripción">📋</button>`:''}
+        <div class="vcg-chev" onclick="toggleCatalogItem(${p.id})">${exp?'▲':'▼'}</div>
       </div>
-      ${exp?`<div style="padding:8px 12px 12px;border-top:1px solid var(--gray-200);background:var(--gray-50);">
-        ${p.description?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;white-space:pre-line;line-height:1.5;">${escapeHTML(p.description)}</div>`:''}
-        <div style="display:flex;flex-wrap:wrap;gap:5px;font-size:11px;">
-          <span style="background:${!isAgotado?'var(--blue-lt)':'rgba(239,68,68,.1)'};color:${!isAgotado?'var(--blue)':'var(--red)'};padding:3px 9px;border-radius:10px;font-weight:700;">📦 ${!isAgotado?'Disponibles: '+_disp:'Agotado'}</span>
-          ${(!isAgotado&&_res>0)?`<span style="background:rgba(180,83,9,.12);color:#b45309;padding:3px 9px;border-radius:10px;font-weight:700;">🔐 ${_res} reservada${_res===1?'':'s'}${_todoRes?' — no queda ninguna libre':' · en almacén hay '+p.stock}</span>`:''}
-          ${p.garantia?`<span style="background:var(--gray-100);color:var(--gray-600);padding:3px 9px;border-radius:10px;">🛡️ ${escapeHTML(p.garantia)}</span>`:''}
-          ${p.comision?`<span style="background:#f0fdf4;color:var(--green);padding:3px 9px;border-radius:10px;font-weight:600;">Comisión: ${escapeHTML(p.comision)}</span>`:''}
-          ${p.puntos?`<span style="background:var(--blue-lt);color:var(--blue);padding:3px 9px;border-radius:10px;">⭐ ${p.puntos} pts</span>`:''}
+      ${exp?`<div class="vcg-open">
+        ${p.description?`<div class="vcg-desc">${escapeHTML(p.description)}</div>`:''}
+        <div class="vcg-chips">
+          <span class="vcg-chip${!isAgotado?'':' rojo'}">📦 ${!isAgotado?'Disponibles: '+_disp:'Agotado'}</span>
+          ${(!isAgotado&&_res>0)?`<span class="vcg-chip amber">🔐 ${_res} reservada${_res===1?'':'s'}${_todoRes?' — no queda ninguna libre':' · en almacén hay '+p.stock}</span>`:''}
+          ${p.garantia?`<span class="vcg-chip gray">🛡️ ${escapeHTML(p.garantia)}</span>`:''}
+          ${p.comision?`<span class="vcg-chip green">Comisión: ${escapeHTML(p.comision)}</span>`:''}
+          ${p.puntos?`<span class="vcg-chip">⭐ ${p.puntos} pts</span>`:''}
         </div>
       </div>`:''}
     </div>`;
@@ -16795,27 +16869,28 @@ function renderAdminCatalog() {
   // v35: Count agotados for toggle
   const agotadosCount = allProds.filter(p => (p.stock || 0) <= 0).length;
   if(!prods.length){c.innerHTML=`<div class="es"><div class="es-icon">📦</div><div class="es-text">${_adminShowAgotados?'Sin productos':'Sin productos disponibles'}${agotadosCount>0&&!_adminShowAgotados?` <span style="color:var(--blue);cursor:pointer;text-decoration:underline;" onclick="_adminShowAgotados=true;renderAdminCatalogCats();renderAdminCatalog()">(${agotadosCount} agotados)</span>`:''}</div></div>`;return;}
-  c.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:11px;">
-    <span style="color:var(--text-muted);">${prods.length} producto${prods.length!==1?'s':''}</span>
-    ${agotadosCount>0?`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" ${_adminShowAgotados?'checked':''} onchange="_adminShowAgotados=this.checked;renderAdminCatalogCats();renderAdminCatalog()" style="margin:0;"> Agotados (${agotadosCount})</label>`:''}
-  </div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">`+
+  c.innerHTML=`<div class="vcg-head vcg-head-admin">
+    <span>${prods.length} producto${prods.length!==1?'s':''}</span>
+    ${agotadosCount>0?`<label class="vcg-agotados"><input type="checkbox" ${_adminShowAgotados?'checked':''} onchange="_adminShowAgotados=this.checked;renderAdminCatalogCats();renderAdminCatalog()"> Agotados (${agotadosCount})</label>`:''}
+  </div><div class="vca-grid">`+
     prods.map(p=>{
       const cat=getCategorias().find(c=>c.id===p.catId);
       const photoUrl = _resolvePhotoUrl(p.photo);
       const isAgotado = (p.stock || 0) <= 0;
-      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s,transform .15s;${isAgotado?'opacity:0.7;':''}" onmouseover="this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-        <div style="height:140px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
-          ${photoUrl?`<img src="${escapeAttr(photoUrl)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
-          <div style="${photoUrl?'display:none;':''}width:100%;height:100%;align-items:center;justify-content:center;font-size:48px;">📦</div>
-          ${cat?`<span style="position:absolute;top:8px;left:8px;background:var(--blue);color:white;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;">${escapeHTML(cat.name)}</span>`:''}
-          ${isAgotado?`<span style="position:absolute;top:8px;right:8px;background:var(--red);color:white;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;">AGOTADO</span>`:''}
+      // v235: fichas .vca-* con elevación por CSS (adiós onmouseover inline)
+      return `<div class="vca-card${isAgotado?' agotado':''}">
+        <div class="vca-foto">
+          ${photoUrl?`<img src="${escapeAttr(photoUrl)}" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
+          <div class="vca-thumb" style="${photoUrl?'display:none;':''}">📦</div>
+          ${cat?`<span class="vca-cat">${escapeHTML(cat.name)}</span>`:''}
+          ${isAgotado?`<span class="vca-agotado">AGOTADO</span>`:''}
         </div>
-        <div style="padding:12px;">
-          <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">${escapeHTML(p.name)}${_esProductoNuevo(p)?' '+_BADGE_NUEVO:''}</div>
-          ${p.description?`<div style="font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHTML(p.description)}</div>`:''}
-          ${p.precio?`<div style="font-weight:800;font-size:16px;color:var(--blue);margin-bottom:6px;">${escapeHTML(p.precio)}</div>`:''}
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
-            ${p.garantia?`<span style="background:var(--gray-100);color:var(--gray-600);padding:2px 7px;border-radius:8px;font-size:9px;font-weight:600;">🛡️ ${escapeHTML(p.garantia)}</span>`:''}
+        <div class="vca-body">
+          <div class="vca-nombre">${escapeHTML(p.name)}${_esProductoNuevo(p)?' '+_BADGE_NUEVO:''}</div>
+          ${p.description?`<div class="vca-desc">${escapeHTML(p.description)}</div>`:''}
+          ${p.precio?`<div class="vca-precio">${escapeHTML(p.precio)}</div>`:''}
+          <div class="vca-chips">
+            ${p.garantia?`<span class="vca-chip">🛡️ ${escapeHTML(p.garantia)}</span>`:''}
           </div>
         </div>
       </div>`;
@@ -17448,39 +17523,36 @@ function _valeNotasHTML(v, chico) {
 }
 
 function renderComisionBody(g,pendientes,enSobre,cobrados) {
-  let html='<div style="border-top:1px solid var(--border);padding:12px 14px;">';
+  // v235: fuera los estilos inline — cada pieza lleva clase (.vc-*) y hereda
+  // de una vez el tema oscuro, el contraste y el lenguaje de la casa.
+  let html='<div class="vc-wrap">';
   if(!pendientes.length&&!enSobre.length&&!cobrados.length){
-    html+='<div class="es" style="padding:8px 0;"><div class="es-text">Sin vales confirmados con comisión</div></div>';
+    html+='<div class="es"><div class="es-text">Sin vales confirmados con comisión</div></div>';
   } else {
     // ── PENDIENTES ──
     if(pendientes.length){
       const s=sumCommissions(pendientes);
       const sumBadge=fmtComisionBadge(s.usd,s.mn,s.computed,s.sinCalcular);
-      html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-        <span style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;">⏳ Pendientes (${pendientes.length})</span>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          ${sumBadge?`<span style="font-size:13px;font-weight:800;color:var(--green);">💵 ${sumBadge}</span>`:''}
-          ${pendientes.length>1?`<button class="btn btn-sm" style="background:var(--yellow);color:white;flex-shrink:0;" onclick="markAllCommissionsEnSobre(${g.id},event)">✉️ Todo al sobre</button>`:''}
+      html+=`<div class="vc-sec">
+        <span class="vc-sec-t vc-t-orange">⏳ Pendientes (${pendientes.length})</span>
+        <div class="vc-sec-r">
+          ${sumBadge?`<span class="vc-sum">💵 ${sumBadge}</span>`:''}
+          ${pendientes.length>1?`<button class="btn btn-sm vc-btn-amber" onclick="markAllCommissionsEnSobre(${g.id},event)">✉️ Todo al sobre</button>`:''}
         </div>
       </div>`;
       html+=pendientes.map(v=>{
         const r=getValeCommissionParts(v);
         const vBadge=fmtComisionBadge(r.totalUSD||0,r.totalMN||0,r.totalUSD!==null||r.totalMN!==null);
-        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-              <span style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(v.cliente||'—')}</span>
-              ${_valeFechaHTML(v)}
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(v.articulo||'—')}</div>
+        return `<div class="vc-row">
+          <div class="vc-main">
+            <div class="vc-top"><span class="vc-nombre">${escapeHTML(v.cliente||'—')}</span>${_valeFechaHTML(v)}</div>
+            <div class="vc-art">${escapeHTML(v.articulo||'—')}</div>
             ${_valeNotasHTML(v)}
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-              ${r.parts.length?r.parts.map(p=>`<span style="background:${p.cedido?'rgba(245,158,11,.14)':'rgba(16,185,129,.12)'};color:${p.cedido?'var(--orange)':'var(--green)'};border-radius:20px;padding:1px 8px;font-size:10px;font-weight:600;">${escapeHTML(p.label)}: ${escapeHTML(p.com)}</span>`).join(''):`<span style="color:var(--gray-400);font-size:10px;">Sin comisión definida</span>`}
-            </div>
-            ${vBadge?`<div style="margin-top:4px;font-size:12px;font-weight:800;color:var(--green);">= ${vBadge}</div>`:''}
+            <div class="vc-parts">${r.parts.length?r.parts.map(p=>`<span class="vc-part${p.cedido?' cedida':''}">${escapeHTML(p.label)}: ${escapeHTML(p.com)}</span>`).join(''):'<span class="vc-sincom">Sin comisión definida</span>'}</div>
+            ${vBadge?`<div class="vc-total">= ${vBadge}</div>`:''}
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-            <button class="btn btn-sm" style="background:var(--yellow);color:white;" onclick="markCommissionEnSobre(${v.id},event)">✉️ En sobre</button>
+          <div class="vc-btns">
+            <button class="btn btn-sm vc-btn-amber" onclick="markCommissionEnSobre(${v.id},event)">✉️ En sobre</button>
             <button class="btn btn-green btn-sm" onclick="markCommissionCobrado(${v.id},event)">💰 Cobrado</button>
           </div>
         </div>`;
@@ -17490,70 +17562,58 @@ function renderComisionBody(g,pendientes,enSobre,cobrados) {
     if(enSobre.length){
       const s=sumCommissions(enSobre);
       const sumBadge=fmtComisionBadge(s.usd,s.mn,s.computed,s.sinCalcular);
-      html+=`<div style="margin-top:${pendientes.length?'14px':'0'};">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-          <span style="font-size:11px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.5px;">✉️ En sobre (${enSobre.length})</span>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            ${sumBadge?`<span style="font-size:13px;font-weight:800;color:var(--green);">💵 ${sumBadge}</span>`:''}
-            ${enSobre.length>1?`<button class="btn btn-green btn-sm" onclick="markAllCommissionsCobrado(${g.id},event)" title="Solo las ${enSobre.length} que están en el sobre; las pendientes no se tocan">💰 Cobrar las ${enSobre.length} del sobre</button>`:''}
-          </div>
-        </div>`;
+      html+=`<div class="vc-sec vc-sec-next">
+        <span class="vc-sec-t vc-t-amber">✉️ En sobre (${enSobre.length})</span>
+        <div class="vc-sec-r">
+          ${sumBadge?`<span class="vc-sum">💵 ${sumBadge}</span>`:''}
+          ${enSobre.length>1?`<button class="btn btn-green btn-sm" onclick="markAllCommissionsCobrado(${g.id},event)" title="Solo las ${enSobre.length} que están en el sobre; las pendientes no se tocan">💰 Cobrar las ${enSobre.length} del sobre</button>`:''}
+        </div>
+      </div>`;
       html+=enSobre.map(v=>{
         const r=getValeCommissionParts(v);
         const vBadge=fmtComisionBadge(r.totalUSD||0,r.totalMN||0,r.totalUSD!==null||r.totalMN!==null);
         const ts=v.commissionEnSobreTs?new Date(v.commissionEnSobreTs).toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' '+timeStr(v.commissionEnSobreTs):'';
-        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:9px;margin-bottom:6px;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-              <span style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(v.cliente||'—')}</span>
-              ${_valeFechaHTML(v)}
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHTML(v.articulo||'—')}</div>
+        return `<div class="vc-row vc-sobre">
+          <div class="vc-main">
+            <div class="vc-top"><span class="vc-nombre">${escapeHTML(v.cliente||'—')}</span>${_valeFechaHTML(v)}</div>
+            <div class="vc-art">${escapeHTML(v.articulo||'—')}</div>
             ${_valeNotasHTML(v)}
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-              ${r.parts.length?r.parts.map(p=>`<span style="background:rgba(245,158,11,.12);color:var(--yellow);border-radius:20px;padding:1px 8px;font-size:10px;font-weight:600;">${escapeHTML(p.label)}: ${escapeHTML(p.com)}</span>`).join(''):`<span style="color:var(--gray-400);font-size:10px;">Sin comisión definida</span>`}
-            </div>
-            ${vBadge?`<div style="margin-top:4px;font-size:12px;font-weight:800;color:var(--yellow);">= ${vBadge}</div>`:''}
+            <div class="vc-parts">${r.parts.length?r.parts.map(p=>`<span class="vc-part cedida">${escapeHTML(p.label)}: ${escapeHTML(p.com)}</span>`).join(''):'<span class="vc-sincom">Sin comisión definida</span>'}</div>
+            ${vBadge?`<div class="vc-total vc-t-amber">= ${vBadge}</div>`:''}
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;text-align:right;">
-            <span style="font-size:9px;color:var(--yellow);font-weight:700;">✉️ En sobre</span>
-            ${ts?`<div style="font-size:9px;color:var(--gray-400);">${ts}</div>`:''}
+          <div class="vc-btns vc-btns-end">
+            <span class="vc-estado vc-t-amber">✉️ En sobre</span>
+            ${ts?`<div class="vc-ts">${ts}</div>`:''}
             <button class="btn btn-green btn-sm" onclick="markCommissionCobrado(${v.id},event)">💰 Cobrado</button>
-            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 8px;color:var(--orange);" onclick="unpayCommission(${v.id},event)">↩ Pendiente</button>
+            <button class="btn btn-ghost btn-sm vc-btn-back" onclick="unpayCommission(${v.id},event)">↩ Pendiente</button>
           </div>
         </div>`;
       }).join('');
-      html+='</div>';
     }
     // ── COBRADOS ──
     if(cobrados.length){
       const s=sumCommissions(cobrados);
       const sumBadge=fmtComisionBadge(s.usd,s.mn,s.computed,s.sinCalcular);
-      html+=`<div style="margin-top:${pendientes.length||enSobre.length?'14px':'0'};">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;">💰 Cobrados (${cobrados.length})</span>
-          ${sumBadge?`<span style="font-size:11px;font-weight:800;color:var(--green);">💵 ${sumBadge}</span>`:''}
-        </div>`;
+      html+=`<div class="vc-sec vc-sec-next">
+        <span class="vc-sec-t vc-t-green">💰 Cobrados (${cobrados.length})</span>
+        ${sumBadge?`<span class="vc-sum vc-sum-sm">💵 ${sumBadge}</span>`:''}
+      </div>`;
       html+=cobrados.map(v=>{
         const r=getValeCommissionParts(v);
         const ts=v.commissionPaidTs?new Date(v.commissionPaidTs).toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' '+timeStr(v.commissionPaidTs):'';
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.2);border-radius:8px;margin-bottom:4px;opacity:.85;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-              <span style="font-size:11px;font-weight:600;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(v.cliente||'—')}</span>
-              ${_valeFechaHTML(v)}
-            </div>
+        return `<div class="vc-row vc-cobrado">
+          <div class="vc-main">
+            <div class="vc-top"><span class="vc-nombre vc-nombre-old">${escapeHTML(v.cliente||'—')}</span>${_valeFechaHTML(v)}</div>
             ${_valeNotasHTML(v, true)}
-            ${r.parts.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">${r.parts.map(p=>`<span style="background:rgba(16,185,129,.1);color:var(--green);border-radius:20px;padding:1px 7px;font-size:9px;font-weight:600;">${escapeHTML(p.com)}</span>`).join('')}</div>`:''}
+            ${r.parts.length?`<div class="vc-parts">${r.parts.map(p=>`<span class="vc-part">${escapeHTML(p.com)}</span>`).join('')}</div>`:''}
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:9px;color:var(--green);font-weight:700;">💰 Cobrado</div>
-            ${ts?`<div style="font-size:9px;color:var(--gray-400);">${ts}</div>`:''}
-            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 8px;margin-top:4px;color:var(--orange);" onclick="unpayCommission(${v.id},event)">↩ Pendiente</button>
+          <div class="vc-btns vc-btns-end">
+            <span class="vc-estado vc-t-green">💰 Cobrado</span>
+            ${ts?`<div class="vc-ts">${ts}</div>`:''}
+            <button class="btn btn-ghost btn-sm vc-btn-back" onclick="unpayCommission(${v.id},event)">↩ Pendiente</button>
           </div>
         </div>`;
       }).join('');
-      html+='</div>';
     }
   }
   html+='</div>';

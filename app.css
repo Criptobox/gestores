@@ -1,6 +1,9 @@
 /* ════════════════════════════════════════════════════════════
-   AXONTECH — app.css  · v77 (pulido app móvil) + v78 (experiencia app)
-   Tema claro/oscuro + layout responsive + modales + componentes
+   AXONTECH — app.css
+   Tema claro/oscuro + layout responsive + modales + componentes.
+   El lenguaje de la casa (tarjetas 3D .vx-*/.vxg-*/.vxm-*/.vxt-*)
+   se añade por versiones AL FINAL del archivo — cada bloque nuevo
+   gana por cascada. Cada versión documenta qué trajo.
    ════════════════════════════════════════════════════════════ */
 
 /* ── v78: Sora autohospedada (identidad tipográfica de la app) ──
@@ -3370,7 +3373,7 @@ body.contrast #versionBadge{box-shadow:none !important;}
 }
 /* Esquina de vidrio — el gesto firma, detrás del contenido */
 .vx-card.g-hero::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.46) 0%,rgba(255,255,255,.8) 100%);
   pointer-events:none;
@@ -3434,7 +3437,7 @@ body.contrast #versionBadge{box-shadow:none !important;}
   box-shadow:rgba(var(--gsh,15,42,60),0) 34px 46px 22px -40px,rgba(var(--gsh,15,42,60),.3) 0 16px 30px -12px !important;
 }
 .gp-card.gp-3d::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.84) 100%);
   pointer-events:none;
@@ -3562,7 +3565,7 @@ body.contrast .gp-card.gp-3d .gp-card-com > span:last-child{color:var(--text-mut
   box-shadow:rgba(var(--gsh,15,42,60),0) 24px 34px 16px -36px,rgba(var(--gsh,15,42,60),.24) 0 10px 20px -12px !important;
 }
 .hist-hero::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.76) 100%);
   pointer-events:none;
@@ -3601,7 +3604,7 @@ body.contrast .gp-card.gp-3d .gp-card-com > span:last-child{color:var(--text-mut
   transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;
 }
 .vd-hero::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.44) 0%,rgba(255,255,255,.8) 100%);
   pointer-events:none;
@@ -3717,7 +3720,7 @@ body.contrast .vd-deshacer{
   box-shadow:rgba(var(--gsh,15,42,60),0) 30px 40px 20px -40px,rgba(var(--gsh,15,42,60),.3) 0 14px 26px -12px;
 }
 .vxg-card.vxg-hero::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.84) 100%);
   pointer-events:none;
@@ -3987,7 +3990,7 @@ body.contrast .vx-st-cobrar:has(.vx-stat-alerta.rojo){border-color:var(--border)
   transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s;
 }
 .vx-skin::after{
-  content:'';position:absolute;inset:0;z-index:-1;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
   border-radius:inherit;border-top-right-radius:100%;
   background:linear-gradient(0deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.76) 100%);
   pointer-events:none;
@@ -4228,3 +4231,462 @@ body.dark .vx-skin .acc,body.dark .vx-skin .rank-pts{
 }
 body.dark .vx-skin .mv-time{color:var(--gink,#0f172a) !important;opacity:.66;}
 body.dark .sg-head.sg-head.vx-skin .sg-sub{color:var(--gink,#0f172a) !important;opacity:.72;}
+/* ══════════════════════════════════════════════════════════════════
+   v234 · v0.00005 — UNA SOLA CASA: la piel 3D llega a mensajeros,
+   picker y a los vales propios del gestor
+   1 · Tarjetas de MENSAJEROS (.vxm-card): mismo lenguaje 3D que las
+       fichas de gestor — cada mensajero viste SU color (hash estable
+       del nombre). Adiós a las tarjetas planas .m-item.
+   2 · Picker «Filtrar por gestor» (.vxp-tile.vxp-hero): el tile sin
+       seleccionar lleva la piel 3D en vez del relleno sólido.
+   3 · MIS VALES del gestor: ya con piel via .vx-skin desde app.js.
+   4 · Seguro para móvil: en ≤700px se RE-AFIRMA el degradado y la
+       esquina de vidrio de TODAS las pieles — aunque algún CSS viejo
+       en caché intente aplanarlas, la receta gana.
+   5 · Badge de versión con pulso cuando hay actualización pendiente.
+   Alto contraste: todo plano, como manda la casa.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1 · TARJETA DE MENSAJERO (usa la receta compartida .vx-skin) ── */
+.vxm-card{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:12px 13px;border-radius:16px;margin-bottom:8px;cursor:pointer;
+}
+.vxm-card:active{transform:scale(.985);}
+.vxm-ava{
+  display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.72);color:var(--gacc2,#0369a1);
+  font-size:13px;font-weight:800;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 3px 8px -3px rgba(var(--gsh,15,42,60),.5);
+}
+.vxm-body{flex:1;min-width:0;}
+.vxm-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.vxm-nombre{font-weight:800;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vxm-view{font-size:9.5px;font-weight:800;color:var(--gacc2,#0369a1);white-space:nowrap;}
+.vxm-sub{display:flex;gap:9px;flex-wrap:wrap;font-size:10px;font-weight:600;opacity:.72;margin-top:2px;}
+.vxm-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.vxm-actions .vg-btn{font-size:10px;padding:3px 10px;}
+/* Seleccionado = anillo azul (el que está «viendo entregas») */
+.vxm-card.vxm-act{
+  box-shadow:0 0 0 2.5px var(--blue,#0891b2),rgba(var(--gsh,15,42,60),.3) 0 14px 26px -12px !important;
+}
+/* Chapas de vidrio extra */
+.vg-chip-amber{background:rgba(255,255,255,.85);color:#b45309;border:1px solid rgba(255,255,255,.9);}
+.vg-chip-idle{background:rgba(255,255,255,.5);color:var(--gink,#0f172a);border:1px solid rgba(255,255,255,.6);}
+/* Botón WhatsApp: vidrio con tinta verde (antes borde verde sobre nada) */
+.vg-wa{color:#047857 !important;}
+
+/* ── 2 · PICKER «Filtrar por gestor»: tile con piel 3D ── */
+.vxp-tile.vxp-hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  border-color:transparent !important;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 20px 26px 14px -32px,rgba(var(--gsh,15,42,60),.22) 0 10px 18px -12px !important;
+}
+.vxp-tile.vxp-hero::after{
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.84) 100%);
+  pointer-events:none;
+}
+.vxp-tile.vxp-hero .vxp-nombre{color:var(--gink,#0f172a) !important;}
+.vxp-tile.vxp-hero .vxp-n{
+  background:rgba(255,255,255,.66) !important;color:var(--gink,#0f172a) !important;
+}
+.vxp-tile.vxp-hero .vx-ava{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 3px 8px -3px rgba(var(--gsh,15,42,60),.5);
+}
+
+/* ── 4 · SEGURO MÓVIL: la piel no se aplana en pantallas chicas ──
+   Los teléfonos son donde más se usa la app y donde un CSS a medias
+   (caché mezclada) más se nota. Aquí se re-afirma la receta completa:
+   degradado + esquina de vidrio en TODAS las pieles, ganándole a
+   cualquier regla vieja que rondara por ahí. */
+@media (max-width:700px){
+  .vxg-card.vxg-hero,.vx-skin,.gp-card.gp-3d,.vxp-tile.vxp-hero,.vx-card.g-hero{
+    background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  }
+  .vxg-card.vxg-hero::after,.vx-skin::after,.gp-card.gp-3d::after,.vxp-tile.vxp-hero::after{
+    content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
+    border-radius:inherit;border-top-right-radius:100%;
+    background:linear-gradient(0deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.8) 100%);
+    pointer-events:none;
+  }
+  .vxg-card.vxg-hero{border-color:transparent !important;}
+  .vxm-card{padding:11px 12px;}
+  .vxm-ava{width:34px;height:34px;font-size:12px;}
+  .vxm-actions .vg-btn{font-size:9.5px;padding:3px 9px;}
+}
+
+/* ── 5 · BADGE DE VERSIÓN: pulso naranja mientras haya actualización ──
+   Los teléfonos pueden quedarse semanas con código viejo; el aviso
+   ahora se mueve y no se puede pasar por alto. */
+.vx-vervie{animation:vxVerVie 1.6s ease-in-out infinite;}
+@keyframes vxVerVie{
+  0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.55);}
+  50%{box-shadow:0 0 0 6px rgba(245,158,11,0);}
+}
+
+/* ── Notificaciones del gestor: adiós al borde lateral de color ──
+   El color pasa al icono (squircle tintado, como .vx-com-ic) y las
+   filas quedan redondas como el resto de la casa. */
+.gnotif-icon{
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:10px;font-size:15px;background:var(--surface3);flex-shrink:0;
+}
+.gnotif-item.type-agotado .gnotif-icon{background:rgba(239,68,68,.14);}
+.gnotif-item.type-low .gnotif-icon{background:rgba(245,158,11,.16);}
+.gnotif-item.type-restocked .gnotif-icon,.gnotif-item.type-ok .gnotif-icon{background:rgba(16,185,129,.14);}
+.gnotif-item.type-agotado,.gnotif-item.type-low,
+.gnotif-item.type-restocked,.gnotif-item.type-ok{border-left:1px solid var(--border);}
+.gnotif-item.unread{
+  border-left:1px solid var(--border);background:var(--blue-lt);
+  box-shadow:inset 0 0 0 1px rgba(14,165,233,.22),0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+}
+body.dark .gnotif-icon{background:rgba(255,255,255,.06);}
+
+/* ── Alto contraste: todo plano, sin pulso ni degradados ── */
+body.contrast .vxm-card{
+  background:var(--surface) !important;border:1px solid var(--border) !important;
+  box-shadow:none !important;transform:none !important;
+}
+body.contrast .vxm-ava{background:var(--surface3) !important;color:var(--text) !important;box-shadow:none !important;}
+body.contrast .vxm-view{color:var(--blue) !important;}
+body.contrast .vxm-card.vxm-act{box-shadow:0 0 0 2px var(--blue) !important;}
+body.contrast .vg-chip-amber,body.contrast .vg-chip-idle{
+  background:var(--surface3) !important;color:var(--text) !important;border-color:var(--border) !important;
+}
+body.contrast .vg-wa{color:var(--green) !important;}
+body.contrast .vxp-tile.vxp-hero{
+  background:var(--surface) !important;border:1px solid var(--border) !important;box-shadow:none !important;
+}
+body.contrast .vxp-tile.vxp-hero .vxp-nombre{color:var(--text) !important;}
+body.contrast .vxp-tile.vxp-hero .vxp-n{background:var(--surface3) !important;color:var(--text) !important;}
+body.contrast .vxp-tile.vxp-hero .vx-ava{box-shadow:none !important;}
+body.contrast .vx-vervie{animation:none;}
+/* ══════════════════════════════════════════════════════════════════
+   v235 · v0.00006 — UNA SOLA CASA (remate): el picker de mensajero
+   del modal «Asignar» entra al lenguaje 3D, el mensajero se delata
+   con SU color donde aparezca, y las últimas zonas a estilo inline
+   (próximas entregas, comisiones del admin, los dos catálogos) pasan
+   a clases de la familia. Arreglos de fondo: --teal existía solo
+   como fallback, y la esquina de vidrio usaba inset (sin soporte en
+   WebKit viejo — ya corregido arriba con offsets explícitos).
+   Alto contraste: todo plano, como manda la casa.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 0 · --teal por fin existe (el degradado del Total y el tile
+      «Todos» del picker la usaban con fallback a escondidas) ── */
+:root{--teal:#0891b2;}
+body.dark{--teal:#22d3ee;}
+
+/* ── 1 · PICKER DE MENSAJERO del modal «Asignar» (.vxt-*) ──
+   La ficha SIN elegir viste la piel 3D del mensajero (misma receta
+   del picker de gestores); la ELEGIDA queda clara con anillo azul. */
+.vxt-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin:2px 0 12px;max-height:264px;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+.vxt-tile{
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  border:1.5px solid var(--border);border-radius:16px;
+  background:var(--surface);padding:10px 11px;cursor:pointer;
+  font-family:var(--font);text-align:left;min-width:0;
+  position:relative;isolation:isolate;overflow:hidden;
+  transition:border-color .15s,box-shadow .15s,transform .15s cubic-bezier(.2,.8,.2,1);
+}
+.vxt-tile:active{transform:scale(.97);}
+.vxt-tile.vxt-hero{
+  background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+  border-color:transparent;
+  box-shadow:rgba(var(--gsh,15,42,60),0) 20px 26px 14px -32px,rgba(var(--gsh,15,42,60),.22) 0 10px 18px -12px;
+}
+.vxt-tile.vxt-hero::after{
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
+  border-radius:inherit;border-top-right-radius:100%;
+  background:linear-gradient(0deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.84) 100%);
+  pointer-events:none;
+}
+.vxt-ava{
+  width:34px;height:34px;border-radius:32%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;letter-spacing:.3px;
+  background:var(--surface3);color:var(--text);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);
+}
+.vxt-tile.vxt-hero .vxt-ava{
+  background:rgba(255,255,255,.72);color:var(--gacc2,#0369a1);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 3px 8px -3px rgba(var(--gsh,15,42,60),.5);
+}
+.vxt-nombre{
+  font-size:12.5px;font-weight:800;color:var(--text);letter-spacing:-.1px;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.vxt-sub{font-size:9.5px;font-weight:600;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.vxt-tile.act{
+  border-color:var(--blue);background:var(--blue-lt);
+  box-shadow:0 0 0 2.5px var(--blue-lt);
+}
+@media (max-width:700px){
+  .vxt-grid{gap:7px;max-height:236px;}
+  .vxt-tile{padding:9px 10px;}
+  .vxt-ava{width:30px;height:30px;font-size:11px;}
+  .vxt-nombre{font-size:12px;}
+}
+
+/* ── 2 · PUNTITO DE COLOR del mensajero donde se le menciona ── */
+.vmdot{
+  display:inline-block;width:8px;height:8px;border-radius:100px;
+  margin:0 3px 0 1px;vertical-align:middle;
+  box-shadow:0 0 0 2px rgba(255,255,255,.55);
+}
+body.dark .vmdot{box-shadow:0 0 0 2px rgba(15,23,42,.55);}
+body.contrast .vmdot{box-shadow:none;border:1px solid var(--border);}
+
+/* ── 3 · PRÓXIMAS ENTREGAS (.vpe-*) — mismo idioma, sin inline ── */
+#proximasEntregas{
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  background:var(--surface);box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+}
+.vpe-row{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;
+  font-size:11px;min-width:0;border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.vpe-row:last-of-type{border-bottom:none;}
+.vpe-row:hover{background:var(--surface2);}
+.vpe-row:active{background:var(--surface3);}
+.vpe-row.rojo{background:rgba(239,68,68,.07);}
+.vpe-row.amber{background:rgba(245,158,11,.08);}
+.vpe-hora{font-weight:800;color:var(--text-muted);white-space:nowrap;flex-shrink:0;min-width:92px;font-variant-numeric:tabular-nums;}
+.vpe-cli{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%;flex-shrink:1;}
+.vpe-det{color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.vpe-nota{flex-shrink:0;font-size:11px;cursor:help;}
+.vpe-cuando{font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;color:var(--text-muted);}
+.vpe-row.rojo .vpe-hora,.vpe-row.rojo .vpe-cuando{color:#dc2626;}
+.vpe-row.amber .vpe-hora,.vpe-row.amber .vpe-cuando{color:#b45309;}
+.vpe-mas{font-size:11px;font-weight:700;color:var(--blue);padding:7px 10px;cursor:pointer;}
+.vpe-mas.vpe-menos{color:var(--text-muted);}
+body.dark .vpe-row.rojo{background:rgba(239,68,68,.12);}
+body.dark .vpe-row.amber{background:rgba(245,158,11,.10);}
+body.dark .vpe-row.rojo .vpe-hora,body.dark .vpe-row.rojo .vpe-cuando{color:#F87171;}
+body.dark .vpe-row.amber .vpe-hora,body.dark .vpe-row.amber .vpe-cuando{color:#FBBF24;}
+body.dark #proximasEntregas{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.5);}
+body.contrast .vpe-row{border-bottom:1px solid var(--border) !important;}
+body.contrast .vpe-row.rojo,body.contrast .vpe-row.amber{background:var(--surface) !important;}
+body.contrast .vpe-row.rojo .vpe-hora,body.contrast .vpe-row.rojo .vpe-cuando{color:var(--red) !important;}
+body.contrast .vpe-row.amber .vpe-hora,body.contrast .vpe-row.amber .vpe-cuando{color:var(--orange) !important;}
+body.contrast #proximasEntregas{box-shadow:none !important;}
+
+/* ── 4 · COMISIONES DEL ADMIN (.vc-*) — adiós a las cajas inline ── */
+.vc-wrap{border-top:1px solid var(--border);padding:12px 14px;}
+.vc-sec{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:9px;flex-wrap:wrap;gap:6px;
+}
+.vc-sec-next{margin-top:16px;}
+.vc-sec-t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.vc-t-orange{color:var(--orange);}
+.vc-t-amber{color:#b45309;}
+.vc-t-green{color:var(--green);}
+.vc-sec-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.vc-sum{font-size:13px;font-weight:800;color:var(--green);}
+.vc-sum-sm{font-size:11px;}
+.vc-btn-amber{background:var(--yellow);color:white;flex-shrink:0;}
+.vc-row{
+  display:flex;align-items:center;gap:8px;padding:9px 11px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:6px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.vc-row:hover{border-color:var(--blue-bd);box-shadow:0 2px 8px -4px rgba(15,23,42,.12);}
+.vc-sobre{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.28);}
+.vc-cobrado{background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.22);opacity:.88;padding:7px 11px;}
+.vc-main{flex:1;min-width:0;}
+.vc-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+.vc-nombre{font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vc-nombre-old{font-size:11px;font-weight:600;color:var(--text-muted);}
+.vc-art{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.vc-parts{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.vc-part{
+  background:rgba(16,185,129,.12);color:var(--green);
+  border-radius:20px;padding:2px 9px;font-size:10px;font-weight:600;
+}
+.vc-part.cedida{background:rgba(245,158,11,.14);color:var(--orange);}
+.vc-sincom{color:var(--gray-400);font-size:10px;}
+.vc-total{margin-top:5px;font-size:12px;font-weight:800;color:var(--green);}
+.vc-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.vc-btns-end{text-align:right;align-items:flex-end;}
+.vc-estado{font-size:9.5px;font-weight:800;white-space:nowrap;}
+.vc-ts{font-size:9px;color:var(--gray-400);white-space:nowrap;}
+.vc-btn-back{font-size:10px;padding:3px 8px;color:var(--orange);}
+body.dark .vc-row{background:var(--surface2);border-color:var(--border);}
+body.dark .vc-sobre{background:rgba(245,158,11,.10);border-color:rgba(251,191,36,.3);}
+body.dark .vc-cobrado{background:rgba(16,185,129,.09);border-color:rgba(52,211,153,.28);}
+body.dark .vc-t-amber{color:#FBBF24;}
+body.dark .vc-part.cedida{color:#FBBF24;}
+body.contrast .vc-row,
+body.contrast .vc-sobre,
+body.contrast .vc-cobrado{
+  background:var(--surface) !important;border:1px solid var(--border) !important;box-shadow:none !important;
+}
+body.contrast .vc-part,body.contrast .vc-part.cedida{background:var(--surface3) !important;color:var(--text) !important;}
+body.contrast .vc-t-amber{color:var(--orange) !important;}
+body.contrast .vc-btn-amber{background:var(--yellow) !important;border:1px solid var(--border) !important;}
+
+/* ── 5 · CATÁLOGO DEL GESTOR (.vcg-*) — fichas de la familia ── */
+.vcg-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:9px;font-size:11px;color:var(--text-muted);
+}
+.vcg-head-admin{margin-bottom:12px;}
+.vcg-agotados{display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--text-muted);}
+.vcg-agotados input{margin:0;}
+.vcg-item{
+  border:1.5px solid var(--border);border-radius:14px;margin-bottom:7px;
+  overflow:hidden;background:var(--surface);
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+  transition:border-color .15s,box-shadow .15s,opacity .15s;
+}
+.vcg-item.exp{border-color:var(--blue);box-shadow:0 2px 4px rgba(15,23,42,.05),0 10px 24px -12px rgba(0,109,138,.25);}
+.vcg-item.agotado{opacity:.62;}
+.vcg-fila{display:flex;align-items:center;gap:10px;padding:9px 10px;}
+.vcg-foto{width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;}
+.vcg-thumb{
+  width:52px;height:52px;border-radius:10px;background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+}
+.vcg-main{flex:1;min-width:0;cursor:pointer;}
+.vcg-nombre{font-weight:700;font-size:13px;color:var(--text);line-height:1.3;}
+.vcg-sub{font-size:10px;color:var(--text-muted);margin-top:1px;}
+.vcg-precio{color:var(--blue);font-weight:800;font-size:12.5px;margin-top:2px;}
+.vcg-ico{
+  background:none;border:none;cursor:pointer;font-size:18px;padding:4px;
+  color:var(--gray-400);flex-shrink:0;font-family:inherit;
+}
+.vcg-ico.favorito{color:#F59E0B;}
+.vcg-chev{font-size:13px;color:var(--gray-400);flex-shrink:0;cursor:pointer;margin-left:4px;}
+.vcg-chapa-agotado{
+  font-weight:700;font-size:10px;color:var(--red);
+  background:rgba(239,68,68,.1);padding:1px 6px;border-radius:7px;
+}
+.vcg-open{padding:9px 12px 12px;border-top:1.5px solid var(--border);background:var(--surface2);}
+.vcg-desc{font-size:12px;color:var(--text-muted);margin-bottom:10px;white-space:pre-line;line-height:1.5;}
+.vcg-chips{display:flex;flex-wrap:wrap;gap:5px;font-size:11px;}
+.vcg-chip{
+  background:var(--blue-lt);color:var(--blue);
+  padding:3px 10px;border-radius:100px;font-weight:700;
+}
+.vcg-chip.rojo{background:rgba(239,68,68,.1);color:var(--red);}
+.vcg-chip.amber{background:rgba(180,83,9,.12);color:#b45309;}
+.vcg-chip.gray{background:var(--surface3);color:var(--text-muted);}
+.vcg-chip.green{background:rgba(16,185,129,.12);color:var(--green);}
+body.dark .vcg-item{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.5);}
+body.dark .vcg-item.exp{box-shadow:0 2px 4px rgba(0,0,0,.45),0 12px 28px -12px rgba(0,180,216,.3);}
+body.dark .vcg-open{background:var(--surface2);}
+body.dark .vcg-chip.amber{background:rgba(245,158,11,.16);color:#FBBF24;}
+body.dark .vcg-chip.green{background:rgba(16,185,129,.16);color:#34D399;}
+body.dark .vcg-chapa-agotado{background:rgba(239,68,68,.16);}
+body.contrast .vcg-item{box-shadow:none !important;background:var(--surface) !important;}
+body.contrast .vcg-item.exp{border:2px solid #000 !important;}
+body.dark.contrast .vcg-item.exp{border-color:#e2e8f0 !important;}
+body.contrast .vcg-chip,body.contrast .vcg-chip.rojo,body.contrast .vcg-chip.amber,
+body.contrast .vcg-chip.gray,body.contrast .vcg-chip.green{
+  background:var(--surface3) !important;color:var(--text) !important;border:1px solid var(--border);
+}
+body.contrast .vcg-open{background:var(--surface) !important;}
+
+/* ── 6 · CATÁLOGO DEL ADMIN (.vca-*) — tarjetas con elevación CSS ── */
+.vca-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.vca-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px -8px rgba(15,23,42,.10);
+  transition:box-shadow .2s,transform .15s cubic-bezier(.2,.8,.2,1),border-color .15s;
+}
+.vca-card:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 14px 32px -12px rgba(15,23,42,.22);transform:translateY(-2px);border-color:var(--blue-bd);}
+.vca-card.agotado{opacity:.68;}
+.vca-foto{
+  height:140px;background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;
+}
+.vca-foto img{width:100%;height:100%;object-fit:cover;}
+.vca-thumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;}
+.vca-cat{
+  position:absolute;top:8px;left:8px;background:var(--blue);color:white;
+  padding:2px 9px;border-radius:100px;font-size:9px;font-weight:700;
+}
+.vca-agotado{
+  position:absolute;top:8px;right:8px;background:var(--red);color:white;
+  padding:2px 9px;border-radius:100px;font-size:9px;font-weight:700;
+}
+.vca-body{padding:12px;}
+.vca-nombre{font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;}
+.vca-desc{
+  font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.vca-precio{font-weight:800;font-size:16px;color:var(--blue);margin-bottom:6px;}
+.vca-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.vca-chip{
+  background:var(--surface3);color:var(--text-muted);
+  padding:2px 8px;border-radius:100px;font-size:9px;font-weight:600;
+}
+body.dark .vca-card{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.5);}
+body.dark .vca-card:hover{box-shadow:0 2px 4px rgba(0,0,0,.45),0 14px 34px -12px rgba(0,0,0,.6);}
+body.dark .vca-thumb{background:var(--surface2);}
+body.contrast .vca-card{box-shadow:none !important;}
+body.contrast .vca-card:hover{transform:none;box-shadow:none !important;}
+body.contrast .vca-cat,body.contrast .vca-agotado{border:1px solid var(--border);}
+
+/* ── 7 · PASE DE CONSISTENCIA: las piezas genéricas que seguían
+      con la cara de antes (modales, logins, detalle del vale,
+      formulario, estados vacíos). Ligero: radios y sombras de la
+      familia, sin rediseños agresivos. ── */
+.modal{border-radius:22px;}
+@media (max-width:700px){
+  .modal{border-radius:26px 26px 0 0;}
+}
+.modal-title{letter-spacing:-.2px;}
+#valeDetail .card,#valeHistorialDetalle .card{
+  border-radius:18px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px -10px rgba(15,23,42,.12);
+}
+.mensajero-row{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:8px 11px;font-size:12px;margin-bottom:10px;
+}
+body.dark .mensajero-row{background:var(--surface2);border-color:var(--border);}
+body.contrast .mensajero-row{background:var(--surface) !important;border:1px solid var(--border) !important;}
+.det-empty{border:1.5px dashed var(--border);border-radius:18px;}
+.es{border-radius:16px;}
+body.dark .modal{box-shadow:0 -14px 44px rgba(0,0,0,.55);}
+body.contrast #valeDetail .card,body.contrast #valeHistorialDetalle .card{box-shadow:none !important;}
+
+/* ── 8 · SEGURO MÓVIL: el nuevo picker de mensajero también se
+      re-afirma en pantallas chicas (misma póliza que las pieles). ── */
+@media (max-width:700px){
+  .vxt-tile.vxt-hero{
+    background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  }
+  .vxt-tile.vxt-hero::after{
+    content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:-1;
+    border-radius:inherit;border-top-right-radius:100%;
+    background:linear-gradient(0deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.8) 100%);
+    pointer-events:none;
+  }
+}
+
+/* ── 9 · ALTO CONTRASTE: picker de mensajero y chips de color ── */
+body.contrast .vxt-tile{
+  background:var(--surface) !important;border:2px solid var(--border) !important;box-shadow:none !important;
+}
+body.contrast .vxt-tile.vxt-hero{background:var(--surface) !important;}
+body.contrast .vxt-tile.vxt-hero::after{display:none;}
+body.contrast .vxt-tile.vxt-hero .vxt-nombre,
+body.contrast .vxt-tile.vxt-hero .vxt-sub{color:var(--text) !important;opacity:1 !important;}
+body.contrast .vxt-tile.vxt-hero .vxt-ava{background:var(--surface3) !important;color:var(--text) !important;box-shadow:none !important;}
+body.contrast .vxt-tile.act{border-color:#000 !important;box-shadow:none !important;background:var(--surface) !important;}
+body.dark.contrast .vxt-tile.act{border-color:#e2e8f0 !important;}

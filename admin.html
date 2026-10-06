@@ -26,10 +26,10 @@
        + onload es el patrón asíncrono seguro). Sora sale del archivo local;
        JetBrains Mono (solo paneles ax2) llega después sin frenar la app. -->
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="./app.css?v=233">
+  <link rel="stylesheet" href="./app.css?v=235">
   <!-- v211 RENDIMIENTO: pre carga del JS principal desde el head + defer al
        ejecutar (mismo tratamiento que index.html). -->
-  <link rel="preload" href="./app.min.js?v=233" as="script" fetchpriority="high">
+  <link rel="preload" href="./app.min.js?v=235" as="script" fetchpriority="high">
   <style>
     /* Splash screen inline — se quita desde app.js init() o tras 8s. */
     #axon-splash{position:fixed;inset:0;background:linear-gradient(135deg,#003a4d 0%,#006d8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .4s ease;}
@@ -71,7 +71,7 @@
     <span id="versionBadge"
           onclick="checkVersion(true)"
           title="Versión actual · Toca para buscar actualizaciones"
-          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">0.00004</span>
+          style="margin-left:8px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;border-radius:10px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.3px;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;">0.00006</span>
   </div>
   <span id="adminBadge"></span>
   <span id="inboxCountBadge" style="display:none;background:var(--red);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;"></span>
@@ -1174,7 +1174,9 @@
   <div class="modal" style="max-width:380px;">
     <div class="modal-title">🛵 Asignar a mensajero</div>
     <div class="modal-sub" id="shareModalSub">Vale</div>
-    <select id="mensajeroSelect" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;margin-bottom:10px;"></select>
+    <!-- v235: el select nativo se jubila — los mensajeros se eligen en fichas 3D
+         con su color (las pinta _renderShareTiles(), setShareMensajero() marca). -->
+    <div id="mensajeroTiles" class="vxt-grid" role="listbox" aria-label="Elegir mensajero"></div>
     <div class="lbl" style="margin:6px 0;">Vista previa del mensaje:</div>
     <pre id="shareValePreview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap;font-family:'Courier New',monospace;max-height:240px;overflow-y:auto;margin-bottom:10px;"></pre>
     <!-- v85: "Asignar" a secas. Los otros dos botones asignan y además copian el
@@ -1914,7 +1916,7 @@
      Directa bajo <body> para que @media print la muestre sola. -->
 <div id="printReport" aria-hidden="true"></div>
 
-<script src="./app.min.js?v=233" defer></script>
+<script src="./app.min.js?v=235" defer></script>
 <script>
 // Close modals by clicking backdrop
 document.querySelectorAll('.modal-bg').forEach(bg => {
