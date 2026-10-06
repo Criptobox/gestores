@@ -1,8 +1,8 @@
 // ── Versiones de la app y del SW (deben coincidir en cada release) ──
 // Sistema de versiones reiniciado a v3 — el banner superior muestra esta versión
 // y la app verifica automáticamente contra version.json si hay una versión mayor.
-const APP_VERSION  = '235';
-const CACHE = 'axontech-v235';
+const APP_VERSION  = '238';
+const CACHE = 'axontech-v238';
 const STATIC = [
   './', './index.html', './admin.html', './app.css', './app.js',
   './app.min.js',   // v211: el JS minificado que cargan index/admin (app.js queda por compat)

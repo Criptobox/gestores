@@ -4690,3 +4690,197 @@ body.contrast .vxt-tile.vxt-hero .vxt-sub{color:var(--text) !important;opacity:1
 body.contrast .vxt-tile.vxt-hero .vxt-ava{background:var(--surface3) !important;color:var(--text) !important;box-shadow:none !important;}
 body.contrast .vxt-tile.act{border-color:#000 !important;box-shadow:none !important;background:var(--surface) !important;}
 body.dark.contrast .vxt-tile.act{border-color:#e2e8f0 !important;}
+/* ══════════════════════════════════════════════════════════════════
+   v236 · v0.00007 — LA TARJETA DEL LOGIN NO SE APAGA EN EL TELÉFONO
+   Queja: «las tarjetas en modo móvil pierden el diseño; en PC se ve
+   la franja 3D y en el teléfono la tarjeta queda de un solo tono».
+   Causas encontradas:
+     a) El seguro móvil de v234/v235 re-afirmaba el degradado en TODAS
+        las pieles… menos en .g-item.g-hero, la de «¿Quién eres?».
+     b) .g3d-glass media su tamaño con inset (WebKit viejo no lo lee).
+     c) Los círculos medían su alto con aspect-ratio (2021): en motores
+        antiguos el alto caía a cero y los círculos desaparecían.
+   Aquí: offsets y altos explícitos, re-afirmación del degradado con
+   !important en pantallas chicas (la misma póliza que ya curó a las
+   demás pieles) y respaldo de color pleno por si un navegador tira el
+   degradado. Alto contraste vuelve a mandar al final.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 1 · Vidrio con offsets explícitos (inset se queda como recordatorio) */
+.g3d-glass{top:6px;right:6px;bottom:6px;left:6px;}
+
+/* 2 · Círculos con alto explícito: sin aspect-ratio también son redondos */
+.g3d-circles .c1{width:78px;height:78px;}
+.g3d-circles .c2{width:64px;height:64px;}
+.g3d-circles .c3{width:50px;height:50px;}
+.g3d-circles .c4{width:36px;height:36px;}
+.g3d-circles .c5{width:27px;height:27px;}
+
+/* 3 · Respaldo: si el navegador descarta el degradado, la tarjeta queda
+   del COLOR PLENO del gestor — no del pastel lavado de la era v220 */
+.g-item.g-hero,.g-item.g-hero.active,.g-item.g-hero.g-item-pinned{
+  background-color:var(--g2,#006d8a);
+  background-image:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+}
+body.dark .g-item.g-hero,body.dark .g-item.g-hero.active,
+body.dark .g-item.g-hero.g-item-pinned{
+  background-color:var(--g2,#006d8a);
+  background-image:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%);
+}
+
+/* 4 · SEGURO MÓVIL: la tarjeta del login se re-afirma en pantallas
+   chicas — la misma póliza que ya curó a las demás pieles */
+@media (max-width:700px){
+  .g-item.g-hero,.g-item.g-hero.active,.g-item.g-hero.g-item-pinned,
+  body.dark .g-item.g-hero,body.dark .g-item.g-hero.active,
+  body.dark .g-item.g-hero.g-item-pinned{
+    background:linear-gradient(135deg,var(--g1,#9be8d8) 0%,var(--g2,#006d8a) 100%) !important;
+  }
+  .g3d-glass{
+    top:4px;right:4px;bottom:4px;left:4px;inset:4px;
+    border-radius:22px;border-top-right-radius:100%;
+    background:linear-gradient(0deg,rgba(255,255,255,.36) 0%,rgba(255,255,255,.82) 100%);
+    border-left:1px solid rgba(255,255,255,.9);border-bottom:1px solid rgba(255,255,255,.9);
+  }
+  .g3d-circles .c1{width:52px;height:52px;}
+  .g3d-circles .c2{width:42px;height:42px;}
+  .g3d-circles .c5{width:33px;height:33px;}
+}
+
+/* 5 · Alto contraste: vuelve a mandar — plano, como manda la casa */
+body.contrast .g-item.g-hero,body.contrast .g-item.g-hero.active,
+body.contrast .g-item.g-hero.g-item-pinned{
+  background:var(--surface) !important;background-image:none !important;
+}
+body.contrast .g3d-glass,body.contrast .g3d-circles{display:none !important;}
+
+
+/* ═══════════════ v237 · comisiones a la vista + adiós al 📍 ═══════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   v237 · Comisiones del gestor a la vista (historial + detalle) y tarjeta del
+   login sin el botón 📍. Sigue el lenguaje 3D de la casa (v231→v236).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1 · Tarjetas del historial (mis vales): fila de comisión con chapa verde
+   «💵 Ganas/Por ganar: X» y, si hubo cesión, la chapa naranja «⬇ −X». */
+.mv-com{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:7px;
+}
+.mv-com:empty{display:none;}
+.mvc-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;line-height:1.5;white-space:nowrap;
+  color:#059669;background:rgba(16,185,129,.10);
+  border:1px solid rgba(16,185,129,.28);
+  border-radius:20px;padding:2px 9px;
+}
+.mvc-chip b{font-weight:800;font-variant-numeric:tabular-nums;}
+.mvc-reb{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:700;white-space:nowrap;
+  color:#c2410c;background:rgba(249,115,22,.10);
+  border:1px dashed rgba(249,115,22,.45);
+  border-radius:20px;padding:2px 8px;
+}
+.mvc-rev{color:#c2410c;background:rgba(249,115,22,.08);border-style:dashed;}
+/* Sobre la piel 3D del gestor: chips de vidrio blanco con tinta propia —
+   la misma gramática que .vg-chip, legible sobre cualquier color */
+.mvc-chip.ink{color:var(--gink,#0f172a);background:rgba(255,255,255,.34);border:1px solid rgba(255,255,255,.5);}
+.mvc-reb.ink{color:var(--gink,#0f172a);background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.55);}
+
+/* 2 · Modal «Detalle de la Venta» del gestor: desglose completo */
+.gv-nombre{font-size:16px;font-weight:800;color:var(--blue-dk,#006d8a);margin-bottom:12px;}
+.gv-dato{margin-bottom:6px;font-size:13px;line-height:1.55;color:var(--text);}
+.gv-dato b{font-weight:700;}
+.gv-sec{
+  margin-top:12px;padding:10px 12px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;
+}
+.gv-t{
+  font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--text-muted);margin-bottom:6px;
+}
+.gv-row{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:3.5px 0;font-size:12.5px;color:var(--text);
+}
+.gv-row .gv-l{min-width:0;}
+.gv-row .gv-v{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.gv-row-ced .gv-v{color:var(--orange);font-weight:800;}
+.gv-row-man .gv-v{color:var(--orange);}
+.gv-total{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);
+  font-size:12.5px;font-weight:700;color:#059669;
+}
+.gv-total b{font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;}
+.gv-rebaja{
+  margin-top:7px;padding:6px 9px;border-radius:8px;
+  font-size:11px;line-height:1.55;color:#c2410c;
+  background:rgba(249,115,22,.09);
+}
+.gv-rebaja b{font-weight:800;}
+.gv-rebaja i{font-style:normal;opacity:.82;}
+.gv-estado{
+  margin-top:12px;padding:10px;text-align:center;font-weight:700;
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+}
+body.dark .gv-nombre{color:var(--blue,#0891b2);}
+body.dark .gv-total{color:#34d399;}
+body.dark .mvc-chip{color:#34d399;background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.35);}
+body.dark .mvc-reb{color:#fdba74;background:rgba(249,115,22,.12);}
+body.dark .mvc-chip.ink,body.dark .mvc-reb.ink{color:var(--gink,#f1f5f9);}
+
+/* 3 · Alto contraste: chapas planas, como manda la casa */
+body.contrast .mvc-chip,body.contrast .mvc-reb{
+  background:transparent !important;color:var(--text) !important;
+  border-color:var(--border) !important;
+}
+body.contrast .mvc-chip b{color:var(--text) !important;}
+body.contrast .gv-row-ced .gv-v,body.contrast .gv-row-man .gv-v{color:var(--text);}
+body.contrast .gv-total{color:var(--text);}
+body.contrast .gv-rebaja{background:var(--surface2);color:var(--text);}
+
+/* 4 · El botón 📍 «Fijar al inicio» ya no se renderiza en las tarjetas del
+   selector. Sus estilos viejos quedan inertes; aquí solo se asegura que, si un
+   teléfono llega con CSS a medias, el botón no reaparezca sobre las siglas. */
+#gestoresList .g-pin-btn{display:none !important;}
+#gestoresList .g-pin-label{display:none !important;}
+
+/* ════════════════════════════════════════════════════════════════
+   v238 · BOTÓN «← Volver» SIEMPRE VISIBLE al entrar a un gestor
+   Antes el back bar solo existía ≤900px y no era sticky: al bajar al
+   formulario o al historial desaparecía y en PC directamente no había
+   opción de regresar al selector «¿Quién eres?». Ahora:
+   · Aparece en TODOS los anchos mientras haya gestor entrado
+     (el selector sin gestor lo sigue ocultando: regla :not(.has-gestor)).
+   · Sticky arriba: por más que se haga scroll, el botón queda a mano.
+   · Píldora de vidrio de la casa; el tema oscuro y el contraste ya lo
+     cubren porque usa las variables de superficie.
+   ════════════════════════════════════════════════════════════════ */
+#mobileBackBar{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:8px 12px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 5px 16px -8px rgba(15,23,42,.10);
+  position:sticky;top:8px;z-index:60;
+}
+#mobileBackBar button{
+  background:var(--blue);color:#fff;border:none;border-radius:100px;
+  padding:7px 14px;font-size:12px;font-weight:800;cursor:pointer;
+  box-shadow:0 2px 8px -2px rgba(37,99,235,.45);
+  transition:transform .12s ease,box-shadow .12s ease;
+}
+#mobileBackBar button:hover{transform:translateY(-1px);box-shadow:0 4px 12px -2px rgba(37,99,235,.55);}
+#mobileBackBar button:active{transform:scale(.96);}
+#mobileBackBar #mobileBackName{
+  font-size:13px;font-weight:800;color:var(--blue-dk);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+body.dark #mobileBackBar{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -8px rgba(0,0,0,.5);}
+body.dark #mobileBackBar #mobileBackName{color:var(--blue-lt,#93c5fd);}
+/* Alto contraste: plano, borde marcado, sin sombra de color */
+body.contrast #mobileBackBar{box-shadow:none;background:var(--surface);}
+body.contrast #mobileBackBar button{box-shadow:none;}

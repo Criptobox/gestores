@@ -9,7 +9,7 @@ const IS_ADMIN = document.body.dataset.page === 'admin';
 //  Sistema de versiones reiniciado a v3. El badge superior muestra esta versión.
 //  checkVersion() consulta version.json periódicamente; si detecta una versión
 //  mayor, muestra el banner "Nueva versión disponible" con botón Recargar.
-const APP_VERSION = 235;
+const APP_VERSION = 238;
 // v62: la etiqueta que se ENSEÑA va aparte del número que se COMPARA.
 // APP_VERSION es el contador de publicaciones y tiene que seguir subiendo sin
 // saltos: checkVersion() decide que hay actualización con `remoto > local`, así
@@ -20,7 +20,7 @@ const APP_VERSION = 235;
 // _PUBLIC_VERSION_STR es solo cosmética y la inyecta build.py: avanza 1.0, 1.1,
 // … 1.9, 2.0 mientras el contador va 62, 63, 64. Si faltara, se cae al número
 // interno para que el badge nunca aparezca vacío.
-let _PUBLIC_VERSION_STR = '0.00006';
+let _PUBLIC_VERSION_STR = '0.00009';
 const VERSION_STR = _PUBLIC_VERSION_STR || ('v' + APP_VERSION);
 
 // Estado del chequeo de versión
@@ -84,7 +84,7 @@ function _isNewerVersion(remote, local) {
 // Hash local de la build actual (se inyecta automáticamente desde build.py vía
 // version.json cacheado en el SW; si no está disponible, queda null y solo se
 // compara por número de versión).
-let _LOCAL_BUILD_HASH = 'e220845cfc6c895d';
+let _LOCAL_BUILD_HASH = '8acd29683c4eef9a';
 
 // Verifica contra version.json si hay una versión más nueva disponible.
 // `manual=true` fuerza mostrar un toast incluso si no hay novedades (caso del tap en el badge).
@@ -1522,7 +1522,9 @@ function _lineaParaLaNube(p) {
   if (p && p.pts != null && isFinite(parseFloat(p.pts))) s.pts = parseFloat(p.pts);
   // v140: el precio de catálogo del día de la venta (ver patchVale al confirmar).
   if (p && typeof p.precio === 'string' && p.precio.trim()) s.precio = p.precio.trim().slice(0, 60);
-  ['cedidaUSD','cedidaMN','rebajaUSD','rebajaMN'].forEach(k => {
+  // v236: la comisión puesta a mano VIAJA a la nube con la línea (si no, el
+  // otro teléfono la recalcularía del catálogo y cada cual vería un número).
+  ['cedidaUSD','cedidaMN','rebajaUSD','rebajaMN','comManualUSD','comManualMN'].forEach(k => {
     const n = parseFloat(p && p[k]);
     if (isFinite(n) && n > 0) s[k] = Math.round(n * 100) / 100;
   });
@@ -2608,11 +2610,194 @@ const _COLOR_TIENDA = '#64748B';
 // v211: primer color de la paleta que NADIE esté usando todavía. Si la lista
 // entera agotara los 20 tonos, se sigue ciclando (imposible evitarse), pero
 // a partir de 20 gestores el avatar ya lleva nombre al lado en todos lados.
+// v236 · DIVERSIDAD DE MATIZ — queja del usuario: «el azul es el que más
+// repite». La paleta trae 4 azules casi gemelos (azul, índigo, cielo y azul
+// rey) y el relleno por orden de paleta los repartía uno detrás de otro: dos
+// hex distintos que se LEEN igual. Ahora, entre los colores libres se escoge
+// el de matiz MÁS ALEJADO de los que ya están puestos.
+// Matiz 0-360 de un hex (HSL). Los grises (pizarra…) devuelven -1: no tienen
+// matiz útil y no deben empujar a nadie.
+function _matizDe(hex) {
+  const c = _hexToRgb(hex);
+  const r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (d < 0.09) return -1;   // gris: sin matiz útil
+  let h;
+  if (mx === r) h = ((g - b) / d) % 6;
+  else if (mx === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h = Math.round(h * 60);
+  if (h < 0) h += 360;
+  return h;
+}
+// Distancia circular entre dos matices (0-180). Gris contra color = media
+// (181): no acerca ni aleja. Gris contra gris = 360 (idénticos a efectos de
+// repetición — que no caigan dos grises juntos si se puede).
+function _distMatiz(a, b) {
+  if (a < 0 && b < 0) return 360;
+  if (a < 0 || b < 0) return 181;
+  const d = Math.abs(a - b);
+  return d > 180 ? 360 - d : d;
+}
+// Entre los colores libres (no presentes en el mapa/mapa-set de ocupados),
+// el de matiz más alejado de los hues dados. `ocupados` puede ser Set o Map
+// con claves en minúscula.
+function _colorLibreDiverso(ocupados, hues) {
+  const libres = GESTOR_COLORS.filter(c => !(ocupados && ocupados.has(c.toLowerCase())));
+  if (!libres.length) return null;
+  const hs = (hues || []).filter(h => h >= 0);
+  let mejor = libres[0], mejorD = -1;
+  libres.forEach(c => {
+    const h = _matizDe(c);
+    const d = hs.length ? hs.reduce((s, hg) => Math.min(s, _distMatiz(h, hg)), 360) : 360;
+    if (d > mejorD) { mejorD = d; mejor = c; }
+  });
+  return mejor;
+}
 function _colorGestorLibre(lista) {
   const usados = new Set((lista || []).map(g => String((g && g.color) || '').trim().toLowerCase()));
-  usados.add(_COLOR_TIENDA);
+  usados.add(_COLOR_TIENDA.toLowerCase());
   const libre = GESTOR_COLORS.find(c => !usados.has(c.toLowerCase()));
-  return libre || GESTOR_COLORS[(lista ? lista.length : 0) % GESTOR_COLORS.length];
+  if (!libre) return GESTOR_COLORS[(lista ? lista.length : 0) % GESTOR_COLORS.length];
+  // v236: de los libres, el que más se aleje de los colores ya llevados
+  const hues = (lista || []).map(g => _matizDe(g && g.color));
+  return _colorLibreDiverso(usados, hues) || libre;
+}
+
+// ════════════════════════════════════════════════════════════════
+// v238 · COLOR VISIBLE DEL GESTOR — se DERIVA al render, no se ruega.
+// Cuatro versiones intentaron arreglar los colores guardados (v211, v218,
+// v236 pasada 3, pasadas al sondeo) y el usuario seguía viendo «azul en
+// casi todo»: la nube de su equipo guarda azules históricos y cualquier
+// arreglo dependiente de escribir/leer la nube llega tarde o no llega.
+// Cambio de filosofía: el color que se PINTA no sale de g.color, sale de
+// una derivación determinista sobre el roster completo, calculada aquí
+// mismo en cada render. A prueba de caché, de datos viejos y de sondeos.
+//
+// Receta:
+//  1. ARCOÍRIS: orden de la paleta precalculado por inserción del punto
+//     más lejano (fuerza bruta en scripts/calc-arcoiris.js). Los primeros
+//     12 gestores reciben 12 colores que alternan lados de la rueda
+//     cromática — el azul aparece UNA vez, no cuatro.
+//  2. Se respeta el color guardado SOLO si es válido, no repetido y su
+//     FAMILIA de matiz (rojo/naranja/lima/verde/teal/azul/violeta/magenta)
+//     está libre — así un roster sano no cambia, y uno envenenado de
+//     azules se re-reparte solo.
+//  3. Sin familia libre, gana el candidato de matiz más alejado de todos
+//     los aceptados. Con roster >20 se cicla la paleta.
+// ════════════════════════════════════════════════════════════════
+const _ARCOIRIS = [
+  '#2563EB', // 221° azul (el color base de la app, solo el primero)
+  '#D97706', // 32°  ámbar
+  '#15803D', // 142° bosque
+  '#C026D3', // 293° magenta
+  '#65A30D', // 85°  lima
+  '#BE185D', // 335° fucsia
+  '#0D9488', // 175° teal
+  '#7C3AED', // 262° violeta
+  '#DC2626', // 0°   rojo
+  '#4F46E5', // 243° índigo
+  '#0891B2', // 192° cian
+  '#059669', // 161° esmeralda
+];
+const _ARCOIRIS_EXTRA = [
+  '#EA580C', // 21°  naranja
+  '#7E22CE', // 272° uva
+  '#BE123C', // 345° granate
+  '#0284C7', // 200° cielo
+  '#334155', // pizarra
+  '#B45309', // 26°  marrón
+  '#1D4ED8', // 224° azul rey
+  '#9333EA', // 271° púrpura
+];
+// Familia de matiz: lo que el ojo lee como «el mismo color». Dos gestores
+// de la misma familia es lo que el usuario llama «el azul se repite».
+function _familiaDe(h) {
+  if (h < 0) return 'gris';
+  if (h < 15 || h >= 345) return 'rojo';
+  if (h < 50) return 'naranja';
+  if (h < 95) return 'lima';
+  if (h < 165) return 'verde';
+  if (h < 195) return 'teal';
+  if (h < 255) return 'azul';
+  if (h < 300) return 'violeta';
+  return 'magenta';
+}
+function _hexGestorValido(c) { return /^#[0-9a-f]{6}$/i.test(String(c || '').trim()); }
+// HSL → hex (para tonos generados cuando la paleta de 20 se agota)
+function _hslAHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const to = x => Math.round(255 * x).toString(16).padStart(2, '0').toUpperCase();
+  return '#' + to(f(0)) + to(f(8)) + to(f(4));
+}
+// Candidato siguiente del arcoíris: entre los 20, el de familia libre con
+// matiz más alejado de los aceptados; si las 8 familias ya están ocupadas,
+// el de matiz más alejado SIN caer de nuevo en la familia azul (la queja
+// histórica: «el azul es el que más repite») salvo que no quede otro matiz.
+function _colorArcoirisSiguiente(duenos, familias, hues) {
+  let mejorFam = null, mejorFD = -1, mejor = null, mejorD = -1, mejorNoAzul = null, mejorNAD = -1;
+  const _todos = _ARCOIRIS.concat(_ARCOIRIS_EXTRA);
+  _todos.forEach(c => {
+    const cn = c.toLowerCase();
+    if (duenos.has(cn)) return;
+    const ch = _matizDe(c);
+    const d = (hues && hues.length) ? hues.reduce((s, hg) => Math.min(s, _distMatiz(ch, hg)), 360) : 360;
+    if (d > mejorD) { mejorD = d; mejor = c; }
+    const f = _familiaDe(ch);
+    if (f !== 'azul' && d > mejorNAD) { mejorNAD = d; mejorNoAzul = c; }
+    if (familias && !familias.has(f) && d > mejorFD) { mejorFD = d; mejorFam = c; }
+  });
+  if (mejorFam) return mejorFam;
+  return mejorNoAzul || mejor || null;   // null = paleta agotada
+}
+// Mapa id → color visible. Se recalcula solo cuando el roster cambia
+// (firma = ids + colores guardados). Determinista: el mismo equipo pinta
+// lo mismo en todos los teléfonos sin escribir nada a la nube.
+let _coloresVisiblesMap = null, _coloresVisiblesFirma = null;
+function _mapaColoresVisibles() {
+  const lista = getGestores();
+  const firma = lista.map(g => g.id + ':' + String(g.color || '').trim().toLowerCase() + (g._tienda ? ':T' : '')).join('|');
+  if (_coloresVisiblesMap && _coloresVisiblesFirma === firma) return _coloresVisiblesMap;
+  const _norm = c => String(c || '').trim().toLowerCase();
+  const _tienda = _norm(_COLOR_TIENDA);
+  const duenos = new Set(), familias = new Set(), hues = [];
+  const mapa = new Map();
+  lista.slice().sort((a, b) => Number(a.id) - Number(b.id)).forEach(g => {
+    if (!g) return;
+    if (g._tienda) { mapa.set(g.id, _COLOR_TIENDA); return; }
+    const c = _norm(g.color);
+    const h = _hexGestorValido(c) ? _matizDe(c) : -2;
+    const fam = h >= 0 ? _familiaDe(h) : null;
+    if (fam && c !== _tienda && !duenos.has(c) && !familias.has(fam)) {
+      // color guardado legítimo: familia libre y hex sin dueño → se queda
+      // (se conserva la escritura original, no la normalizada)
+      const cOrig = String(g.color).trim();
+      duenos.add(c); familias.add(fam); hues.push(h); mapa.set(g.id, cOrig); return;
+    }
+    // sin color válido, gemelo de hex o gemelo de familia → arcoíris
+    let nuevo = _colorArcoirisSiguiente(duenos, familias, hues);
+    if (!nuevo) {
+      // paleta agotada (>20 gestores): tono generado al ángulo áureo,
+      // determinista por cantidad de colores ya repartidos
+      nuevo = _hslAHex(Math.round((hues.length * 137.508) % 360), 62, 42);
+    }
+    duenos.add(_norm(nuevo)); familias.add(_familiaDe(_matizDe(nuevo))); hues.push(_matizDe(nuevo));
+    mapa.set(g.id, nuevo);
+  });
+  _coloresVisiblesMap = mapa; _coloresVisiblesFirma = firma;
+  return mapa;
+}
+// EL punto de lectura para TODO lo que se pinta. Ni una línea de render
+// debe leer g.color directo — siempre por aquí.
+function _colorDeGestor(g) {
+  if (!g) return _COLOR_TIENDA;
+  if (g._tienda) return _COLOR_TIENDA;
+  let c = null;
+  try { c = _mapaColoresVisibles().get(g.id) || null; } catch (e) { c = null; }
+  return c || (g.color || '#006d8a');
 }
 
 // v211: normalizador de colores — recorre los gestores (del más antiguo al más
@@ -2645,8 +2830,10 @@ function _asegurarColoresUnicos(sinGuardar) {
     if (_esHexOK(c) && c !== _tienda && !duenoDe.has(c)) duenoDe.set(c, g);
   });
   // Pasada 2 — reparar: quien tenga color repetido, vacío, inválido o el gris
-  // reservado recibe el primer color libre de la paleta.
-  const _libre = () => GESTOR_COLORS.find(c => !duenoDe.has(c.toLowerCase()))
+  // reservado recibe el color libre MÁS ALEJADO de los ya puestos (v236: antes
+  // iba el primero de la paleta y llenaba de azules).
+  const _libre = () => _colorLibreDiverso(duenoDe, [...duenoDe.keys()].map(_matizDe))
+                    || GESTOR_COLORS.find(c => !duenoDe.has(c.toLowerCase()))
                     || GESTOR_COLORS[duenoDe.size % GESTOR_COLORS.length];
   let cambio = false;
   _orden.forEach(g => {
@@ -2656,6 +2843,35 @@ function _asegurarColoresUnicos(sinGuardar) {
     duenoDe.set(nuevo.toLowerCase(), g);
     if (String(g.color || '').toUpperCase() !== nuevo) { g.color = nuevo; cambio = true; }
   });
+  // Pasada 3 — v236 · DIVERSIDAD VISUAL: sin hex repetidos puede seguir habiendo
+  // dos gestores que se LEEN del mismo color (los 4 azules de la paleta, por
+  // ejemplo). El más antiguo conserva; a quien esté a menos de 25° de matiz de
+  // otro color ya visto se le busca, entre los libres, el matiz más alejado.
+  // Determinista (mismo equipo → mismo arreglo en todos los teléfonos) y corre
+  // una sola vez con escritura a la nube desde init().
+  const _UMBRAL = 25;
+  const vistos = [];
+  let cambioDiv = false;
+  _orden.forEach(g => {
+    const h = _matizDe(g.color);
+    const cerca = h >= 0 && vistos.some(hv => hv >= 0 && _distMatiz(h, hv) < _UMBRAL);
+    if (cerca) {
+      const nuevo = _colorLibreDiverso(duenoDe, vistos);
+      if (nuevo && _norm(nuevo) !== _norm(g.color)) {
+        duenoDe.delete(_norm(g.color));
+        g.color = nuevo;
+        duenoDe.set(_norm(nuevo), g);
+        vistos.push(_matizDe(nuevo));
+        cambioDiv = true;
+        return;
+      }
+    }
+    vistos.push(h);
+  });
+  if (cambioDiv) {
+    cambio = true;
+    console.log('[AXONTECH] v236: colores re-repartidos por diversidad de matiz — adiós a los gemelos');
+  }
   if (cambio) {
     if (!sinGuardar) saveGestores(lista);
     else { try { _safeSetLS('axon_gestores', JSON.stringify(lista)); } catch (e) {} }   // persiste el arreglo sin tocar la nube
@@ -7643,7 +7859,13 @@ function renderGestores() {
     c.innerHTML = window.__axonBooting ? skelTiles(6) : '<div class="es"><div class="es-icon">👤</div><div class="es-text">El admin aún no ha configurado gestores</div></div>';
     return;
   }
-  const pinnedId = _getPinnedGestorId();
+  // v237: el botón 📍 «Fijar al inicio» se jubila de las tarjetas. Era el que
+  // el usuario pidió quitar dos veces: en el móvil quedaba pegado DEBAJO de las
+  // siglas del nombre (los dos viven en la esquina superior derecha de la
+  // tarjeta 3D) y parecía un botón de GPS. Sin él la tarjeta queda limpia: solo
+  // las siglas, el nombre y «Entrar». El fijado antiguo guardado en el
+  // teléfono sigue respetándose al arrancar (_autoSelectPinnedGestor), pero ya
+  // no hay chapa ni anillo ámbar que lo anuncie.
   // v226: subtítulo de la tarjeta con los puntos del ciclo — la MISMA fuente
   // que el ranking (axon_ranking_summary, calculado por el admin y bajado por
   // todos los teléfonos). Si aún no llegó, mensaje neutro. Aquí no se usan
@@ -7660,14 +7882,10 @@ function renderGestores() {
   };
   c.innerHTML=gestores.map(g=>{
     const act=g.id===activeGestorId;
-    const pinned=g.id===pinnedId;
-    const pinBtn = pinned
-      ? `<button class="g-pin-btn g-pinned" type="button" title="Quitar del inicio" aria-label="Quitar del inicio" onclick="event.stopPropagation();unpinGestor()">📌</button>`
-      : `<button class="g-pin-btn" type="button" title="Fijar al inicio" aria-label="Fijar al inicio" onclick="event.stopPropagation();togglePinGestor(${g.id})">📍</button>`;
     // v226: tarjeta 3D del mockup — círculos concéntricos con las iniciales
     // (o la foto) en el interior, esquina de vidrio, nombre centrado abajo y
-    // «Entrar ›». El pin sigue funcional (arriba-dcha) y el ✓ marca sesión.
-    return `<div class="g-item g-hero g3d ${act?'active':''} ${pinned?'g-item-pinned':''}" style="${gestorHeroVars(g)}" onclick="selectGestor(${g.id})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectGestor(${g.id})}">
+    // «Entrar ›». El ✓ marca la sesión activa.
+    return `<div class="g-item g-hero g3d ${act?'active':''}" style="${gestorHeroVars(g)}" onclick="selectGestor(${g.id})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectGestor(${g.id})}">
       <span class="g3d-circles" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="c4"></i><i class="c5">${gestorAvatarInner(g)}</i></span>
       <span class="g3d-glass" aria-hidden="true"></span>
       <span class="g3d-body">
@@ -7677,8 +7895,6 @@ function renderGestores() {
       <span class="g3d-enter" aria-hidden="true">Entrar
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
       </span>
-      ${pinBtn}
-      ${pinned?'<span class="g-pin-label">Fijado</span>':''}
       ${act?'<span class="g-badge" title="Sesión activa">✓</span>':''}
     </div>`;
   }).join('');
@@ -7763,7 +7979,7 @@ function doSelectGestor(id) {
   // ─── AVATAR con foto (si existe) ───
   const bannerAvatar=document.getElementById('bannerAvatar');
   bannerAvatar.innerHTML=gestorAvatarInner(g);
-  bannerAvatar.style.background = (g.photo && /^(https?:|data:image|photos\/|\.\/photos\/)/i.test(g.photo)) ? 'transparent' : g.color;
+  bannerAvatar.style.background = (g.photo && /^(https?:|data:image|photos\/|\.\/photos\/)/i.test(g.photo)) ? 'transparent' : _colorDeGestor(g);
 
   // ─── Botones de foto (📷 cambiar / ✕ quitar) ───
   // Se añaden al #gestorBanner (no al avatar) porque el banner es más grande
@@ -8827,7 +9043,7 @@ function renderAdminGestoresList() {
     const _cardPastel = g._tienda ? '' : gestorHeroVars(g);
     return `<div class="gp-card${g._tienda ? '' : ' gp-3d'}" data-gestor-id="${g.id}" style="${_cardPastel}">
       <div class="gp-card-top">
-        <div class="g-avatar" style="${hasPhoto?'background:transparent;':'background:'+g.color+';'}width:44px;height:44px;font-size:14px;flex-shrink:0;position:relative;">${gestorAvatarInner(g)}</div>
+        <div class="g-avatar" style="${hasPhoto?'background:transparent;':'background:'+_colorDeGestor(g)+';'}width:44px;height:44px;font-size:14px;flex-shrink:0;position:relative;">${gestorAvatarInner(g)}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-weight:800;font-size:15px;color:var(--text);">${escapeHTML(g.name)}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${vales.length} vales · ${today} hoy · ⭐ ${pts} pts</div>
@@ -8881,7 +9097,7 @@ function refreshEditGestorPhotoUI(g) {
     av.style.background = 'transparent';
   } else {
     av.textContent = g ? (g.initials || '?') : '?';
-    if (g) { av.style.cssText += ';background:' + (g.color || '#006d8a') + ';color:#fff;border:none;'; } else { av.style.background = 'var(--gray-300)'; }
+    if (g) { av.style.cssText += ';background:' + _colorDeGestor(g) + ';color:#fff;border:none;'; } else { av.style.background = 'var(--gray-300)'; }
   }
   // Mostrar/ocultar botón "Quitar"
   const removeBtn = document.getElementById('editGestorRemovePhotoBtn');
@@ -9382,7 +9598,7 @@ let _vxGruposActuales = [];   // la última lista de grupos renderizada (para el
 
 function _vxChipHTML(g, activo, n) {
   return `<button type="button" class="vx-chip${activo ? ' act' : ''}" onclick="setGestorFilter(${activo ? 'null' : g.id})" title="${escapeHTML(g.name)}">
-    <span class="vx-ava" style="background:${g.color};width:26px;height:26px;font-size:9.5px;">${escapeHTML(g.initials)}</span>
+    <span class="vx-ava" style="background:${_colorDeGestor(g)};width:26px;height:26px;font-size:9.5px;">${escapeHTML(g.initials)}</span>
     <span class="vx-chip-label">${escapeHTML((g.name || '').split(' ')[0])}</span>
     ${n ? `<span class="vx-chip-n">${n}</span>` : ''}
   </button>`;
@@ -9427,7 +9643,7 @@ function openGestorPicker() {
     // sigue en vidrio neutro.
     const _hero = !g._tienda && !activo;
     return `<button type="button" class="vxp-tile${activo ? ' act' : ''}${_hero ? ' vxp-hero' : ''}" onclick="pickGestor(${activo ? 'null' : g.id})"${_hero ? ` style="${gestorHeroVars(g)}"` : ''}>
-      <span class="vx-ava"${_hero ? ' style="background:rgba(255,255,255,.72);color:var(--gacc2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65);"' : ` style="background:${g.color}"`}>${escapeHTML(g.initials)}</span>
+      <span class="vx-ava"${_hero ? ' style="background:rgba(255,255,255,.72);color:var(--gacc2);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65);"' : ` style="background:${_colorDeGestor(g)}"`}>${escapeHTML(g.initials)}</span>
       <span class="vxp-nombre"${_hero ? ' style="color:var(--gink);"' : ''} title="${escapeHTML(g.name)}">${escapeHTML(g.name)}</span>
       <span class="vxp-n"${_hero ? ' style="background:rgba(255,255,255,.66);color:var(--gink);"' : ''}>${n ? n + (n === 1 ? ' vale' : ' vales') : '—'}</span>
     </button>`;
@@ -9614,7 +9830,7 @@ function renderAdminGestores() {
       <div class="vxg-card${_esHero ? ' vxg-hero' : ''}${isOpen ? ' vxg-open' : ''}"${_esHero ? ` style="${_hv}"` : ''} onclick="setGestorFilter(${adminGestorFilter != null ? 'null' : (isOpen ? 'null' : g.id)})">
         ${_esHero ? '<span class="vxg-c c1" aria-hidden="true"></span><span class="vxg-c c2" aria-hidden="true"></span>' : ''}
         <span class="vxg-left">
-          <span class="vxg-ava" style="background:${g.color};">${escapeHTML(g.initials)}</span>
+          <span class="vxg-ava" style="background:${_colorDeGestor(g)};">${escapeHTML(g.initials)}</span>
           <span class="vxg-nombre">${escapeHTML(g.name)}</span>
         </span>
         <span class="vxg-right">
@@ -9688,7 +9904,7 @@ function buildInboxCard(v) {
   const _clsHero = (g && !g._tienda) ? ' g-hero' : '';
   return `<div class="vx-card st-${_vStatus}${_clsHero}${sel ? ' sel' : ''}${isNew ? ' is-new' : ''}"${_hero ? ` style="${_hero}"` : ''} onclick="selectVale(${v.id})">
     ${_clsHero ? '<span class="vxh-c c1" aria-hidden="true"></span><span class="vxh-c c2" aria-hidden="true"></span>' : ''}
-    <div class="vx-ava" style="background:${g ? g.color : '#64748b'};color:#fff;">${gestorAvatarInner(g)}</div>
+    <div class="vx-ava" style="background:${_colorDeGestor(g)};color:#fff;">${gestorAvatarInner(g)}</div>
     <div class="vx-main">
       <div class="vx-r1">
         <span class="vx-nombre">${escapeHTML(v.cliente || 'Sin nombre')}</span>
@@ -9820,7 +10036,16 @@ function _partesMonetarias(txt) {
 // La comisión congelada (comFijadaUSD/MN) tiene que guardar lo que daba el
 // catálogo, NO lo que quedó después de ceder: la cesión se vuelve a restar cada
 // vez que se lee el vale, así que congelar lo ya rebajado lo restaría dos veces.
-const _lineasSinAjustes = items => (items || []).map(it => ({ id: it && it.id, qty: it && it.qty }));
+// v236: la comisión puesta a mano (comManualUSD/MN) es parte de la BASE que se
+// congela, así que viaja con la línea a la congelación. Lo que se recorta son
+// los ajustes POSTERIORES (cesión y rebaja), que se aplican encima del número
+// congelado — igual que venía siendo desde v123/v81.
+const _lineasSinAjustes = items => (items || []).map(it => {
+  const c = { id: it && it.id, qty: it && it.qty };
+  const _mU = parseFloat(it && it.comManualUSD); if (isFinite(_mU) && _mU > 0) c.comManualUSD = _mU;
+  const _mN = parseFloat(it && it.comManualMN);  if (isFinite(_mN) && _mN > 0) c.comManualMN = _mN;
+  return c;
+});
 
 // ── v123: la comisión que da UNA línea del vale, en sus dos monedas ─────────
 // Es lo que da el catálogo por esa cantidad, SIN restarle nada. Es el número
@@ -9828,9 +10053,21 @@ const _lineasSinAjustes = items => (items || []).map(it => ({ id: it && it.id, q
 function _comisionBaseLinea(it) {
   if (!it) return { usd: 0, mn: 0 };
   try {
-    const r = getValeCommissionParts({ valeProductos: [{ id: it.id, qty: it.qty }] });
+    // v236: la línea va ENTERA (la comisión puesta a mano cuenta como base) pero
+    // sin cesión ni rebaja — la base es lo que da el catálogo O lo que el gestor
+    // puso a mano, SIN restarle nada. Antes se recreaba con solo {id, qty} y la
+    // comisión manual se perdía aquí.
+    const _c = { ...it, id: it.id, qty: it.qty };
+    delete _c.cedidaUSD; delete _c.cedidaMN; delete _c.rebajaUSD; delete _c.rebajaMN;
+    const r = getValeCommissionParts({ valeProductos: [_c] });
     return { usd: Math.max(0, r.totalUSD || 0), mn: Math.max(0, r.totalMN || 0) };
   } catch (e) { return { usd: 0, mn: 0 }; }
+}
+// v236: la base de CATÁLOGO de la línea (ignora la comisión puesta a mano).
+// Es el ancla para decidir si lo escrito baja (cede) o sube (pone a mano).
+function _comisionCatalogoLinea(it) {
+  if (!it) return { usd: 0, mn: 0 };
+  return _comisionBaseLinea({ ...it, comManualUSD: 0, comManualMN: 0, cedidaUSD: 0, cedidaMN: 0 });
 }
 // La moneda en la que va la comisión de esa línea. Un producto cobra en una o
 // en otra, no en las dos, así que basta con mirar cuál trae.
@@ -10589,7 +10826,7 @@ function renderValeDetail(destinoId) {
     <div class="card">
       ${numBadge}
       <div class="det-gestor-row">
-        <div class="g-avatar" style="background:${g?g.color:'#888'};width:34px;height:34px;font-size:12px;">${g?escapeHTML(g.initials):'?'}</div>
+        <div class="g-avatar" style="background:${_colorDeGestor(g)};width:34px;height:34px;font-size:12px;">${g?escapeHTML(g.initials):'?'}</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:700;">${g?escapeHTML(g.name):'—'}</div>
           <div style="font-size:11px;color:var(--gray-400);">${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</div>
@@ -10807,47 +11044,74 @@ function renderEditValeSelectedProducts() {
   // formulario (v123). Antes aquí solo salían los nombres, y la única forma de
   // "bajarle la comisión" era la casilla de texto de abajo, que ninguna cuenta
   // lee: se cambiaba el texto y ni bajaba la comisión ni el precio al cliente.
+  // v236: la casilla SIEMPRE visible (aunque el producto no dé comisión) y se
+  // puede SUBIR por encima del catálogo — queda «puesta a mano» y marcada.
   c.innerHTML=`<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:6px;">`+
     editValeProductos.map((i,idx)=>{
-      const base=_comisionBaseLinea(i);
-      const mon=base.mn>0?'MN':'USD';
-      const baseN=mon==='MN'?base.mn:base.usd;
+      const cat=_comisionCatalogoLinea(i);
+      const mon=(parseFloat(i.comManualMN)>0)?'MN':(parseFloat(i.comManualUSD)>0)?'USD':(i.comMonPref)?i.comMonPref:(cat.mn>0?'MN':'USD');
+      const baseN=mon==='MN'?cat.mn:cat.usd;
       const neta=_comisionNetaLinea(i);
       const netaN=mon==='MN'?neta.mn:neta.usd;
+      const aMano=(mon==='MN'?(parseFloat(i.comManualMN)||0):(parseFloat(i.comManualUSD)||0))>0;
       const cedido=Math.round((baseN-netaN)*100)/100;
+      const _fN=n=>mon==='MN'?Math.round(n):(Math.round(n*100)/100);
       const nombre=i.name||(productoOf(i.id)||{}).name||('#'+i.id);
       return `<div style="display:flex;flex-direction:column;gap:3px;">
       <div style="display:flex;align-items:center;gap:6px;">
         <span style="font-weight:800;color:var(--blue);font-size:12px;">×${i.qty}</span>
         <span style="font-size:11px;">${escapeHTML(nombre)}</span>
       </div>
-      ${baseN>0?`<div style="display:flex;align-items:center;gap:6px;padding-left:20px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;padding-left:20px;flex-wrap:wrap;">
         <span style="font-size:10px;color:var(--text-muted);">Comisión del gestor:</span>
-        <input type="number" inputmode="decimal" min="0" max="${baseN}" step="any" value="${netaN}"
+        <input type="number" inputmode="decimal" min="0" step="any" value="${netaN>0?_fN(netaN):''}" placeholder="0"
                class="ev-comLinea" data-linea="${idx}" onfocus="this.select();"
-               onchange="cambiarComisionLineaAdmin(${idx}, this.value)"
-               style="width:80px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;font-weight:700;color:var(--text);">
-        <span style="font-size:10px;color:var(--text-muted);">${mon} de ${mon==='MN'?Math.round(baseN):baseN}</span>
-        ${cedido>0?`<span style="font-size:10px;color:var(--orange);font-weight:700;">−${mon==='MN'?Math.round(cedido):cedido} ${mon} al cliente</span>`:''}
-      </div>`:''}
+               onchange="cambiarComisionLineaAdmin(${idx}, this.value, '${mon}')"
+               style="width:80px;background:var(--surface);border:1.5px solid ${aMano?'var(--orange)':'var(--border)'};border-radius:8px;padding:3px 7px;font-size:12px;font-weight:700;color:var(--text);">
+        ${baseN>0
+          ?`<span style="font-size:10px;color:var(--text-muted);">${mon} de ${_fN(baseN)}</span>`
+          :`<span style="font-size:10px;color:var(--text-muted);">${mon} · el producto no da comisión</span>`}
+        <button type="button" onclick="cambiarMonedaComisionLineaAdmin(${idx})" title="Escribir esta comisión en la otra moneda"
+                style="background:var(--surface);border:1px solid var(--border);border-radius:100px;font-size:9px;font-weight:800;padding:2px 8px;color:var(--text-muted);cursor:pointer;">${mon} ⇄</button>
+        ${aMano?`<span style="font-size:9.5px;color:var(--orange);font-weight:800;">✍️ puesta a mano</span>`:''}
+        ${cedido>0?`<span style="font-size:10px;color:var(--orange);font-weight:700;">−${_fN(cedido)} ${mon} al cliente</span>`:''}
+      </div>
     </div>`;}).join('')+`</div>`;
   _recalcularComisionEditVale();
 }
 // v130: lo mismo que cambiarComisionLinea del gestor, sobre el vale que el
 // admin está editando. Se guarda la DIFERENCIA (lo cedido): la comisión baja y
 // el cliente paga eso menos, en la misma moneda — _rebajaVale lo recoge solo.
-function cambiarComisionLineaAdmin(idx, valor) {
+// v236: escribir MÁS que el catálogo deja la comisión puesta a mano (viaja con
+// la línea y, al guardar, el vale se vuelve a congelar con ese importe).
+function cambiarComisionLineaAdmin(idx, valor, mon) {
   const it=editValeProductos[idx];
   if(!it)return;
-  const base=_comisionBaseLinea(it);
-  const mon=base.mn>0?'MN':'USD';
-  const baseN=mon==='MN'?base.mn:base.usd;
+  mon=(mon==='MN')?'MN':'USD';
+  const cat=_comisionCatalogoLinea(it);
+  const baseN=mon==='MN'?cat.mn:cat.usd;
   let quiere=parseFloat(valor);
   if(!isFinite(quiere)||quiere<0)quiere=0;
-  if(quiere>baseN){quiere=baseN;showToast('No se puede dar más comisión de la que da ese producto');}
-  const cedido=Math.round((baseN-quiere)*100)/100;
-  if(mon==='MN'){it.cedidaMN=cedido;delete it.cedidaUSD;}
-  else          {it.cedidaUSD=cedido;delete it.cedidaMN;}
+  quiere=Math.round(quiere*100)/100;
+  delete it.comManualUSD;delete it.comManualMN;delete it.cedidaUSD;delete it.cedidaMN;
+  if(quiere>baseN){ if(mon==='MN')it.comManualMN=quiere; else it.comManualUSD=quiere; }
+  else{
+    const cedido=Math.round((baseN-quiere)*100)/100;
+    if(cedido>0){ if(mon==='MN')it.cedidaMN=cedido; else it.cedidaUSD=cedido; }
+  }
+  renderEditValeSelectedProducts();
+}
+// v236: cambiar la moneda de la casilla en el modal de edición (misma mecánica
+// del formulario del gestor, sin conversión de importes).
+function cambiarMonedaComisionLineaAdmin(idx) {
+  const it=editValeProductos[idx];
+  if(!it)return;
+  const cat=_comisionCatalogoLinea(it);
+  const actual=(parseFloat(it.comManualMN)>0)?'MN':(parseFloat(it.comManualUSD)>0)?'USD':(it.comMonPref)?it.comMonPref:(cat.mn>0?'MN':'USD');
+  const nueva=actual==='MN'?'USD':'MN';
+  it.comMonPref=nueva;
+  if(nueva==='MN'&&parseFloat(it.comManualUSD)>0){ it.comManualMN=parseFloat(it.comManualUSD); delete it.comManualUSD; }
+  else if(nueva==='USD'&&parseFloat(it.comManualMN)>0){ it.comManualUSD=parseFloat(it.comManualMN); delete it.comManualMN; }
   renderEditValeSelectedProducts();
 }
 // La casilla "Comisión gestor" del modal pasa a ser la SUMA de lo que queda en
@@ -10963,7 +11227,7 @@ function confirmEditValePickerSelection() {
     const p=productoOf(parseInt(id));
     const prev=_antes.get(String(id))||{};
     const it={id:parseInt(id),name:p?p.name:id,qty};
-    ['cedidaUSD','cedidaMN','rebajaUSD','rebajaMN'].forEach(k=>{if(prev[k]!=null)it[k]=prev[k];});
+    ['cedidaUSD','cedidaMN','rebajaUSD','rebajaMN','comManualUSD','comManualMN'].forEach(k=>{if(prev[k]!=null)it[k]=prev[k];});
     return it;
   });
   editValeProductos=items;
@@ -11057,6 +11321,13 @@ function saveEditVale() {
   // productos, lo bloqueaba por el stock y no guardaba la rebaja.
   const _idQty = arr => JSON.stringify((arr||[]).map(it => [String(it && it.id), parseInt(it && it.qty,10)||0]));
   const productsChanged = _idQty(editValeProductos) !== _idQty(v.valeProductos);
+  // v236: cambiar SOLO la comisión de una línea (puesta a mano) no es un cambio
+  // de productos — el stock no se toca — pero la comisión congelada sí tiene que
+  // volver a fijarse, porque ahora viaja DENTRO de la línea.
+  const _comDeLineas = arr => JSON.stringify((arr||[]).map(it => [
+    Math.max(0, parseFloat(it && it.comManualUSD) || 0),
+    Math.max(0, parseFloat(it && it.comManualMN) || 0)]));
+  const comChanged = _comDeLineas(editValeProductos) !== _comDeLineas(v.valeProductos);
   if (productsChanged && v.stockDecremented) {
     // Este vale ya tiene el stock descontado del inventario (pending_payment o
     // confirmed). Cambiar aquí los productos/cantidades no ajusta el stock —
@@ -11080,7 +11351,9 @@ function saveEditVale() {
   // v81: si cambian los productos, la comisión congelada se vuelve a fijar con
   // los nuevos. Si no, el vale seguiría valiendo lo que valían los productos
   // que ya no tiene.
-  if (productsChanged) {
+  // v236: también si solo cambió una comisión puesta a mano — el número congelado
+  // es el que manda en todas las pantallas, y ahí tiene que entrar el nuevo.
+  if (productsChanged || comChanged) {
     try {
       const _r = getValeCommissionParts({valeProductos: _lineasSinAjustes(editValeProductos)});
       if (_r.totalUSD !== null || _r.totalMN !== null) {
@@ -11502,17 +11775,62 @@ function removeMensajero(id) {
   if(getVales().some(v=>v.mensajeroId===id&&['assigned','pending_payment'].includes(v.status))){showToast('Tiene vales activos');return;}
   guardarMensajeros(getMensajeros().filter(m=>m.id!==id),[id]);renderMensajeros();maybeAutoSync();
 }
-// v234 · Color propio y ESTABLE de cada mensajero: hash del nombre → paleta
-// de 20 colores (la misma de los gestores). Determinista: el mismo nombre
-// viste siempre el mismo color en todos los teléfonos, sin guardar nada.
-// El gris de la Tienda queda reservado; si el hash cae ahí, se corre uno.
+// v234 · Color propio y ESTABLE de cada mensajero. v236 · SIN COLISIONES:
+// el hash del nombre se quedaba corto — dos nombres podían caer en el mismo
+// tono y «el azul es el que más repite». Ahora la lista de mensajeros (orden
+// alfabético) resuelve POR TURNO: cada quien toma el color que su hash le
+// trae de la paleta viva y, si ya se lo llevó otro, el primer libre. El mismo
+// equipo viste lo mismo en todos los teléfonos (determinista, sin guardar
+// nada) y DENTRO del equipo nadie repite. Un nombre que ya no está en la
+// lista (vale antiguo) cae al hash directo.
+const _PALETA_VIVA = [
+  '#DC2626', // rojo
+  '#059669', // esmeralda
+  '#2563EB', // azul
+  '#EA580C', // naranja
+  '#7C3AED', // violeta
+  '#65A30D', // lima
+  '#0891B2', // cian
+  '#BE185D', // fucsia
+  '#D97706', // ámbar
+  '#15803D', // bosque
+  '#4F46E5', // índigo
+  '#C026D3', // magenta
+  '#0D9488', // teal
+  '#B45309', // marrón
+  '#9333EA', // púrpura
+  '#0284C7', // cielo
+  '#BE123C', // granate
+  '#1D4ED8', // azul rey
+  '#7E22CE', // uva
+  '#334155', // pizarra
+];
 function _colorMensajero(m){
-  const nombre=(m&&m.name)||'?';
-  let h=0;
-  for(let i=0;i<nombre.length;i++){ h=((h*31)+nombre.charCodeAt(i))>>>0; }
-  let c=GESTOR_COLORS[h%GESTOR_COLORS.length];
-  if(c===_COLOR_TIENDA) c=GESTOR_COLORS[(h+7)%GESTOR_COLORS.length];
-  return c;
+  const nombre=String((m&&m.name)||'?');
+  const _hash=nm=>{let h=0;for(let i=0;i<nm.length;i++)h=((h*31)+nm.charCodeAt(i))>>>0;return h;};
+  let orden=null;
+  try{ orden=(typeof getMensajeros==='function')?sortMensajerosAlpha(getMensajeros()).map(x=>String(x&&x.name||'?')):null; }catch(e){ orden=null; }
+  const idx=orden?orden.indexOf(nombre):-1;
+  if(idx<0||!orden.length){
+    // nombre fuera de la lista (vale histórico) o lista aún vacía: hash directo
+    return _PALETA_VIVA[_hash(nombre)%_PALETA_VIVA.length];
+  }
+  const tomados=new Set();
+  const famUsadas=new Set();   // v238: además de no repetir hex, no repetir FAMILIA
+  for(let i=0;i<orden.length;i++){
+    const nm=orden[i]||'?';
+    let c=_PALETA_VIVA[_hash(nm)%_PALETA_VIVA.length];
+    if(tomados.has(c)||famUsadas.has(_familiaDe(_matizDe(c)))){
+      // v238: el hash trajo un color repetido o de una familia ya llevada
+      // por otro mensajero del turno → primer libre de familia libre.
+      c=_PALETA_VIVA.find(x=>!tomados.has(x)&&!famUsadas.has(_familiaDe(_matizDe(x))))
+        ||_PALETA_VIVA.find(x=>!tomados.has(x))||c;
+    }
+    tomados.add(c);
+    famUsadas.add(_familiaDe(_matizDe(c)));
+    if(i===idx) return c;
+  }
+  return _PALETA_VIVA[idx%_PALETA_VIVA.length];
 }
 // La piel 3D del mensajero usa la MISMA receta del gestor (degradado 135° +
 // esquina de vidrio + tinta derivada): gestorHeroVars solo lee .color.
@@ -11916,7 +12234,7 @@ function renderGestorGreet(){
     document.body.style.removeProperty('--pgTopD');
     return;
   }
-  const col=g.color||'#006D8A';
+  const col=_colorDeGestor(g);
   document.body.style.setProperty('--pgTopL',_pastelClaro(col));
   document.body.style.setProperty('--pgTopD',_pastelOscuro(col));
   const ini=(g.name||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'?';
@@ -12145,6 +12463,53 @@ const esValeConfirmadoVisible = v => !!v && v.status === 'confirmed' && !v.hidde
 const valesConfirmadosDeGestor = gestorId =>
   getVales().filter(v => v && v.gestorId === gestorId && esValeConfirmadoVisible(v));
 
+// ── v237: comisiones del vale en las vistas del GESTOR ──────────────────────
+// La tarjeta del historial dice lo que se ganó en ese vale (el TOTAL, aunque el
+// vale lleve varios productos — el desglose vive en el detalle) y al tocarlo el
+// modal abre la cuenta completa producto a producto.
+// getValeCommissionParts ya descuenta lo cedido/rebajado en un solo punto, así
+// que la cifra que se enseña es SIEMPRE la ya rebajada — y cuando hubo rebaja
+// se acompaña de una chapa «⬇ −X» para que se vea de dónde salió.
+function _fmtComTotalTxt(usd, mn) {
+  const p = [];
+  if (usd > 0) p.push('$' + (Math.round(usd * 100) / 100).toFixed(2) + ' USD');
+  if (mn > 0) p.push(Math.round(mn) + ' MN');
+  return p.join(' + ');
+}
+function _comisionGananciaVale(v) {
+  let r = null;
+  try { r = getValeCommissionParts(v); } catch (e) { r = null; }
+  if (!r) return null;
+  const _ced = (typeof _cedidoTotal === 'function') ? _cedidoTotal(v) : { usd: 0, mn: 0 };
+  const _hayCed = !!(_ced.usd > 0 || _ced.mn > 0);
+  const _hasTot = r.totalUSD !== null || r.totalMN !== null;
+  return {
+    parts: r.parts || [],
+    computable: !!r.computable,
+    hasTot: _hasTot,
+    // Total YA rebajado (lo que de verdad se gana / se contará)
+    total: _hasTot ? (_fmtComTotalTxt(r.totalUSD, r.totalMN) || '$0.00 USD') : null,
+    // Lo que daba el vale ANTES de la rebaja (para el «ganaba X»)
+    orig: (_hasTot && _hayCed) ? (_fmtComTotalTxt((r.totalUSD || 0) + _ced.usd, (r.totalMN || 0) + _ced.mn) || null) : null,
+    ced: _ced,
+    hayCed: _hayCed
+  };
+}
+// Chapa(s) de comisión para la tarjeta del historial. modo 'pend' = vale por
+// cobrar (la comisión aún no es ganada: «Por ganar»), resto = confirmado.
+function _chapaComisionVale(v, skin, modo) {
+  const c = _comisionGananciaVale(v);
+  if (!c) return '';
+  if (!c.hasTot) {
+    return c.computable ? '' : `<span class="mvc-chip mvc-rev${skin ? ' ink' : ''}" title="La comisión de este vale no se pudo calcular — avísale al admin">💵 Sin calcular</span>`;
+  }
+  const _lbl = modo === 'pend' ? 'Por ganar' : 'Ganas';
+  const _reb = c.hayCed
+    ? `<span class="mvc-reb${skin ? ' ink' : ''}" title="Ganaba ${escapeHTML(c.orig || '—')} — la rebaja ya está descontada">⬇ −${escapeHTML(_fmtComTotalTxt(c.ced.usd, c.ced.mn))}</span>`
+    : '';
+  return `<span class="mvc-chip${skin ? ' ink' : ''}" title="Tu comisión en este vale, ya con la rebaja aplicada">💵 ${_lbl}: <b>${escapeHTML(c.total)}</b></span>${_reb}`;
+}
+
 function renderMyVales() {
   const c = document.getElementById('gestorMyVales');
   const hList = document.getElementById('gestorHistorialList');
@@ -12271,6 +12636,7 @@ function renderMyVales() {
           <div class="mv-head"><span class="mv-time${_skinMy?' ink':''}"><b${_skinMy?' class="acc"':''}>${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>${_skinMy?'<span class="vg-chip">⏳ Sin cobrar</span>':''}</div>
           <div class="mv-info${_skinMy?' ink':''}" style="font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
           <div class="mv-info${_skinMy?' ink':''}" style="font-size:11px;opacity:.72;">${escapeHTML(v.articulo||'—')}</div>
+          <div class="mv-com${_skinMy?' ink':''}">${_chapaComisionVale(v,_skinMy,'pend')}</div>
           <div class="mv-foot" style="margin-top:6px;">${_skinMy?'':`<span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span>`}${v.total!=null&&String(v.total).trim()!==''?`<span class="mv-precio-hist" style="margin-left:auto;font-size:12px;font-weight:800;${_skinMy?'color:var(--gacc2);':''}">$${escapeHTML(String(v.total).replace(/^[\$\s]+/,''))}</span>`:''}</div>
         </div>`;
       }).join('');
@@ -12285,6 +12651,7 @@ function renderMyVales() {
           <div class="mv-head"><span class="mv-time${_skinMy?' ink':''}"><b${_skinMy?' class="acc"':''}>${valeNumStr(v)}</b> · ${new Date(v.ts).toLocaleDateString('es-ES')} ${timeStr(v.ts)}</span>${_skinMy?'<span class="vg-chip">✅ Cobrado</span>':''}</div>
           <div class="mv-info${_skinMy?' ink':''}" style="font-weight:600;">${escapeHTML(v.cliente||'—')}</div>
           <div class="mv-info${_skinMy?' ink':''}" style="font-size:11px;opacity:.72;">${escapeHTML(v.articulo||'—')}</div>
+          <div class="mv-com${_skinMy?' ink':''}">${_chapaComisionVale(v,_skinMy,'hist')}</div>
           <div class="mv-foot" style="margin-top:6px;">${_skinMy?'':`<span class="mv-status" style="color:${s.color};font-size:10px;">${s.icon} ${s.label}</span>`}${v.total!=null&&String(v.total).trim()!==''?`<span class="mv-precio-hist" style="margin-left:auto;font-size:12px;font-weight:800;${_skinMy?'color:var(--gacc2);':''}">$${escapeHTML(String(v.total).replace(/^[\$\s]+/,''))}</span>`:''}</div>
         </div>`;
       }).join('');
@@ -12386,22 +12753,53 @@ function clearGestorHistory(){
 function openGestorValeModal(id) {
   const v = getVales().find(x=>x.id===id); if(!v) return;
   const sMap={
+    pending:{label:'Enviado · admin pendiente',color:'var(--blue)',icon:'🔵'},
+    assigned:{label:'Con mensajero',color:'var(--orange)',icon:'🛵'},
     delivered:{label:'Entregado',color:'#7C3AED',icon:'📦'},
-    confirmed:{label:'Venta confirmada ✅',color:'var(--green)',icon:'✅'}
+    confirmed:{label:'Venta confirmada ✅',color:'var(--green)',icon:'✅'},
+    pending_payment:{label:'Pendiente de cobro ⏳',color:'var(--yellow)',icon:'⏳'}
   };
   // v51 FIX: normalizar status
   const _vStatus = v.status || 'pending';
   const s = sMap[_vStatus]||{label:_vStatus,color:'var(--gray-400)',icon:'•'};
+  // ── v237: desglose COMPLETO de la comisión ──
+  // Antes el detalle solo decía teléfono/dirección/artículo/total/garantía: la
+  // comisión —lo que de verdad le importa al gestor— no aparecía por ninguna
+  // parte. Ahora se lista producto a producto (con su comisión), lo cedido si
+  // hubo rebaja, y el total YA rebajado que es el que se cuenta.
+  const c = _comisionGananciaVale(v);
+  const _esPend = _vStatus === 'pending_payment';
+  let comHTML = '';
+  if (c && (c.parts.length || c.hasTot)) {
+    const _filas = c.parts.map(p =>
+      `<div class="gv-row${p.cedido ? ' gv-row-ced' : ''}${p.manual ? ' gv-row-man' : ''}">
+        <span class="gv-l">${escapeHTML(p.label)}</span>
+        <span class="gv-v">${escapeHTML(p.com)}</span>
+      </div>`).join('');
+    const _totTxt = c.hasTot ? c.total : 'por revisar';
+    const _totRow = `<div class="gv-total">
+        <span>${_esPend ? 'Por ganar cuando cobres' : 'Ganas en este vale'}</span>
+        <b>${escapeHTML(_totTxt || '—')}</b>
+      </div>`;
+    const _rebRow = (c.hasTot && c.hayCed)
+      ? `<div class="gv-rebaja">↘ Ya está descontada tu rebaja de <b>−${escapeHTML(_fmtComTotalTxt(c.ced.usd, c.ced.mn))}</b>${c.orig ? ` <i>(ganaba ${escapeHTML(c.orig)})</i>` : ''}${v.comisionCedidaMotivo ? ` · «${escapeHTML(v.comisionCedidaMotivo)}»` : ''}</div>`
+      : '';
+    comHTML = `<div class="gv-sec">
+      <div class="gv-t">💰 Tu comisión</div>
+      ${_filas}
+      ${_totRow}
+      ${_rebRow}
+    </div>`;
+  }
   const content = `
-    <div style="font-size:16px;font-weight:800;color:var(--blue-dk);margin-bottom:12px;">${valeNumStr(v)} ${escapeHTML(v.cliente)}</div>
-    <div style="margin-bottom:6px;"><b>📱 Teléfono:</b> ${escapeHTML(v.telefono||'—')}</div>
-    <div style="margin-bottom:6px;"><b>📍 Dirección:</b> ${escapeHTML(v.direccion||'—')}</div>
-    <div style="margin-bottom:6px;"><b>📦 Artículo:</b> ${escapeHTML(v.articulo||'—')}</div>
-    <div style="margin-bottom:6px;"><b>💰 Total:</b> ${escapeHTML(v.total||'—')}</div>
-    <div style="margin-bottom:12px;"><b>⚙️ Garantía:</b> ${escapeHTML(v.garantia||'—')}</div>
-    <div style="padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-weight:700;color:${s.color};text-align:center;">
-      ${s.icon} ${s.label}
-    </div>
+    <div class="gv-nombre">${valeNumStr(v)} ${escapeHTML(v.cliente)}</div>
+    <div class="gv-dato"><b>📱 Teléfono:</b> ${escapeHTML(v.telefono||'—')}</div>
+    <div class="gv-dato"><b>📍 Dirección:</b> ${escapeHTML(v.direccion||'—')}</div>
+    <div class="gv-dato"><b>📦 Artículo:</b> ${escapeHTML(v.articulo||'—')}</div>
+    <div class="gv-dato"><b>💰 Total:</b> ${escapeHTML(v.total||'—')}</div>
+    <div class="gv-dato"><b>⚙️ Garantía:</b> ${escapeHTML(v.garantia||'—')}</div>
+    ${comHTML}
+    <div class="gv-estado" style="color:${s.color};">${s.icon} ${s.label}</div>
   `;
   document.getElementById('gestorValeModalContent').innerHTML = content;
   document.getElementById('gestorValeModal').classList.add('show');
@@ -13353,7 +13751,7 @@ function confirmPickerSelection() {
     const p=productoOf(parseInt(id));
     const it={id:parseInt(id),name:p?p.name:id,qty};
     const prev=_antes[String(parseInt(id))];
-    if (prev) ['cedidaUSD','cedidaMN'].forEach(k => { if (prev[k] > 0) it[k] = prev[k]; });
+    if (prev) ['cedidaUSD','cedidaMN','comManualUSD','comManualMN'].forEach(k => { if (prev[k] > 0) it[k] = prev[k]; });
     return it;
   });
   selectedProductsUI=items;currentValeProductos=items;
@@ -13401,6 +13799,9 @@ function confirmPickerSelection() {
     if(comMN>0)parts.push(`${Math.round(comMN)} MN`);
     document.getElementById('vf-comisionGestor').value=parts.join(' + ');
   }
+  // v236: y encima manda la suma línea a línea — si alguna línea conservaba
+  // comisión cedida o puesta a mano de antes, el campo lo refleja.
+  _recalcularComisionFormulario();
   // auto-fill garantia from first product that has one
   if(!document.getElementById('vf-garantia').value){
     const g=items.map(({id})=>productoOf(id)?.garantia).find(Boolean);
@@ -13417,60 +13818,91 @@ function renderSelectedProductsUI() {
   if(!c) return;
   if(!selectedProductsUI.length){c.style.display='none';return;}
   c.style.display='block';
-  // ── v123: cada producto con SU comisión, editable ─────────────────────────
-  // Antes había una sola casilla de comisión para todo el vale, y con varias
-  // líneas eso no alcanza: "en los 10 nanos bajo 50 de los 100 y en los POE
-  // bajo 4000 de los 10000" son dos ajustes, en dos monedas. Ahora cada línea
-  // enseña lo que da de comisión y se puede escribir encima lo que se quiere
-  // cobrar; la diferencia es lo que el gestor cede, y baja lo que paga el
-  // cliente en esa misma moneda.
-  c.innerHTML=`<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:8px;">`+
+  // ── v123/v236: cada producto con SU comisión, SIEMPRE editable ────────────
+  // v123 la hizo editable línea a línea; v236 la deja visible SIEMPRE (antes la
+  // fila desaparecía si el producto no daba comisión y no había forma de ponerle
+  // una) y permite SUBIRLA por encima del catálogo: escribir menos cede la
+  // diferencia al cliente; escribir más deja la comisión «puesta a mano».
+  c.innerHTML=`<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:8px;">
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45;">✍️ Toca el número: <b>menos</b> que el catálogo = la diferencia baja al precio del cliente · <b>más</b> = queda puesta a mano (el admin la ve marcada).</div>`+
     selectedProductsUI.map((i, idx)=>{
-      const base = _comisionBaseLinea(i);
-      const mon  = base.mn > 0 ? 'MN' : 'USD';
-      const baseN = mon === 'MN' ? base.mn : base.usd;
+      const cat = _comisionCatalogoLinea(i);
+      const mon = (parseFloat(i.comManualMN) > 0) ? 'MN'
+                : (parseFloat(i.comManualUSD) > 0) ? 'USD'
+                : (i.comMonPref) ? i.comMonPref
+                : (cat.mn > 0 ? 'MN' : 'USD');
+      const baseN = mon === 'MN' ? cat.mn : cat.usd;
       const neta  = _comisionNetaLinea(i);
       const netaN = mon === 'MN' ? neta.mn : neta.usd;
+      const aMano = (mon === 'MN' ? (parseFloat(i.comManualMN)||0) : (parseFloat(i.comManualUSD)||0)) > 0;
       const cedido = Math.round((baseN - netaN) * 100) / 100;
+      const _fN = n => mon === 'MN' ? Math.round(n) : (Math.round(n * 100) / 100);
       return `<div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;">
         <span style="font-weight:800;color:var(--blue);flex-shrink:0;font-size:13px;">×${i.qty}</span>
         <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHTML(i.name)}</span>
       </div>
-      ${baseN > 0 ? `<div style="display:flex;align-items:center;gap:6px;padding-left:22px;">
+      <div style="display:flex;align-items:center;gap:6px;padding-left:22px;flex-wrap:wrap;">
         <span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">Tu comisión:</span>
-        <input type="number" inputmode="decimal" min="0" max="${baseN}" step="any"
-               value="${netaN}" data-linea="${idx}"
-               onfocus="this.select();" onchange="cambiarComisionLinea(${idx}, this.value)"
-               style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;font-weight:700;color:var(--text);">
-        <span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${mon} de ${mon==='MN'?Math.round(baseN):baseN}</span>
-        ${cedido > 0 ? `<span style="font-size:10px;color:var(--orange);font-weight:700;white-space:nowrap;">−${mon==='MN'?Math.round(cedido):cedido} al cliente</span>` : ''}
-      </div>` : ''}
+        <input type="number" inputmode="decimal" min="0" step="any"
+               value="${netaN > 0 ? _fN(netaN) : ''}" placeholder="0" data-linea="${idx}"
+               onfocus="this.select();" onchange="cambiarComisionLinea(${idx}, this.value, '${mon}')"
+               style="width:86px;background:var(--surface);border:1.5px solid ${aMano?'var(--orange)':'var(--border)'};border-radius:8px;padding:3px 7px;font-size:12px;font-weight:700;color:var(--text);">
+        ${baseN > 0
+          ? `<span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${mon} de ${_fN(baseN)}</span>`
+          : `<span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${mon} · el producto no da comisión</span>`}
+        <button type="button" onclick="cambiarMonedaComisionLinea(${idx})" title="Escribir esta comisión en la otra moneda"
+                style="background:var(--surface);border:1px solid var(--border);border-radius:100px;font-size:9px;font-weight:800;padding:2px 8px;color:var(--text-muted);cursor:pointer;flex-shrink:0;">${mon} ⇄</button>
+        ${aMano ? `<span style="font-size:9.5px;color:var(--orange);font-weight:800;white-space:nowrap;">✍️ puesta a mano</span>` : ''}
+        ${cedido > 0 ? `<span style="font-size:10px;color:var(--orange);font-weight:700;white-space:nowrap;">−${_fN(cedido)} al cliente</span>` : ''}
+      </div>
     </div>`;}).join('')+
     `</div><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 10px;" onclick="openProductPicker()">✏️ Editar selección</button>`;
 }
 
-// ── v123: el gestor escribe lo que quiere cobrar por esa línea ──────────────
-// Se guarda la DIFERENCIA (lo cedido), no el importe: así, si mañana cambia la
-// comisión del catálogo, lo que el gestor decidió ceder sigue significando lo
-// mismo. Se topa entre 0 y la comisión entera — ceder más de lo que se gana no
-// existe, y "cobrar más de lo que da el producto" tampoco.
-function cambiarComisionLinea(idx, valor) {
+// ── v123/v236: el gestor escribe lo que quiere cobrar por esa línea ─────────
+// v123: se guarda la DIFERENCIA (lo cedido), no el importe — si mañana cambia la
+// comisión del catálogo, lo decidido sigue significando lo mismo.
+// v236: escribir MÁS que el catálogo ya no está prohibido — deja la comisión
+// PUESTA A MANO (comManualUSD/MN), que viaja a la nube, se congela con el vale y
+// el admin ve marcada. El ancla para decidir es SIEMPRE el catálogo.
+function cambiarComisionLinea(idx, valor, mon) {
   const it = currentValeProductos[idx];
   if (!it) return;
-  const base = _comisionBaseLinea(it);
-  const mon = base.mn > 0 ? 'MN' : 'USD';
-  const baseN = mon === 'MN' ? base.mn : base.usd;
+  mon = (mon === 'MN') ? 'MN' : 'USD';
+  const baseN = (mon === 'MN') ? _comisionCatalogoLinea(it).mn : _comisionCatalogoLinea(it).usd;
   let quiere = parseFloat(valor);
   if (!isFinite(quiere) || quiere < 0) quiere = 0;
-  if (quiere > baseN) { quiere = baseN; showToast('No puedes cobrar más de lo que da ese producto'); }
-  const cedido = Math.round((baseN - quiere) * 100) / 100;
-  if (mon === 'MN') { it.cedidaMN = cedido; delete it.cedidaUSD; }
-  else              { it.cedidaUSD = cedido; delete it.cedidaMN; }
+  quiere = Math.round(quiere * 100) / 100;
+  delete it.comManualUSD; delete it.comManualMN; delete it.cedidaUSD; delete it.cedidaMN;
+  if (quiere > baseN) {
+    if (mon === 'MN') it.comManualMN = quiere; else it.comManualUSD = quiere;
+  } else {
+    const cedido = Math.round((baseN - quiere) * 100) / 100;
+    if (cedido > 0) { if (mon === 'MN') it.cedidaMN = cedido; else it.cedidaUSD = cedido; }
+  }
   // selectedProductsUI y currentValeProductos son el MISMO array (ver
   // confirmPickerSelection), así que no hay nada que copiar. Se deja dicho por
   // si algún día dejan de serlo.
   if (selectedProductsUI !== currentValeProductos) selectedProductsUI[idx] = it;
+  renderSelectedProductsUI();
+  _recalcularComisionFormulario();
+}
+// v236: la casilla de una línea se puede escribir en la OTRA moneda (el
+// catálogo da USD y al gestor le cuentan en MN, o al revés). Sin conversión:
+// lo que se escribe vale lo que dice la etiqueta.
+function cambiarMonedaComisionLinea(idx) {
+  const it = currentValeProductos[idx];
+  if (!it) return;
+  const cat = _comisionCatalogoLinea(it);
+  const actual = (parseFloat(it.comManualMN) > 0) ? 'MN'
+               : (parseFloat(it.comManualUSD) > 0) ? 'USD'
+               : (it.comMonPref) ? it.comMonPref
+               : (cat.mn > 0 ? 'MN' : 'USD');
+  const nueva = actual === 'MN' ? 'USD' : 'MN';
+  it.comMonPref = nueva;
+  if (nueva === 'MN' && parseFloat(it.comManualUSD) > 0) { it.comManualMN = parseFloat(it.comManualUSD); delete it.comManualUSD; }
+  else if (nueva === 'USD' && parseFloat(it.comManualMN) > 0) { it.comManualUSD = parseFloat(it.comManualMN); delete it.comManualMN; }
   renderSelectedProductsUI();
   _recalcularComisionFormulario();
 }
@@ -15152,7 +15584,7 @@ function _renderStatsGestorCard(g, vales, from, to) {
   const _sgCls = _sgSkin ? ' ink' : '';
   let html = `<div class="card sg-card${isExpanded?' sg-open':''}" style="padding:0;overflow:hidden;margin-bottom:6px;">
     <div class="sg-head${_sgSkin?' vx-skin':''}" onclick="toggleStatsGestor(${g.id})" style="${_sgSkin?gestorHeroVars(g):''}display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;${isExpanded?'background:var(--blue-lt);':''}">
-      <div class="g-avatar" style="background:${g.color};width:32px;height:32px;font-size:11px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
+      <div class="g-avatar" style="background:${_colorDeGestor(g)};width:32px;height:32px;font-size:11px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span class="sg-nombre${_sgCls}" style="font-size:13px;font-weight:700;">${escapeHTML(g.name)}</span>
@@ -17222,8 +17654,21 @@ function getValeCommissionParts(v) {
   const items=v.valeProductos||[];
   const parts=[];
   let totalUSD=0,totalMN=0;let computable=true;
-  items.forEach(({id,qty})=>{
+  items.forEach((itRaw)=>{
+    const id=itRaw&&itRaw.id, qty=(itRaw&&itRaw.qty)||0;
+    // ── v236: comisión PUESTA A MANO — manda sobre el catálogo en esa línea ──
+    // Es el TOTAL de la línea (no por unidad) y viaja a la nube en
+    // _lineaParaLaNube. En las partes se delata con «puesta a mano» para que el
+    // admin vea que ese número no salió del catálogo.
+    const _mU=Math.max(0,parseFloat(itRaw&&itRaw.comManualUSD)||0);
+    const _mN=Math.max(0,parseFloat(itRaw&&itRaw.comManualMN)||0);
     const p=productoOf(id);
+    if(_mU>0||_mN>0){
+      const _lb=p?`${p.name||p.nombre||('Producto #'+id)}${qty>1?` ×${qty}`:''}`:`Producto #${id} (borrado)`;
+      if(_mU>0){ totalUSD+=_mU; parts.push({label:_lb,com:`puesta a mano: $${_mU.toFixed(2)} USD`,currency:'USD',manual:true}); }
+      if(_mN>0){ totalMN+=_mN; parts.push({label:_lb,com:`puesta a mano: ${Math.round(_mN)} MN`,currency:'MN',manual:true}); }
+      return;
+    }
     if(!p){
       // Producto borrado del catálogo — la comisión no se puede calcular.
       // Marcamos como no computable para avisar al gestor/admin, en vez de
@@ -17817,7 +18262,7 @@ function renderGestorRanking() {
       <div class="rank-pos">${pos}</div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:6px;">
-          <div class="g-avatar" style="background:${g.color};width:26px;height:26px;font-size:10px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
+          <div class="g-avatar" style="background:${_colorDeGestor(g)};width:26px;height:26px;font-size:10px;flex-shrink:0;">${escapeHTML(g.initials)}</div>
           <span class="rank-name${_skinRk?' ink':''}" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(g.name)}</span>
           ${(() => {
             // v114: los puntos ahora vuelven a cero al llegar a la meta, así que
@@ -18576,7 +19021,7 @@ function rankingDelCiclo(desde, hasta) {
   let prev = null;
   try { const c = _cicloAnterior(desde); if (c && c.from) prev = _puntosPorGestorEnRango(c.from, c.to); } catch(e) {}
   return getGestores().filter(g => g && !g._tienda)
-    .map(g => ({ id:g.id, name:g.name, initials:g.initials, color:g.color,
+    .map(g => ({ id:g.id, name:g.name, initials:g.initials, color:_colorDeGestor(g),
                  pts:_redondearPts(Math.max(0, tot.get(String(g.id)) || 0)),
                  prev: prev ? _redondearPts(Math.max(0, prev.get(String(g.id)) || 0)) : 0 }))
     .filter(x => x.pts > 0)
@@ -19164,7 +19609,7 @@ function showRankNotifCards(top3) {
     card.style.bottom=(20+i*90)+'px';
     card.innerHTML=`
       <div class="rank-notif-card-header">
-        <div class="rank-notif-card-icon" style="background:${g.color}">${escapeHTML(g.initials)}</div>
+        <div class="rank-notif-card-icon" style="background:${_colorDeGestor(g)}">${escapeHTML(g.initials)}</div>
         <div class="rank-notif-card-title" style="color:${PLACE_COLOR[i]}">${PLACE_LABEL[i]}</div>
         <div class="rank-notif-card-time">ahora</div>
       </div>
@@ -19225,7 +19670,7 @@ function launchEpicGlowPulse(triggerGestor, triggerPts, ctx) {
         ${top3.map((g,i)=>`
           <div class="glow-winner-row" id="glowRow${i}" style="transition-delay:${.3+i*.25}s">
             <div class="glow-winner-place" style="color:${PLACE_COLOR[i]}">${i===0?'1°':i===1?'2°':'3°'}</div>
-            <div class="glow-winner-avatar" style="background:${g.color}">${escapeHTML(g.initials)}</div>
+            <div class="glow-winner-avatar" style="background:${_colorDeGestor(g)}">${escapeHTML(g.initials)}</div>
             <div class="glow-winner-info">
               <div class="glow-winner-name">${escapeHTML(g.name)}</div>
               <div class="glow-winner-pts">${g.pts} pts${esMes?(i===0?' 👑 ¡Ganó el mes!':''):(i===0&&meta>0&&g.pts>=meta?' ⭐ ¡Meta alcanzada!':'')}</div>
@@ -19337,7 +19782,7 @@ function showGoalBanner(g, pts) {
       <div style="font-size:15px;font-weight:900;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3);">¡META ALCANZADA!</div>
       <div style="font-size:13px;opacity:.9;margin-top:2px;">${escapeHTML(g.name)} llegó a <b>${pts} puntos ⭐</b> — ¡Felicidades!</div>
     </div>
-    <div style="background:${g.color};width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;border:2px solid rgba(255,255,255,.4);">${escapeHTML(g.initials)}</div>
+    <div style="background:${_colorDeGestor(g)};width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;border:2px solid rgba(255,255,255,.4);">${escapeHTML(g.initials)}</div>
     <button onclick="dismissGoalBanner()" style="background:rgba(255,255,255,.18);border:none;color:white;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;">×</button>`;
   document.body.appendChild(el);
   setTimeout(()=>dismissGoalBanner(),6000);
@@ -19409,7 +19854,7 @@ function _podioGuardado(mes, ganador, pts) {
   return lista.map(r => {
     const g = gestorOf(r.id) || {};
     return { id: r.id, name: g.name || r.name, initials: g.initials || String(r.name || '?').slice(0, 2).toUpperCase(),
-             color: g.color || '#64748B', pts: r.pts };
+             color: _colorDeGestor(g), pts: r.pts };
   });
 }
 function _celebrarMetaDelGestor() {
@@ -19649,7 +20094,7 @@ function renderHistorial() {
       html+=`<div class="card${_hh}" style="${_hero?_hero+';':''}padding:8px 12px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:10px;${estafaBorder}" onclick="selectValeFromHistorial(${v.id})">
         ${_circ}
         <div style="flex-shrink:0;">
-          <div class="g-avatar" style="background:${g?g.color:'#888'};width:28px;height:28px;font-size:10px;">${g?escapeHTML(g.initials):'?'}</div>
+          <div class="g-avatar" style="background:${_colorDeGestor(g)};width:28px;height:28px;font-size:10px;">${g?escapeHTML(g.initials):'?'}</div>
         </div>
         <div style="flex:1;min-width:0;">
           <!-- v119: manda el GESTOR, no el cliente. En el historial se busca
@@ -22966,7 +23411,7 @@ function _pastelOscuro(hex){
 // Devuelve '' para la Tienda (queda con la superficie neutra del tema).
 function _pfVars(g){
   if(!g||g._tienda) return '';
-  const b=g.color||'#006d8a';
+  const b=_colorDeGestor(g);
   return '--pfL:'+_pastelClaro(b)+';--pfD:'+_pastelOscuro(b)+';';
 }
 function gestorHeroVars(g){
@@ -22975,7 +23420,7 @@ function gestorHeroVars(g){
   // (--gink) para el nombre sobre el vidrio, acento medio (--gacc2) para
   // «Entrar», tinte translúcido (--gacc) para los círculos y rgb de sombra
   // (--gsh) del mismo tono. --gbd se conserva por compatibilidad.
-  const base=(g&&g.color)||'#006d8a';
+  const base=_colorDeGestor(g);
   return '--g1:'+_pastelClaro(base)
     +';--gbd:'+_mixHex(base,[255,255,255],.42)
     +';--g2:'+base
@@ -23057,7 +23502,7 @@ function openPerfil(){
   const sb=document.getElementById('pfSub');
   if(g){
     av.textContent=g.initials||'?';
-    av.style.background=g.color||'var(--gray-400)';
+    av.style.background=_colorDeGestor(g);
     nm.textContent=g.name;
     sb.textContent='Gestor · sesión activa en este dispositivo';
   }else{
@@ -23083,7 +23528,10 @@ function pfTheme(){ toggleTheme(); _pfRefreshStates(); haptic(8); }
 function pfContrast(){ toggleContrast(); _pfRefreshStates(); }
 function pfNotifs(){ closePerfil(); openNotifsModal(); }
 function pfTasa(){ closePerfil(); openTasaModal(); }
-function pfChangeGestor(){ closePerfil(); haptic(10); changeGestor(); }
+// v238: pfChangeGestor se jubila — el perfil ya no ofrece «Cambiar de
+// gestor» (cada gestor trabaja en SU dispositivo; es independiente uno del
+// otro, como pidió el usuario). La salida al selector «¿Quién eres?» vive
+// en el botón «← Volver» del back bar, siempre visible al entrar.
 // Cerrar la hoja con Escape (accesibilidad)
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') closePerfil();
